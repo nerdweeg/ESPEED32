@@ -107,6 +107,29 @@ if ! command -v arduino-cli >/dev/null 2>&1; then
   exit 1
 fi
 
+# Return the first available serial port for the current OS, or empty string.
+find_serial_port() {
+  local os
+  os="$(uname -s)"
+  case "$os" in
+    Darwin) ls -1 /dev/cu.usbserial* /dev/cu.usbmodem* /dev/tty.usbserial* 2>/dev/null | head -n 1 || true ;;
+    Linux)  ls -1 /dev/ttyUSB* /dev/ttyACM* 2>/dev/null | head -n 1 || true ;;
+    *)      true ;;
+  esac
+}
+
+# Return an OS-appropriate hint for specifying the serial port.
+port_hint() {
+  local os
+  os="$(uname -s)"
+  case "$os" in
+    Darwin)  printf 'run with -p /dev/cu.usbserial-XXXX' ;;
+    Linux)   printf 'run with -p /dev/ttyUSB0 or /dev/ttyACM0' ;;
+    MINGW*|MSYS*|CYGWIN*) printf 'run with -p COM3 (check Device Manager for the port number)' ;;
+    *)       printf 'run with -p /dev/ttyUSB0 or similar' ;;
+  esac
+}
+
 json_value() {
   local key="$1"
   sed -n "s/.*\"$key\"[[:space:]]*:[[:space:]]*\"\\([^\"]*\\)\".*/\\1/p" "$ARDUINO_JSON" | head -n 1
@@ -223,12 +246,12 @@ if [[ -z "$PORT" ]]; then
   PORT="$(json_value port)"
 fi
 if [[ -z "$PORT" ]]; then
-  PORT="/dev/tty.usbserial-120"
+  PORT="$(find_serial_port || true)"
 fi
 
 if [[ ! -e "$PORT" ]]; then
-  ALT_PORT="$(ls -1 /dev/tty.usbserial* /dev/cu.usbserial* 2>/dev/null | head -n 1 || true)"
-  if [[ -n "$ALT_PORT" ]]; then
+  ALT_PORT="$(find_serial_port || true)"
+  if [[ -n "$ALT_PORT" && "$ALT_PORT" != "$PORT" ]]; then
     echo "[FLASH] Port $PORT not found, using $ALT_PORT"
     PORT="$ALT_PORT"
   fi
@@ -242,8 +265,8 @@ if [[ -z "$BAUD" ]]; then
 fi
 
 if [[ "$SPIFFS_ONLY" -eq 0 && "$COMPILE_ONLY" -eq 0 && ! -e "$PORT" ]]; then
-  echo "Serial port not found: $PORT" >&2
-  echo "Tip: run with -p /dev/tty.usbserial-XXXX or /dev/cu.usbserial-XXXX" >&2
+  echo "Serial port not found: ${PORT:-<none detected>}" >&2
+  echo "Tip: $(port_hint)" >&2
   exit 1
 fi
 

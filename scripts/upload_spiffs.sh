@@ -34,8 +34,70 @@ Options:
 USAGE
 }
 
+# Detect the Arduino15 data directory for the current OS.
+arduino_data_dir() {
+  local os
+  os="$(uname -s)"
+  case "$os" in
+    Darwin)
+      printf '%s' "$HOME/Library/Arduino15"
+      ;;
+    Linux)
+      printf '%s' "${ARDUINO_DATA_DIR:-$HOME/.arduino15}"
+      ;;
+    MINGW*|MSYS*|CYGWIN*)
+      local appdata="${LOCALAPPDATA:-${APPDATA:-}}"
+      if [[ -n "$appdata" ]]; then
+        # Convert Windows path to Unix style for bash
+        appdata="$(cygpath -u "$appdata" 2>/dev/null || printf '%s' "$appdata" | sed 's|\\|/|g; s|^\([A-Za-z]\):|/\1|')"
+        printf '%s' "$appdata/Arduino15"
+      else
+        printf '%s' "$HOME/AppData/Local/Arduino15"
+      fi
+      ;;
+    *)
+      printf '%s' "${ARDUINO_DATA_DIR:-$HOME/.arduino15}"
+      ;;
+  esac
+}
+
+# Return the first available serial port for the current OS, or empty string.
+find_serial_port() {
+  local os
+  os="$(uname -s)"
+  case "$os" in
+    Darwin)
+      ls -1 /dev/cu.usbserial* /dev/cu.usbmodem* /dev/tty.usbserial* 2>/dev/null | head -n 1 || true
+      ;;
+    Linux)
+      ls -1 /dev/ttyUSB* /dev/ttyACM* 2>/dev/null | head -n 1 || true
+      ;;
+    MINGW*|MSYS*|CYGWIN*)
+      # COM ports on Windows — auto-detection is unreliable from bash; require -p
+      true
+      ;;
+    *)
+      ls -1 /dev/ttyUSB* /dev/ttyACM* 2>/dev/null | head -n 1 || true
+      ;;
+  esac
+}
+
+# Return an OS-appropriate hint for specifying the serial port.
+port_hint() {
+  local os
+  os="$(uname -s)"
+  case "$os" in
+    Darwin)  printf 'run with -p /dev/cu.usbserial-XXXX' ;;
+    Linux)   printf 'run with -p /dev/ttyUSB0 or /dev/ttyACM0' ;;
+    MINGW*|MSYS*|CYGWIN*) printf 'run with -p COM3 (check Device Manager for the port number)' ;;
+    *)       printf 'run with -p /dev/ttyUSB0 or similar' ;;
+  esac
+}
+
+# macOS only: prefer /dev/cu.* over /dev/tty.* for reliable upload.
 matching_cu_port() {
   local port="${1:-}"
+  [[ "$(uname -s)" == Darwin ]] || return 1
   if [[ "$port" == /dev/tty.* ]]; then
     local cu_port="/dev/cu.${port#/dev/tty.}"
     if [[ -e "$cu_port" ]]; then
@@ -125,12 +187,12 @@ if [[ -z "$PORT" && -f "$ARDUINO_JSON" ]]; then
 fi
 
 if [[ -z "$PORT" ]]; then
-  PORT="/dev/tty.usbserial-120"
+  PORT="$(find_serial_port || true)"
 fi
 
 if [[ ! -e "$PORT" ]]; then
-  ALT_PORT="$(ls -1 /dev/tty.usbserial* /dev/cu.usbserial* 2>/dev/null | head -n 1 || true)"
-  if [[ -n "$ALT_PORT" ]]; then
+  ALT_PORT="$(find_serial_port || true)"
+  if [[ -n "$ALT_PORT" && "$ALT_PORT" != "$PORT" ]]; then
     echo "[SPIFFS] Port $PORT not found, using $ALT_PORT"
     PORT="$ALT_PORT"
   fi
@@ -150,11 +212,15 @@ if [[ -z "$BAUD" ]]; then
   BAUD="115200"
 fi
 
-MKSPiffs_DIR="$(ls -d "$HOME/Library/Arduino15/packages/esp32/tools/mkspiffs/"* 2>/dev/null | sort -V | tail -n 1 || true)"
-ESPTOOL_DIR="$(ls -d "$HOME/Library/Arduino15/packages/esp32/tools/esptool_py/"* 2>/dev/null | sort -V | tail -n 1 || true)"
+_arduino15="$(arduino_data_dir)"
+MKSPiffs_DIR="$(ls -d "$_arduino15/packages/esp32/tools/mkspiffs/"* 2>/dev/null | sort -V | tail -n 1 || true)"
+ESPTOOL_DIR="$(ls -d "$_arduino15/packages/esp32/tools/esptool_py/"* 2>/dev/null | sort -V | tail -n 1 || true)"
 
+# On Windows the bundled binaries have a .exe suffix
 MKSPiffs_BIN="$MKSPiffs_DIR/mkspiffs"
 ESPTOOL_BIN="$ESPTOOL_DIR/esptool"
+if [[ ! -x "$MKSPiffs_BIN" && -x "${MKSPiffs_BIN}.exe" ]]; then MKSPiffs_BIN="${MKSPiffs_BIN}.exe"; fi
+if [[ ! -x "$ESPTOOL_BIN" && -x "${ESPTOOL_BIN}.exe" ]]; then ESPTOOL_BIN="${ESPTOOL_BIN}.exe"; fi
 
 if [[ "$PURGE" -eq 0 && ! -x "$MKSPiffs_BIN" ]]; then
   echo "mkspiffs not found. Install ESP32 platform tools first." >&2
@@ -167,8 +233,8 @@ if [[ ! -x "$ESPTOOL_BIN" && ( "$BUILD_ONLY" -eq 0 || "$PURGE" -eq 1 ) ]]; then
 fi
 
 if [[ ( "$BUILD_ONLY" -eq 0 || "$PURGE" -eq 1 ) && ! -e "$PORT" ]]; then
-  echo "Serial port not found: $PORT" >&2
-  echo "Tip: run with -p /dev/tty.usbserial-XXXX or /dev/cu.usbserial-XXXX" >&2
+  echo "Serial port not found: ${PORT:-<none detected>}" >&2
+  echo "Tip: $(port_hint)" >&2
   exit 1
 fi
 
