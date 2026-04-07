@@ -242,7 +242,7 @@ details.doc-fold>:not(summary){margin-top:8px}
       <li><code>DISPLAY -&gt; FONT SIZE</code> altera a densidade do texto entre <code>LARGE</code> e <code>small</code>.</li>
       <li><code>ECRA -&gt; ANTISPIN</code> abre o submenu de configuracao do antispin onde seleciona a unidade de visualizacao (<code>MS</code> / <code>%</code> / <code>TEXT</code>) e o passo do encoder para cada unidade.</li>
       <li><code>ECRA -&gt; PASSO FREIO</code> define quantos por cento o encoder move o TRAVAO por clique (0,1–50,0%, padrao 1,0%). Configuravel em <code>DEFINICOES → ECRA → PASSO FREIO</code>.</li>
-      <li><code>ECRA -&gt; PASSO SENSI</code> define o passo do encoder para SENSI em incrementos de 0,1% (0,1–5,0%, padrao 0,5%). Configuravel em <code>DEFINICOES → ECRA → PASSO SENSI</code>.</li>
+      <li><code>ECRA -&gt; PASSO SENSI</code> define o passo do encoder para SENSI em incrementos de 0,1% (0,1–5,0%, padrao 1,0%). Configuravel em <code>DEFINICOES → ECRA → PASSO SENSI</code>.</li>
       <li>A saída PWM do motor usa resolução de duty de 10 bits, por isso os passos de 0,1% de FREIO/SENSI são preservados nos cálculos e na conversão PWM.</li>
     </ul>
     <h3>Comportamento da race view (LIST vs GRID)</h3>
@@ -616,7 +616,7 @@ details.doc-fold>:not(summary){margin-top:8px}
 |  |  |  |- PASSO FREIO (0,1-50,0 %, padrao 1,0%)
 |  |  |  `- VOLTAR
 |  |  |- PASSO SENSI
-|  |  |  |- PASSO SENSI (0,1-5,0 % em passos de 0,1%, padrao 0,5%)
+|  |  |  |- PASSO SENSI (0,1-5,0 % em passos de 0,1%, padrao 1,0%)
 |  |  |  `- VOLTAR
 |  |  |- STATUS BAR
 |  |  |  |- SLOT 1

@@ -12,6 +12,8 @@ extern OBDISP g_obd;
 extern char msgStr[50];
 extern uint16_t g_carSel;
 extern uint16_t g_antiSpinDisplayMode;
+extern uint16_t g_brakeStep;
+extern uint16_t g_sensiStep;
 extern Menu_type g_mainMenu;
 extern AiEsp32RotaryEncoder g_rotaryEncoder;
 extern uint8_t g_encoderMainSelector;
@@ -32,10 +34,22 @@ static void formatExtPotLabel(char* out, size_t outSize, int8_t potIndex) {
   else snprintf(out, outSize, "POT");
 }
 
-static void formatPctX10Value(char* out, size_t outSize, uint16_t pctX10) {
+static void formatTunedPctX10Value(char* out, size_t outSize, uint16_t pctX10, uint16_t stepRaw) {
   if (!out || outSize == 0) return;
   pctX10 = min(pctX10, (uint16_t)1000U);
-  snprintf(out, outSize, "%u.%u%%", (unsigned int)(pctX10 / 10U), (unsigned int)(pctX10 % 10U));
+  if ((stepRaw % 10U) == 0 && (pctX10 % 10U) == 0) {
+    snprintf(out, outSize, "%u%%", (unsigned int)(pctX10 / 10U));
+  } else {
+    snprintf(out, outSize, "%u.%u%%", (unsigned int)(pctX10 / 10U), (unsigned int)(pctX10 % 10U));
+  }
+}
+
+static void formatBrakeValue(char* out, size_t outSize, uint16_t brakeRaw) {
+  formatTunedPctX10Value(out, outSize, brakeRaw, constrain(g_brakeStep, BRAKE_STEP_MIN, BRAKE_STEP_MAX));
+}
+
+static void formatSensiValue(char* out, size_t outSize, uint16_t sensiRaw) {
+  formatTunedPctX10Value(out, outSize, sensiRaw, constrain(g_sensiStep, SENSI_STEP_MIN, SENSI_STEP_MAX));
 }
 
 static void formatActiveBrakeStatus(char* out, size_t outSize, uint8_t activeBrakeKind, uint8_t activeBrakePct) {
@@ -244,7 +258,7 @@ void displayRaceModeSimple(uint8_t selectedItem, bool isEditing) {
       formatExtPotLabel(msgStr, sizeof(msgStr), getExtPotIndexForTarget(EXT_POT_TARGET_BRAKE));
       obdWriteString(&g_obd, 0, col1_center - ((strlen(msgStr) * WIDTH12x16) / 2), 16, msgStr, FONT_12x16, colorBrake, 1);
     } else {
-      formatPctX10Value(msgStr, sizeof(msgStr), brakeValue);
+      formatBrakeValue(msgStr, sizeof(msgStr), brakeValue);
       uint8_t valueWidth = (uint8_t)strlen(msgStr) * WIDTH8x8;
       obdWriteString(&g_obd, 0, col1_center - (valueWidth / 2), 20, msgStr, FONT_8x8, colorBrake, 1);
     }
@@ -264,9 +278,9 @@ void displayRaceModeSimple(uint8_t selectedItem, bool isEditing) {
       formatExtPotLabel(msgStr, sizeof(msgStr), getExtPotIndexForTarget(EXT_POT_TARGET_SENSI));
       obdWriteString(&g_obd, 0, col2_center - ((strlen(msgStr) * WIDTH12x16) / 2), 16, msgStr, FONT_12x16, colorSensi, 1);
     } else {
-      /* Value in 0.1% resolution, e.g. 20.5% */
-      sprintf(msgStr, "%2u.%u%%", sensiRaw / SENSI_SCALE, sensiFracDigit(sensiRaw));
-      obdWriteString(&g_obd, 0, col2_center - 30, 16, msgStr, FONT_12x16, colorSensi, 1);
+      formatSensiValue(msgStr, sizeof(msgStr), sensiRaw);
+      uint8_t valueWidth = (uint8_t)strlen(msgStr) * WIDTH12x16;
+      obdWriteString(&g_obd, 0, col2_center - (valueWidth / 2), 16, msgStr, FONT_12x16, colorSensi, 1);
     }
     lastSensi = sensiRaw;
     lastSensiUsesPot = sensiUsesPot;
@@ -334,7 +348,7 @@ void displayRaceMode(uint8_t selectedItem, bool isEditing) {
       formatExtPotLabel(msgStr, sizeof(msgStr), getExtPotIndexForTarget(EXT_POT_TARGET_BRAKE));
       obdWriteString(&g_obd, 0, col1_center - ((strlen(msgStr) * WIDTH8x8) / 2), 12, msgStr, FONT_8x8, colorBrake, 1);
     } else {
-      formatPctX10Value(msgStr, sizeof(msgStr), brakeValue);
+      formatBrakeValue(msgStr, sizeof(msgStr), brakeValue);
       uint8_t valueWidth = (uint8_t)strlen(msgStr) * WIDTH8x8;
       obdWriteString(&g_obd, 0, col1_center - (valueWidth / 2), 12, msgStr, FONT_8x8, colorBrake, 1);
     }
@@ -354,9 +368,9 @@ void displayRaceMode(uint8_t selectedItem, bool isEditing) {
       formatExtPotLabel(msgStr, sizeof(msgStr), getExtPotIndexForTarget(EXT_POT_TARGET_SENSI));
       obdWriteString(&g_obd, 0, col2_center - ((strlen(msgStr) * WIDTH8x8) / 2), 12, msgStr, FONT_8x8, colorSensi, 1);
     } else {
-      /* Value in 0.1% resolution, e.g. 20.5% */
-      sprintf(msgStr, "%2u.%u%%", sensiRaw / SENSI_SCALE, sensiFracDigit(sensiRaw));
-      obdWriteString(&g_obd, 0, col2_center - 20, 12, msgStr, FONT_8x8, colorSensi, 1);
+      formatSensiValue(msgStr, sizeof(msgStr), sensiRaw);
+      uint8_t valueWidth = (uint8_t)strlen(msgStr) * WIDTH8x8;
+      obdWriteString(&g_obd, 0, col2_center - (valueWidth / 2), 12, msgStr, FONT_8x8, colorSensi, 1);
     }
     lastSensi = sensiRaw;
     lastSensiUsesPot = sensiUsesPot;
@@ -602,7 +616,7 @@ void printMainMenu(MenuState_enum currMenuState)
             if (isExtPotBrakeTarget() && !isSelectedValueEditing) {
               formatExtPotLabel(msgStr, sizeof(msgStr), getExtPotIndexForTarget(EXT_POT_TARGET_BRAKE));
             } else {
-              formatPctX10Value(msgStr, sizeof(msgStr), getEffectiveBrakeRaw());
+              formatBrakeValue(msgStr, sizeof(msgStr), getEffectiveBrakeRaw());
             }
           }
           /* SENSI is stored in 0.1% steps and shown with one decimal */
@@ -611,7 +625,7 @@ void printMainMenu(MenuState_enum currMenuState)
               formatExtPotLabel(msgStr, sizeof(msgStr), getExtPotIndexForTarget(EXT_POT_TARGET_SENSI));
             } else {
               uint16_t sensiRaw = getEffectiveSensiRaw();
-              sprintf(msgStr, "%2u.%u%%", sensiRaw / SENSI_SCALE, sensiFracDigit(sensiRaw));
+              formatSensiValue(msgStr, sizeof(msgStr), sensiRaw);
             }
           }
           else if (strcmp(g_mainMenu.item[menuIndex].name, getMenuName(g_storedVar.language, 2)) == 0) {

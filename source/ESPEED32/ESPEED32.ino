@@ -73,9 +73,11 @@ static bool g_isEditingCarSelection = false;          /* Flag to prevent g_carSe
 static bool g_antiSpinStepEditActive = false;         /* True while ANTIS uses stepped encoder editing */
 static uint16_t g_antiSpinEditLastEncoder = 0;        /* Raw encoder position used to detect ANTIS step changes */
 static bool g_brakeStepEditActive = false;            /* True while BRAKE uses stepped encoder editing */
-static uint16_t g_brakeEditLastEncoder = 0;           /* Raw encoder position used to detect BRAKE step changes */
+static uint16_t g_brakeEditStartEncoder = 0;          /* Encoder position at BRAKE edit start */
+static uint16_t g_brakeEditBaseValue = 0;             /* BRAKE raw value at edit start */
 static bool g_sensiStepEditActive = false;            /* True while SENSI uses stepped encoder editing */
-static uint16_t g_sensiEditLastEncoder = 0;           /* Raw encoder position used to detect SENSI step changes */
+static uint16_t g_sensiEditStartEncoder = 0;          /* Encoder position at SENSI edit start */
+static uint16_t g_sensiEditBaseValue = 0;             /* SENSI raw value at edit start */
 
 /* Stored Variables (EEPROM/Preferences) */
 StoredVar_type g_storedVar;
@@ -241,6 +243,60 @@ static bool isSensiEditTarget() {
   return g_encoderSelectedValuePtr == &g_storedVar.carParam[g_carSel].minSpeed;
 }
 
+static uint16_t ceilDivU16(uint16_t value, uint16_t divisor) {
+  if (divisor == 0) return 0;
+  return (uint16_t)(((uint32_t)value + (uint32_t)divisor - 1U) / (uint32_t)divisor);
+}
+
+static uint16_t getBrakeEditStepRaw() {
+  return constrain(g_brakeStep, BRAKE_STEP_MIN, BRAKE_STEP_MAX);
+}
+
+static uint16_t getSensiEditStepRaw() {
+  return constrain(g_sensiStep, SENSI_STEP_MIN, SENSI_STEP_MAX);
+}
+
+static uint16_t getSelectedSensiMaxRaw() {
+  return min((uint16_t)MIN_SPEED_MAX_VALUE,
+             (uint16_t)(g_storedVar.carParam[g_carSel].maxSpeed * SENSI_SCALE));
+}
+
+static uint16_t getSteppedEditStartEncoder(uint16_t rawValue, uint16_t stepRaw) {
+  return ceilDivU16(rawValue, stepRaw);
+}
+
+static uint16_t getSteppedEditMaxEncoder(uint16_t rawValue, uint16_t maxRaw, uint16_t stepRaw) {
+  uint32_t start = getSteppedEditStartEncoder(rawValue, stepRaw);
+  uint32_t room = (maxRaw > rawValue) ? ceilDivU16((uint16_t)(maxRaw - rawValue), stepRaw) : 0U;
+  return (uint16_t)min(start + room, (uint32_t)UINT16_MAX);
+}
+
+static uint16_t configureEncoderForSelectedValueEdit(uint16_t minRaw, uint16_t maxRaw) {
+  if (g_encoderSelectedValuePtr == NULL) {
+    setUiEncoderBoundaries(minRaw, maxRaw, false);
+    resetUiEncoder(minRaw);
+    return minRaw;
+  }
+
+  if (isBrakeEditTarget() || isSensiEditTarget()) {
+    uint16_t stepRaw = isBrakeEditTarget() ? getBrakeEditStepRaw() : getSensiEditStepRaw();
+    uint16_t rawValue = constrain(*g_encoderSelectedValuePtr, minRaw, maxRaw);
+    *g_encoderSelectedValuePtr = rawValue;
+    uint16_t startEncoder = getSteppedEditStartEncoder(rawValue, stepRaw);
+    uint16_t maxEncoder = getSteppedEditMaxEncoder(rawValue, maxRaw, stepRaw);
+    setUiEncoderBoundaries(0, maxEncoder, false);
+    resetUiEncoder(startEncoder);
+    return startEncoder;
+  }
+
+  uint16_t startValue = isAntiSpinEditTarget()
+    ? antiSpinMsToUiValue(*g_encoderSelectedValuePtr, g_antiSpinDisplayMode)
+    : *g_encoderSelectedValuePtr;
+  setUiEncoderBoundaries(minRaw, maxRaw, false);
+  resetUiEncoder(startValue);
+  return startValue;
+}
+
 static void beginSteppedValueEdit() {
   g_antiSpinStepEditActive = isAntiSpinEditTarget();
   g_brakeStepEditActive    = isBrakeEditTarget();
@@ -248,8 +304,10 @@ static void beginSteppedValueEdit() {
   g_antiSpinEditLastEncoder = g_antiSpinStepEditActive
     ? antiSpinMsToUiValue(*g_encoderSelectedValuePtr, g_antiSpinDisplayMode)
     : 0;
-  g_brakeEditLastEncoder = g_brakeStepEditActive ? *g_encoderSelectedValuePtr : 0;
-  g_sensiEditLastEncoder = g_sensiStepEditActive ? *g_encoderSelectedValuePtr : 0;
+  g_brakeEditBaseValue = g_brakeStepEditActive ? *g_encoderSelectedValuePtr : 0;
+  g_brakeEditStartEncoder = g_brakeStepEditActive ? getSteppedEditStartEncoder(g_brakeEditBaseValue, getBrakeEditStepRaw()) : 0;
+  g_sensiEditBaseValue = g_sensiStepEditActive ? *g_encoderSelectedValuePtr : 0;
+  g_sensiEditStartEncoder = g_sensiStepEditActive ? getSteppedEditStartEncoder(g_sensiEditBaseValue, getSensiEditStepRaw()) : 0;
 }
 
 static void endSteppedValueEdit() {
@@ -257,8 +315,10 @@ static void endSteppedValueEdit() {
   g_brakeStepEditActive    = false;
   g_sensiStepEditActive    = false;
   g_antiSpinEditLastEncoder = 0;
-  g_brakeEditLastEncoder    = 0;
-  g_sensiEditLastEncoder    = 0;
+  g_brakeEditStartEncoder   = 0;
+  g_brakeEditBaseValue      = 0;
+  g_sensiEditStartEncoder   = 0;
+  g_sensiEditBaseValue      = 0;
 }
 
 static void applyValueEditFromEncoder(uint16_t encoderValue) {
@@ -286,19 +346,16 @@ static void applyValueEditFromEncoder(uint16_t encoderValue) {
     }
     g_antiSpinEditLastEncoder = encoderValue;
   } else if (g_brakeStepEditActive && isBrakeEditTarget()) {
-    int32_t delta = (int32_t)encoderValue - (int32_t)g_brakeEditLastEncoder;
+    int32_t delta = (int32_t)encoderValue - (int32_t)g_brakeEditStartEncoder;
     if (delta == 0) return;
-    int32_t newValue = (int32_t)(*g_encoderSelectedValuePtr) + (delta * (int32_t)g_brakeStep);
+    int32_t newValue = (int32_t)g_brakeEditBaseValue + (delta * (int32_t)getBrakeEditStepRaw());
     *g_encoderSelectedValuePtr = (uint16_t)constrain(newValue, 0, BRAKE_MAX_VALUE);
-    g_brakeEditLastEncoder = encoderValue;
   } else if (g_sensiStepEditActive && isSensiEditTarget()) {
-    int32_t delta = (int32_t)encoderValue - (int32_t)g_sensiEditLastEncoder;
+    int32_t delta = (int32_t)encoderValue - (int32_t)g_sensiEditStartEncoder;
     if (delta == 0) return;
-    int32_t newValue = (int32_t)(*g_encoderSelectedValuePtr) + (delta * (int32_t)g_sensiStep);
-    uint16_t maxSensiRaw = min((uint16_t)MIN_SPEED_MAX_VALUE,
-                               (uint16_t)(g_storedVar.carParam[g_carSel].maxSpeed * SENSI_SCALE));
+    int32_t newValue = (int32_t)g_sensiEditBaseValue + (delta * (int32_t)getSensiEditStepRaw());
+    uint16_t maxSensiRaw = getSelectedSensiMaxRaw();
     *g_encoderSelectedValuePtr = (uint16_t)constrain(newValue, 0, maxSensiRaw);
-    g_sensiEditLastEncoder = encoderValue;
   } else {
     *g_encoderSelectedValuePtr = encoderValue;
   }
@@ -1425,7 +1482,7 @@ MenuState_enum rotary_onButtonClick(MenuState_enum currMenuState)
             break;
           case 1:  /* SENSI (minSpeed) */
             g_encoderSelectedValuePtr = &g_storedVar.carParam[g_carSel].minSpeed;
-            selectedParamMaxValue = min(MIN_SPEED_MAX_VALUE, (int)g_storedVar.carParam[g_carSel].maxSpeed * SENSI_SCALE);
+            selectedParamMaxValue = getSelectedSensiMaxRaw();
             selectedParamMinValue = 0;
             break;
           case 2:  /* CAR - select different car */
@@ -1448,7 +1505,7 @@ MenuState_enum rotary_onButtonClick(MenuState_enum currMenuState)
             break;
           case 1:  /* SENSI (minSpeed) */
             g_encoderSelectedValuePtr = &g_storedVar.carParam[g_carSel].minSpeed;
-            selectedParamMaxValue = min(MIN_SPEED_MAX_VALUE, (int)g_storedVar.carParam[g_carSel].maxSpeed * SENSI_SCALE);
+            selectedParamMaxValue = getSelectedSensiMaxRaw();
             selectedParamMinValue = 0;
             break;
           case 2:  /* ANTIS (antiSpin) */
@@ -1472,11 +1529,7 @@ MenuState_enum rotary_onButtonClick(MenuState_enum currMenuState)
         }
       }
 
-      setUiEncoderBoundaries(selectedParamMinValue, selectedParamMaxValue, false);
-      uint16_t startValue = isAntiSpinEditTarget()
-        ? antiSpinMsToUiValue(*g_encoderSelectedValuePtr, g_antiSpinDisplayMode)
-        : *g_encoderSelectedValuePtr;
-      resetUiEncoder(startValue);
+      uint16_t startValue = configureEncoderForSelectedValueEdit(selectedParamMinValue, selectedParamMaxValue);
       g_escVar.encoderPos = startValue;
       g_originalValueBeforeEdit = *g_encoderSelectedValuePtr;  /* Save original value for cancel */
       beginSteppedValueEdit();
@@ -1493,13 +1546,8 @@ MenuState_enum rotary_onButtonClick(MenuState_enum currMenuState)
                                                                                                      value is a generic pointer to void, so cast to uint16_t pointer */
       selectedParamMaxValue = g_mainMenu.item[g_encoderMainSelector - 1].maxValue;                /* Set Max and Min boundaries according to the selected items max and min value */
       selectedParamMinValue = g_mainMenu.item[g_encoderMainSelector - 1].minValue;
-      setUiEncoderBoundaries(selectedParamMinValue, selectedParamMaxValue, false);
-      resetUiEncoder(isAntiSpinEditTarget()
-                       ? antiSpinMsToUiValue(*g_encoderSelectedValuePtr, g_antiSpinDisplayMode)
-                       : *g_encoderSelectedValuePtr);  /* Reset the encoder to the current value of the selected item */
-      g_escVar.encoderPos = isAntiSpinEditTarget()
-        ? antiSpinMsToUiValue(*g_encoderSelectedValuePtr, g_antiSpinDisplayMode)
-        : *g_encoderSelectedValuePtr;   /* Set the encoderPos global variable to the current value of the selected item */
+      uint16_t startValue = configureEncoderForSelectedValueEdit(selectedParamMinValue, selectedParamMaxValue);
+      g_escVar.encoderPos = startValue;   /* Set the encoderPos global variable to the current value of the selected item */
       g_originalValueBeforeEdit = *g_encoderSelectedValuePtr;  /* Save original value for cancel */
       beginSteppedValueEdit();
       return VALUE_SELECTION;                             /* Return the VALUE_SELECTION state */

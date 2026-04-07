@@ -52,6 +52,15 @@ static void formatConfiguredMenuLabel(const char* source, char* buffer, size_t b
   buffer[out] = '\0';
 }
 
+static void formatStepPercentValue(char* out, size_t outSize, uint16_t stepRaw, uint16_t scale) {
+  if (out == nullptr || outSize == 0 || scale == 0) return;
+  if ((stepRaw % scale) == 0) {
+    snprintf(out, outSize, "%u%%", (unsigned int)(stepRaw / scale));
+  } else {
+    snprintf(out, outSize, "%u.%u%%", (unsigned int)(stepRaw / scale), (unsigned int)(stepRaw % scale));
+  }
+}
+
 static const uint8_t STATUS_SLOT_SELECTABLE_VALUES[] = {
   STATUS_BLANK,
   STATUS_OUTPUT,
@@ -963,7 +972,7 @@ void showBrakeStepSettings() {
       bool eStep = editing;
       obdWriteString(&g_obd, 0, 0, 0, stepLabel, menuFont, (sStep || eStep) ? OBD_WHITE : OBD_BLACK, 1);
       uint16_t shown = editing ? tempStep : g_brakeStep;
-      snprintf(msgStr, sizeof(msgStr), "%u.%u%%", (unsigned int)(shown / BRAKE_SCALE), (unsigned int)brakeFracDigit(shown));
+      formatStepPercentValue(msgStr, sizeof(msgStr), shown, BRAKE_SCALE);
       uint8_t valX = OLED_WIDTH - (uint8_t)(strlen(msgStr) * WIDTH8x8);
       obdWriteString(&g_obd, 0, valX, 0, msgStr, menuFont, (sStep || eStep) ? OBD_WHITE : OBD_BLACK, 1);
 
@@ -1088,7 +1097,7 @@ void showSensiStepSettings() {
       bool eStep = editing;
       obdWriteString(&g_obd, 0, 0, 0, stepLabel, menuFont, (sStep || eStep) ? OBD_WHITE : OBD_BLACK, 1);
       uint16_t shown = editing ? tempStep : g_sensiStep;
-      snprintf(msgStr, sizeof(msgStr), "%u.%u%%", (unsigned int)(shown / SENSI_SCALE), (unsigned int)sensiFracDigit(shown));
+      formatStepPercentValue(msgStr, sizeof(msgStr), shown, SENSI_SCALE);
       uint8_t valX = OLED_WIDTH - (uint8_t)(strlen(msgStr) * WIDTH8x8);
       obdWriteString(&g_obd, 0, valX, 0, msgStr, menuFont, (sStep || eStep) ? OBD_WHITE : OBD_BLACK, 1);
 

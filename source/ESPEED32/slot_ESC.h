@@ -100,7 +100,7 @@
 #define BRAKE_STEP_MIN              1   /* [0.1% raw] Minimum brake step (0.1%) */
 #define BRAKE_STEP_MAX            500   /* [0.1% raw] Maximum brake step (50.0%) */
 /* Sensi encoder step (raw units, 1 unit = 0.1%) */
-#define SENSI_STEP_DEFAULT          5   /* [0.1% raw] Default sensi encoder step (0.5%) */
+#define SENSI_STEP_DEFAULT         10   /* [0.1% raw] Default sensi encoder step (1.0%) */
 #define SENSI_STEP_MIN              1   /* [0.1% raw] Minimum sensi step (0.1%) */
 #define SENSI_STEP_MAX             50   /* [0.1% raw] Maximum sensi step (5.0%) */
 #define FREQ_MIN_VALUE            1000  /* [Hz] Minimum PWM frequency */

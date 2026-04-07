@@ -79,7 +79,7 @@
       <li><code>DISPLAY -&gt; FONT SIZE</code> changes list/menu text density between <code>LARGE</code> and <code>small</code>.</li>
       <li><code>DISPLAY -&gt; ANTISPIN</code> opens the antispin display settings submenu where you select the display unit (<code>MS</code> / <code>%</code> / <code>TEXT</code>) and the encoder step size for each unit.</li>
       <li><code>DISPLAY -&gt; BRAKE STEP</code> sets how many percent the encoder moves BRAKE per tick (0.1–50.0%, default 1.0%). Configure in <code>SETTINGS → DISPLAY → BRAKE STEP</code>.</li>
-      <li><code>DISPLAY -&gt; SENSI STEP</code> sets the encoder step size for SENSI in 0.1% increments (0.1–5.0%, default 0.5%). Configure in <code>SETTINGS → DISPLAY → SENSI STEP</code>.</li>
+      <li><code>DISPLAY -&gt; SENSI STEP</code> sets the encoder step size for SENSI in 0.1% increments (0.1–5.0%, default 1.0%). Configure in <code>SETTINGS → DISPLAY → SENSI STEP</code>.</li>
       <li>The motor PWM output uses 10-bit duty resolution, so 0.1% BRAKE/SENSI steps are preserved through the controller math and hardware PWM conversion.</li>
     </ul>
     <h3>Race view behavior (LIST vs GRID)</h3>
@@ -453,7 +453,7 @@
 |  |  |  |- STEP (0.1-50.0 %, default 1.0%)
 |  |  |  `- BACK
 |  |  |- SENSI STEP
-|  |  |  |- STEP (0.1-5.0 % in 0.1% increments, default 0.5%)
+|  |  |  |- STEP (0.1-5.0 % in 0.1% increments, default 1.0%)
 |  |  |  `- BACK
 |  |  |- STATUS BAR
 |  |  |  |- SLOT 1
