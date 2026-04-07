@@ -10,6 +10,8 @@ extern uint16_t g_statsEnabled;
 extern uint16_t g_antiSpinStepMs;
 extern uint16_t g_antiSpinStepPct;
 extern uint16_t g_antiSpinDisplayMode;
+extern uint16_t g_brakeStep;
+extern uint16_t g_sensiStep;
 extern uint16_t g_encoderInvertEnabled;
 extern ESC_type g_escVar;
 extern OBDISP g_obd;
@@ -276,6 +278,8 @@ static void doResetSettings() {
   g_storedVar.startupDelay         = STARTUP_DELAY_DEFAULT;
   g_antiSpinStepMs                 = ANTISPIN_STEP_DEFAULT;
   g_antiSpinStepPct                = ANTISPIN_STEP_PCT_DEFAULT;
+  g_brakeStep                      = BRAKE_STEP_DEFAULT;
+  g_sensiStep                      = SENSI_STEP_DEFAULT;
   g_antiSpinDisplayMode            = ANTISPIN_UI_MODE_DEFAULT;
   g_encoderInvertEnabled           = ENCODER_INVERT_DEFAULT;
   strncpy(g_storedVar.screensaverLine1, SCREENSAVER_LINE1_DEFAULT, SCREENSAVER_TEXT_MAX - 1);

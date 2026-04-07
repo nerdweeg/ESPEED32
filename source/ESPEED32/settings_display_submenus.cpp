@@ -11,6 +11,8 @@ extern AiEsp32RotaryEncoder g_rotaryEncoder;
 extern uint16_t g_antiSpinStepMs;
 extern uint16_t g_antiSpinStepPct;
 extern uint16_t g_antiSpinDisplayMode;
+extern uint16_t g_brakeStep;
+extern uint16_t g_sensiStep;
 
 extern bool consumeScreensaverWakeInput(bool wakeTriggered);
 extern bool refreshIdleInteractionFromControls(uint32_t* lastInteraction, bool* screensaverActive, uint16_t* lastEncoderPos);
@@ -460,7 +462,7 @@ void showAntiSpinSettings() {
         return "TEXT";
       case ANTISPIN_UI_MODE_MS:
       default:
-        return "MS";
+        return "ms";
     }
   };
 
@@ -849,5 +851,257 @@ void showStatusSettings() {
   }
 
   saveEEPROM(g_storedVar);
+  obdFill(&g_obd, OBD_WHITE, 1);
+}
+
+
+/**
+ * Brake step settings submenu.
+ * Items: STEP (1–50, each = 1%) + BACK.
+ */
+void showBrakeStepSettings() {
+  const char* lblStepUpper[9] = {"STEG BREMS", "BRAKE STEP", "BRAKE STEP", "BRAKE STEP", "PASO FRENO", "BRK SCHRITT", "PASSO FRENO", "STAP REM",   "PASSO FREIO"};
+  const char* lblStepPascal[9]= {"Steg brems", "Brake step", "Brake step", "Brake step", "Paso freno", "Brk schritt", "Passo freno", "Stap rem",   "Passo freio"};
+  const char* const* lblStep  = (g_storedVar.textCase == TEXT_CASE_PASCAL) ? lblStepPascal : lblStepUpper;
+
+  const uint8_t ITEM_STEP = 0;
+  const uint8_t ITEM_BACK = 1;
+  const uint8_t menuFont  = FONT_8x8;
+  const uint8_t lineH     = HEIGHT8x8;
+
+  int8_t sel        = 0;
+  bool editing      = false;
+  uint16_t tempStep = g_brakeStep;
+  bool needRedraw   = true;
+
+  obdFill(&g_obd, OBD_WHITE, 1);
+  g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
+  setUiEncoderBoundaries(0, 1, false);
+  resetUiEncoder(0);
+
+  uint32_t lastInteraction = millis();
+  bool screensaverActive   = false;
+  uint16_t screensaverEncoderPos = (uint16_t)readUiEncoder();
+
+  while (true) {
+    bool wakeUp = refreshIdleInteractionFromControls(&lastInteraction, &screensaverActive, &screensaverEncoderPos);
+    if (wakeUp) { obdFill(&g_obd, OBD_WHITE, 1); needRedraw = true; }
+    if (consumeScreensaverWakeInput(wakeUp)) { continue; }
+    if (!wakeUp && g_storedVar.screensaverTimeout > 0 &&
+        millis() - lastInteraction > (g_storedVar.screensaverTimeout * 1000UL)) {
+      if (g_escVar.trigger_norm == 0) {
+        if (!screensaverActive) { screensaverActive = true; screensaverEncoderPos = readUiEncoder(); showScreensaver(); }
+        if (serviceIdlePowerTransitions(&lastInteraction, &screensaverActive)) { obdFill(&g_obd, OBD_WHITE, 1); needRedraw = true; }
+        delay(10); continue;
+      }
+    }
+    if (!wakeUp && screensaverActive) {
+      if (serviceIdlePowerTransitions(&lastInteraction, &screensaverActive)) { obdFill(&g_obd, OBD_WHITE, 1); needRedraw = true; }
+      delay(10); continue;
+    }
+
+    if (g_rotaryEncoder.encoderChanged()) {
+      lastInteraction = millis();
+      if (editing) {
+        tempStep = (uint16_t)constrain((int)readUiEncoder(), BRAKE_STEP_MIN, BRAKE_STEP_MAX);
+      } else {
+        sel = (int8_t)readUiEncoder();
+      }
+      needRedraw = true;
+    }
+
+    if (g_rotaryEncoder.isEncoderButtonClicked()) {
+      lastInteraction = millis();
+      if (editing) {
+        g_brakeStep = tempStep;
+        editing = false;
+        saveEEPROM(g_storedVar);
+        g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
+        setUiEncoderBoundaries(0, 1, false);
+        resetUiEncoder(ITEM_STEP);
+        sel = ITEM_STEP;
+      } else if (sel == ITEM_STEP) {
+        editing = true;
+        tempStep = g_brakeStep;
+        g_rotaryEncoder.setAcceleration(SEL_ACCELERATION);
+        setUiEncoderBoundaries(BRAKE_STEP_MIN, BRAKE_STEP_MAX, false);
+        resetUiEncoder(tempStep);
+      } else {
+        break;  /* BACK */
+      }
+      needRedraw = true;
+      delay(120);
+    }
+
+    static bool brakeBtnInBrakeStep = false;
+    static uint32_t lastBrakeBtnBrakeStepTime = 0;
+    if (digitalRead(BUTT_PIN) == BUTTON_PRESSED) {
+      lastInteraction = millis();
+      if (!brakeBtnInBrakeStep && millis() - lastBrakeBtnBrakeStepTime > BUTTON_SHORT_PRESS_DEBOUNCE_MS) {
+        brakeBtnInBrakeStep = true;
+        lastBrakeBtnBrakeStepTime = millis();
+        if (editing) {
+          editing = false;
+          g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
+          setUiEncoderBoundaries(0, 1, false);
+          resetUiEncoder(sel);
+          needRedraw = true;
+        } else {
+          while (digitalRead(BUTT_PIN) == BUTTON_PRESSED) { vTaskDelay(5); }
+          break;
+        }
+      }
+    } else {
+      brakeBtnInBrakeStep = false;
+    }
+
+    if (needRedraw) {
+      obdFill(&g_obd, OBD_WHITE, 1);
+      char stepLabel[16];
+      formatConfiguredMenuLabel(lblStep[g_storedVar.language], stepLabel, sizeof(stepLabel));
+      bool sStep = (!editing && sel == ITEM_STEP);
+      bool eStep = editing;
+      obdWriteString(&g_obd, 0, 0, 0, stepLabel, menuFont, (sStep || eStep) ? OBD_WHITE : OBD_BLACK, 1);
+      uint16_t shown = editing ? tempStep : g_brakeStep;
+      snprintf(msgStr, sizeof(msgStr), "%2d%%", (int)shown);
+      uint8_t valX = OLED_WIDTH - (uint8_t)(strlen(msgStr) * WIDTH8x8);
+      obdWriteString(&g_obd, 0, valX, 0, msgStr, menuFont, (sStep || eStep) ? OBD_WHITE : OBD_BLACK, 1);
+
+      bool sBack = (!editing && sel == ITEM_BACK);
+      obdWriteString(&g_obd, 0, 0, ITEM_BACK * lineH, (char*)getBackLabel(g_storedVar.language), menuFont, sBack ? OBD_WHITE : OBD_BLACK, 1);
+      needRedraw = false;
+    }
+
+    if (checkRaceModeEscape()) { requestEscapeToMain(); break; }
+    vTaskDelay(10);
+  }
+
+  obdFill(&g_obd, OBD_WHITE, 1);
+}
+
+
+/**
+ * Sensi step settings submenu.
+ * Items: STEP (1–10 raw units, each = 0.5%) + BACK.
+ * Displayed as "0.5%" to "5.0%".
+ */
+void showSensiStepSettings() {
+  const char* lblStepUpper[9] = {"STEG SENSI", "SENSI STEP", "SENSI STEP", "SENSI STEP", "PASO SENSI", "SEN SCHRITT", "PASSO SENSI", "STAP SENSI", "PASSO SENSI"};
+  const char* lblStepPascal[9]= {"Steg sensi", "Sensi step", "Sensi step", "Sensi step", "Paso sensi", "Sen schritt", "Passo sensi", "Stap sensi", "Passo sensi"};
+  const char* const* lblStep  = (g_storedVar.textCase == TEXT_CASE_PASCAL) ? lblStepPascal : lblStepUpper;
+
+  const uint8_t ITEM_STEP = 0;
+  const uint8_t ITEM_BACK = 1;
+  const uint8_t menuFont  = FONT_8x8;
+  const uint8_t lineH     = HEIGHT8x8;
+
+  int8_t sel        = 0;
+  bool editing      = false;
+  uint16_t tempStep = g_sensiStep;
+  bool needRedraw   = true;
+
+  obdFill(&g_obd, OBD_WHITE, 1);
+  g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
+  setUiEncoderBoundaries(0, 1, false);
+  resetUiEncoder(0);
+
+  uint32_t lastInteraction = millis();
+  bool screensaverActive   = false;
+  uint16_t screensaverEncoderPos = (uint16_t)readUiEncoder();
+
+  while (true) {
+    bool wakeUp = refreshIdleInteractionFromControls(&lastInteraction, &screensaverActive, &screensaverEncoderPos);
+    if (wakeUp) { obdFill(&g_obd, OBD_WHITE, 1); needRedraw = true; }
+    if (consumeScreensaverWakeInput(wakeUp)) { continue; }
+    if (!wakeUp && g_storedVar.screensaverTimeout > 0 &&
+        millis() - lastInteraction > (g_storedVar.screensaverTimeout * 1000UL)) {
+      if (g_escVar.trigger_norm == 0) {
+        if (!screensaverActive) { screensaverActive = true; screensaverEncoderPos = readUiEncoder(); showScreensaver(); }
+        if (serviceIdlePowerTransitions(&lastInteraction, &screensaverActive)) { obdFill(&g_obd, OBD_WHITE, 1); needRedraw = true; }
+        delay(10); continue;
+      }
+    }
+    if (!wakeUp && screensaverActive) {
+      if (serviceIdlePowerTransitions(&lastInteraction, &screensaverActive)) { obdFill(&g_obd, OBD_WHITE, 1); needRedraw = true; }
+      delay(10); continue;
+    }
+
+    if (g_rotaryEncoder.encoderChanged()) {
+      lastInteraction = millis();
+      if (editing) {
+        tempStep = (uint16_t)constrain((int)readUiEncoder(), SENSI_STEP_MIN, SENSI_STEP_MAX);
+      } else {
+        sel = (int8_t)readUiEncoder();
+      }
+      needRedraw = true;
+    }
+
+    if (g_rotaryEncoder.isEncoderButtonClicked()) {
+      lastInteraction = millis();
+      if (editing) {
+        g_sensiStep = tempStep;
+        editing = false;
+        saveEEPROM(g_storedVar);
+        g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
+        setUiEncoderBoundaries(0, 1, false);
+        resetUiEncoder(ITEM_STEP);
+        sel = ITEM_STEP;
+      } else if (sel == ITEM_STEP) {
+        editing = true;
+        tempStep = g_sensiStep;
+        g_rotaryEncoder.setAcceleration(SEL_ACCELERATION);
+        setUiEncoderBoundaries(SENSI_STEP_MIN, SENSI_STEP_MAX, false);
+        resetUiEncoder(tempStep);
+      } else {
+        break;  /* BACK */
+      }
+      needRedraw = true;
+      delay(120);
+    }
+
+    static bool brakeBtnInSensiStep = false;
+    static uint32_t lastBrakeBtnSensiStepTime = 0;
+    if (digitalRead(BUTT_PIN) == BUTTON_PRESSED) {
+      lastInteraction = millis();
+      if (!brakeBtnInSensiStep && millis() - lastBrakeBtnSensiStepTime > BUTTON_SHORT_PRESS_DEBOUNCE_MS) {
+        brakeBtnInSensiStep = true;
+        lastBrakeBtnSensiStepTime = millis();
+        if (editing) {
+          editing = false;
+          g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
+          setUiEncoderBoundaries(0, 1, false);
+          resetUiEncoder(sel);
+          needRedraw = true;
+        } else {
+          while (digitalRead(BUTT_PIN) == BUTTON_PRESSED) { vTaskDelay(5); }
+          break;
+        }
+      }
+    } else {
+      brakeBtnInSensiStep = false;
+    }
+
+    if (needRedraw) {
+      obdFill(&g_obd, OBD_WHITE, 1);
+      char stepLabel[16];
+      formatConfiguredMenuLabel(lblStep[g_storedVar.language], stepLabel, sizeof(stepLabel));
+      bool sStep = (!editing && sel == ITEM_STEP);
+      bool eStep = editing;
+      obdWriteString(&g_obd, 0, 0, 0, stepLabel, menuFont, (sStep || eStep) ? OBD_WHITE : OBD_BLACK, 1);
+      uint16_t shown = editing ? tempStep : g_sensiStep;
+      /* shown is raw 0.5% units: 1=0.5%, 2=1.0%, ..., 10=5.0% */
+      snprintf(msgStr, sizeof(msgStr), "%d.%d%%", (int)(shown / 2), (shown % 2) * 5);
+      uint8_t valX = OLED_WIDTH - (uint8_t)(strlen(msgStr) * WIDTH8x8);
+      obdWriteString(&g_obd, 0, valX, 0, msgStr, menuFont, (sStep || eStep) ? OBD_WHITE : OBD_BLACK, 1);
+
+      bool sBack = (!editing && sel == ITEM_BACK);
+      obdWriteString(&g_obd, 0, 0, ITEM_BACK * lineH, (char*)getBackLabel(g_storedVar.language), menuFont, sBack ? OBD_WHITE : OBD_BLACK, 1);
+      needRedraw = false;
+    }
+
+    if (checkRaceModeEscape()) { requestEscapeToMain(); break; }
+    vTaskDelay(10);
+  }
+
   obdFill(&g_obd, OBD_WHITE, 1);
 }

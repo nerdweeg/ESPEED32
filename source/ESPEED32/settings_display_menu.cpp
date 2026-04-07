@@ -26,7 +26,7 @@ extern void initSettingsMenuItems();
 extern void initDisplayMenuItems();
 
 /**
- * Display settings submenu: VIEW, LANG, CASE, FSIZE, ANTISPIN, STATUS, BACK.
+ * Display settings submenu: VIEW, LANG, CASE, FSIZE, ANTISPIN, BRAKE STEP, SENSI STEP, STATUS, BACK.
  * Handles value editing for display-related parameters.
  */
 void showDisplaySettings() {
@@ -102,8 +102,30 @@ void showDisplaySettings() {
         if (sel == DISPLAY_ITEMS_COUNT) {  /* BACK */
           break;
         }
-        if (sel == DISPLAY_ITEMS_COUNT - 2) {  /* ANTISPIN submenu */
+        if (sel == DISPLAY_ITEMS_COUNT - 4) {  /* ANTISPIN submenu */
           showAntiSpinSettings();
+          if (isEscapeToMainRequested()) break;
+          initDisplayMenuItems();
+          g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
+          setUiEncoderBoundaries(1, DISPLAY_ITEMS_COUNT, false);
+          resetUiEncoder(sel);
+          obdFill(&g_obd, OBD_WHITE, 1);
+          prevSel = 0;
+          continue;
+        }
+        if (sel == DISPLAY_ITEMS_COUNT - 3) {  /* BRAKE STEP submenu */
+          showBrakeStepSettings();
+          if (isEscapeToMainRequested()) break;
+          initDisplayMenuItems();
+          g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
+          setUiEncoderBoundaries(1, DISPLAY_ITEMS_COUNT, false);
+          resetUiEncoder(sel);
+          obdFill(&g_obd, OBD_WHITE, 1);
+          prevSel = 0;
+          continue;
+        }
+        if (sel == DISPLAY_ITEMS_COUNT - 2) {  /* SENSI STEP submenu */
+          showSensiStepSettings();
           if (isEscapeToMainRequested()) break;
           initDisplayMenuItems();
           g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);

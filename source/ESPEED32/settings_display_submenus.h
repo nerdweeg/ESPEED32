@@ -3,6 +3,8 @@
 
 void showScreensaverSettings();
 void showAntiSpinSettings();
+void showBrakeStepSettings();
+void showSensiStepSettings();
 void showStatusSettings();
 
 #endif  /* SETTINGS_DISPLAY_SUBMENUS_H_ */

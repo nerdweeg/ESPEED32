@@ -17,16 +17,16 @@
 
 /* Firmware Version */
 #define SW_MAJOR_VERSION 6
-#define SW_MINOR_VERSION 8
+#define SW_MINOR_VERSION 9
 
 /* Stored Variable Version */
-#define STORED_VAR_VERSION 22 /* Increment when StoredVar_type structure changes */
+#define STORED_VAR_VERSION 23 /* Increment when StoredVar_type structure changes */
 
 /* Menu Configuration */
 #define MENU_ITEMS_COUNT    12    /* Number of possible items in main menu (including optional STATS, LOCK and CAR) */
 #define SETTINGS_ITEMS_COUNT 12   /* Number of items in settings menu (including BACK) */
 #define POWER_ITEMS_COUNT    6    /* Number of items in power submenu (SCRSV, SLEEP, D-SLEEP, STARTUP, VIN CAL., BACK) */
-#define DISPLAY_ITEMS_COUNT  7    /* Number of items in display submenu (VIEW, LANG, CASE, FSIZE, ANTISPIN, STATUS, BACK) */
+#define DISPLAY_ITEMS_COUNT  9    /* Number of items in display submenu (VIEW, LANG, CASE, FSIZE, ANTISPIN, BRAKE STP, SENSI STP, STATUS, BACK) */
 #define HARDWARE_ITEMS_COUNT 5    /* Number of items in hardware submenu (ENC INV, EXT POT, TRIGGER, TEST, BACK) */
 #define POWER_SAVE_TIMEOUT_DEFAULT 5    /* [min] Default auto power save delay (0=manual only) */
 #define POWER_SAVE_TIMEOUT_MAX     10   /* [min] Maximum auto power save delay */
@@ -94,6 +94,14 @@
 #define ANTISPIN_STEP_MAX          50   /* [ms] Maximum ANTIS encoder step */
 #define ANTISPIN_STEP_PCT_MIN       1   /* [%] Minimum ANTIS encoder step in percent mode */
 #define ANTISPIN_STEP_PCT_MAX     100   /* [%] Maximum ANTIS encoder step in percent mode */
+/* Brake encoder step (raw units, 1 unit = 1%) */
+#define BRAKE_STEP_DEFAULT          1   /* [% raw] Default brake encoder step (1%) */
+#define BRAKE_STEP_MIN              1   /* [% raw] Minimum brake step (1%) */
+#define BRAKE_STEP_MAX             50   /* [% raw] Maximum brake step (50%) */
+/* Sensi encoder step (raw units, 1 unit = 0.5%) */
+#define SENSI_STEP_DEFAULT          1   /* [0.5% raw] Default sensi encoder step (0.5%) */
+#define SENSI_STEP_MIN              1   /* [0.5% raw] Minimum sensi step (0.5%) */
+#define SENSI_STEP_MAX             10   /* [0.5% raw] Maximum sensi step (5.0%) */
 #define FREQ_MIN_VALUE            1000  /* [Hz] Minimum PWM frequency */
 #define QUICK_BRAKE_THRESHOLD_MAX 50    /* [%] Maximum quick brake threshold */
 #define QUICK_BRAKE_STRENGTH_MAX  100   /* [%] Maximum quick brake strength */
