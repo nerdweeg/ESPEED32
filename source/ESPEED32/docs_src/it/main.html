@@ -78,6 +78,8 @@
       <li><code>DISPLAY -&gt; CASE</code> sceglie se mostrare le etichette in <code>UPPER</code> o <code>Pascal</code>.</li>
       <li><code>DISPLAY -&gt; FONT SIZE</code> cambia la vista lista/menu tra <code>LARGE</code> e <code>small</code>.</li>
       <li><code>SCHERMO -&gt; ANTISPIN</code> apre il sottomenu delle impostazioni antispin dove selezioni l'unita di visualizzazione (<code>MS</code> / <code>%</code> / <code>TEXT</code>) e il passo dell'encoder per ogni unita.</li>
+      <li><code>SCHERMO -&gt; PASSO FRENO</code> imposta di quanti punti percentuali l'encoder sposta FRENO per clic (1–50%, predefinito 1%). Si configura in <code>IMPOSTAZIONI → SCHERMO → PASSO FRENO</code>.</li>
+      <li><code>SCHERMO -&gt; PASSO SENSI</code> imposta il passo dell'encoder per SENSI in incrementi di 0,5% (0,5–5,0%, predefinito 0,5%). Si configura in <code>IMPOSTAZIONI → SCHERMO → PASSO SENSI</code>.</li>
     </ul>
     <h3>Vista gara (LIST vs GRID)</h3>
     <ul>
@@ -433,6 +435,12 @@
 |  |  |  |- TIPO REG (MS / % / TEXT, predefinito MS)
 |  |  |  |- PASSO MS (1-50 ms, predefinito 5)  [nascosto in modalita TEXT]
 |  |  |  |- PASSO % (1-100 %, predefinito 1)   [visibile solo in modalita %]
+|  |  |  `- INDIETRO
+|  |  |- PASSO FRENO
+|  |  |  |- PASSO FRENO (1-50 %, predefinito 1%)
+|  |  |  `- INDIETRO
+|  |  |- PASSO SENSI
+|  |  |  |- PASSO SENSI (0,5-5,0 % in passi da 0,5%, predefinito 0,5%)
 |  |  |  `- INDIETRO
 |  |  |- STATUS BAR
 |  |  |  |- SLOT 1

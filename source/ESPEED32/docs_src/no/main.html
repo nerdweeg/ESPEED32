@@ -78,6 +78,8 @@
       <li><code>DISPLAY -&gt; CASE</code> velger om etiketter vises i <code>UPPER</code> eller <code>Pascal</code>.</li>
       <li><code>DISPLAY -&gt; FONT SIZE</code> velger mellom <code>LARGE</code> og <code>small</code> for liste- og menyvisning.</li>
       <li><code>SKJERM -&gt; ANTISPINN</code> åpner antispinn-innstillingsmenyen der du velger visningsenhet (<code>MS</code> / <code>%</code> / <code>TEXT</code>) og encoder-steg for hver enhet.</li>
+      <li><code>SKJERM -&gt; BREMSSTEG</code> setter hvor mange prosent encoder flytter BREMS per klikk (1–50%, standard 1%). Konfigureres i <code>INNSTILLING → SKJERM → BREMSSTEG</code>.</li>
+      <li><code>SKJERM -&gt; SENSISTEG</code> setter encoder-steg for SENSI i 0,5%-trinn (0,5–5,0%, standard 0,5%). Konfigureres i <code>INNSTILLING → SKJERM → SENSISTEG</code>.</li>
     </ul>
     <h3>Race view (LIST vs GRID)</h3>
     <ul>
@@ -445,6 +447,12 @@
 |  |  |  |- REG.TYPE (MS / % / TEXT, standard MS)
 |  |  |  |- STEG MS (1-50 ms, standard 5)  [skjult i TEXT-modus]
 |  |  |  |- STEG % (1-100 %, standard 1)   [vises kun i %-modus]
+|  |  |  `- TILBAKE
+|  |  |- BREMSSTEG
+|  |  |  |- STEG BREMS (1-50 %, standard 1%)
+|  |  |  `- TILBAKE
+|  |  |- SENSISTEG
+|  |  |  |- STEG SENSI (0,5-5,0 % i 0,5%-trinn, standard 0,5%)
 |  |  |  `- TILBAKE
 |  |  |- STATUS BAR
 |  |  |  |- SLOT 1

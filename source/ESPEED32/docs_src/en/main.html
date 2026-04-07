@@ -78,6 +78,8 @@
       <li><code>DISPLAY -&gt; CASE</code> chooses whether labels are shown in <code>UPPER</code> or <code>Pascal</code>.</li>
       <li><code>DISPLAY -&gt; FONT SIZE</code> changes list/menu text density between <code>LARGE</code> and <code>small</code>.</li>
       <li><code>DISPLAY -&gt; ANTISPIN</code> opens the antispin display settings submenu where you select the display unit (<code>MS</code> / <code>%</code> / <code>TEXT</code>) and the encoder step size for each unit.</li>
+      <li><code>DISPLAY -&gt; BRAKE STEP</code> sets how many percent the encoder moves BRAKE per tick (1–50%, default 1%). Configure in <code>SETTINGS → DISPLAY → BRAKE STEP</code>.</li>
+      <li><code>DISPLAY -&gt; SENSI STEP</code> sets the encoder step size for SENSI in 0.5% increments (0.5–5.0%, default 0.5%). Configure in <code>SETTINGS → DISPLAY → SENSI STEP</code>.</li>
     </ul>
     <h3>Race view behavior (LIST vs GRID)</h3>
     <ul>
@@ -445,6 +447,12 @@
 |  |  |  |- REG.TYPE (MS / % / TEXT, default MS)
 |  |  |  |- STEP MS (1-50 ms, default 5)  [hidden in TEXT mode]
 |  |  |  |- STEP % (1-100 %, default 1)   [shown only in % mode]
+|  |  |  `- BACK
+|  |  |- BRAKE STEP
+|  |  |  |- STEP (1-50 %, default 1%)
+|  |  |  `- BACK
+|  |  |- SENSI STEP
+|  |  |  |- STEP (0.5-5.0 % in 0.5% increments, default 0.5%)
 |  |  |  `- BACK
 |  |  |- STATUS BAR
 |  |  |  |- SLOT 1

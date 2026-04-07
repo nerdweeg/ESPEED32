@@ -78,6 +78,8 @@
       <li><code>DISPLAY -&gt; CASE</code> bepaalt of labels in <code>UPPER</code> of <code>Pascal</code> worden getoond.</li>
       <li><code>DISPLAY -&gt; FONT SIZE</code> verandert de tekstdichtheid van lijsten/menu's tussen <code>LARGE</code> en <code>small</code>.</li>
       <li><code>DISPLAY -&gt; ANTISPIN</code> opent het antispin-instellingenmenu waar je de weergave-eenheid kiest (<code>MS</code> / <code>%</code> / <code>TEXT</code>) en de encoderstap per eenheid instelt.</li>
+      <li><code>DISPLAY -&gt; STAP REM</code> stelt in hoeveel procent de encoder REM per klik verplaatst (1–50%, standaard 1%). In te stellen via <code>INSTELLINGEN → DISPLAY → STAP REM</code>.</li>
+      <li><code>DISPLAY -&gt; STAP SENSI</code> stelt de encoderstap voor SENSI in stappen van 0,5% in (0,5–5,0%, standaard 0,5%). In te stellen via <code>INSTELLINGEN → DISPLAY → STAP SENSI</code>.</li>
     </ul>
     <h3>Gedrag van raceweergave (LIST vs GRID)</h3>
     <ul>
@@ -445,6 +447,12 @@
 |  |  |  |- REG.TYPE (MS / % / TEXT, standaard MS)
 |  |  |  |- STAP MS (1-50 ms, standaard 5)  [verborgen in TEXT-modus]
 |  |  |  |- STAP % (1-100 %, standaard 1)   [alleen zichtbaar in %-modus]
+|  |  |  `- TERUG
+|  |  |- STAP REM
+|  |  |  |- STAP REM (1-50 %, standaard 1%)
+|  |  |  `- TERUG
+|  |  |- STAP SENSI
+|  |  |  |- STAP SENSI (0,5-5,0 % in stappen van 0,5%, standaard 0,5%)
 |  |  |  `- TERUG
 |  |  |- STATUS BAR
 |  |  |  |- SLOT 1

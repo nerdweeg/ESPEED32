@@ -77,6 +77,8 @@
       <li><code>DISPLAY -&gt; CASE</code> decide si las etiquetas se muestran en <code>UPPER</code> o <code>Pascal</code>.</li>
       <li><code>DISPLAY -&gt; FONT SIZE</code> cambia la vista de listas y menus entre <code>LARGE</code> y <code>small</code>.</li>
       <li><code>PANTALLA -&gt; ANTISPIN</code> abre el submenu de configuracion antispin donde seleccionas la unidad de visualizacion (<code>MS</code> / <code>%</code> / <code>TEXT</code>) y el paso del encoder para cada unidad.</li>
+      <li><code>PANTALLA -&gt; PASO FRENO</code> establece cuantos por ciento mueve el encoder el FRENO por clic (1–50%, por defecto 1%). Se configura en <code>AJUSTES → PANTALLA → PASO FRENO</code>.</li>
+      <li><code>PANTALLA -&gt; PASO SENSI</code> establece el paso del encoder para SENSI en incrementos de 0,5% (0,5–5,0%, por defecto 0,5%). Se configura en <code>AJUSTES → PANTALLA → PASO SENSI</code>.</li>
     </ul>
     <h3>Vista de carrera (LIST vs GRID)</h3>
     <ul>
@@ -430,6 +432,12 @@
 |  |  |  |- TIPO REG (MS / % / TEXT, predeterminado MS)
 |  |  |  |- PASO MS (1-50 ms, predeterminado 5)  [oculto en modo TEXT]
 |  |  |  |- PASO % (1-100 %, predeterminado 1)   [solo visible en modo %]
+|  |  |  `- ATRAS
+|  |  |- PASO FRENO
+|  |  |  |- PASO FRENO (1-50 %, por defecto 1%)
+|  |  |  `- ATRAS
+|  |  |- PASO SENSI
+|  |  |  |- PASO SENSI (0,5-5,0 % en pasos de 0,5%, por defecto 0,5%)
 |  |  |  `- ATRAS
 |  |  |- STATUS BAR
 |  |  |  |- SLOT 1

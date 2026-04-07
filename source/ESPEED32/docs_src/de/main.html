@@ -77,6 +77,8 @@
       <li><code>DISPLAY -&gt; CASE</code> waehlt, ob Labels in <code>UPPER</code> oder <code>Pascal</code> angezeigt werden.</li>
       <li><code>DISPLAY -&gt; FONT SIZE</code> stellt die Listen- und Menueansicht auf <code>LARGE</code> oder <code>small</code>.</li>
       <li><code>ANZEIGE -&gt; ANTISPIN</code> oeffnet das Antispin-Einstellungsmenu, in dem du die Anzeigeeinheit (<code>MS</code> / <code>%</code> / <code>TEXT</code>) und die Encoder-Schrittweite je Einheit festlegst.</li>
+      <li><code>ANZEIGE -&gt; BRK SCHRITT</code> legt fest, um wie viel Prozent der Encoder BREMSE pro Klick aendert (1–50%, Standard 1%). Einstellbar unter <code>EINSTELLUNGEN → ANZEIGE → BRK SCHRITT</code>.</li>
+      <li><code>ANZEIGE -&gt; SEN SCHRITT</code> legt die Encoder-Schrittweite fuer SENSI in 0,5%-Schritten fest (0,5–5,0%, Standard 0,5%). Einstellbar unter <code>EINSTELLUNGEN → ANZEIGE → SEN SCHRITT</code>.</li>
     </ul>
     <h3>Race View (LIST vs GRID)</h3>
     <ul>
@@ -442,6 +444,12 @@
 |  |  |  |- REG.TYP (MS / % / TEXT, Standard MS)
 |  |  |  |- SCHR MS (1-50 ms, Standard 5)  [ausgeblendet im TEXT-Modus]
 |  |  |  |- SCHR % (1-100 %, Standard 1)   [nur im %-Modus sichtbar]
+|  |  |  `- ZURUCK
+|  |  |- BRK SCHRITT
+|  |  |  |- BRK SCHRITT (1-50 %, Standard 1%)
+|  |  |  `- ZURUCK
+|  |  |- SEN SCHRITT
+|  |  |  |- SEN SCHRITT (0,5-5,0 % in 0,5%-Schritten, Standard 0,5%)
 |  |  |  `- ZURUCK
 |  |  |- STATUS BAR
 |  |  |  |- SLOT 1
