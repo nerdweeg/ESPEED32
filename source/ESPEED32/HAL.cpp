@@ -411,7 +411,7 @@ void HAL_InitHW() {
 /**
  * @brief Write PWM value to motor control channel
  * @param pwmChan PWM channel number
- * @param value PWM duty cycle value (0-255)
+ * @param value PWM duty cycle value (0-THR_PWM_MAX_DUTY)
  * @note Adapted for ESP32 3.0.0 library (ledcWrite takes PIN, not CHANNEL)
  */
 void HALanalogWrite(const int pwmChan, int value) {

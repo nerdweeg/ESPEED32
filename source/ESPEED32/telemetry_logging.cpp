@@ -383,7 +383,7 @@ void telemetryCaptureSample(uint8_t carIndex,
                             uint8_t outputPct,
                             uint16_t vin_mV,
                             uint16_t current_mA,
-                            uint8_t brakePct,
+                            uint16_t brakePct,
                             uint16_t sensi_halfPct,
                             uint8_t releaseMode,
                             uint8_t flags) {

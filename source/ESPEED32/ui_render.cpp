@@ -32,6 +32,12 @@ static void formatExtPotLabel(char* out, size_t outSize, int8_t potIndex) {
   else snprintf(out, outSize, "POT");
 }
 
+static void formatPctX10Value(char* out, size_t outSize, uint16_t pctX10) {
+  if (!out || outSize == 0) return;
+  pctX10 = min(pctX10, (uint16_t)1000U);
+  snprintf(out, outSize, "%u.%u%%", (unsigned int)(pctX10 / 10U), (unsigned int)(pctX10 % 10U));
+}
+
 static void formatActiveBrakeStatus(char* out, size_t outSize, uint8_t activeBrakeKind, uint8_t activeBrakePct) {
   if (!out || outSize == 0) return;
 
@@ -199,7 +205,7 @@ void displayStatusLine() {
  * @param isEditing True if currently editing a value
  */
 void displayRaceModeSimple(uint8_t selectedItem, bool isEditing) {
-  static uint16_t lastBrake = 999;
+  static uint16_t lastBrake = 0xFFFF;
   static uint16_t lastSensi = 999;
   static bool lastBrakeUsesPot = false;
   static bool lastSensiUsesPot = false;
@@ -213,7 +219,7 @@ void displayRaceModeSimple(uint8_t selectedItem, bool isEditing) {
 
   /* Check if forced redraw, selection or car changed - force update of ALL items */
   if (g_forceRaceRedraw || selectedItem != lastSelectedItem || isEditing != lastIsEditing || g_carSel != lastCarSel) {
-    lastBrake = 999;
+    lastBrake = 0xFFFF;
     lastSensi = 999;
     lastBrakeUsesPot = false;
     lastSensiUsesPot = false;
@@ -228,7 +234,7 @@ void displayRaceModeSimple(uint8_t selectedItem, bool isEditing) {
 
   /* BRAKE - left column, using FONT_12x16 for both label and value */
   bool brakeUsesPot = isExtPotBrakeTarget() && !(isEditing && selectedItem == 0);
-  uint16_t brakeValue = getEffectiveBrakePct();
+  uint16_t brakeValue = getEffectiveBrakeRaw();
   if (brakeUsesPot != lastBrakeUsesPot || (!brakeUsesPot && brakeValue != lastBrake)) {
     /* Label - using language-specific text with FONT_12x16: 5 chars × 12px = 60px wide */
     const char* brakeLabel = getRaceLabel(g_storedVar.language, 0);
@@ -238,9 +244,9 @@ void displayRaceModeSimple(uint8_t selectedItem, bool isEditing) {
       formatExtPotLabel(msgStr, sizeof(msgStr), getExtPotIndexForTarget(EXT_POT_TARGET_BRAKE));
       obdWriteString(&g_obd, 0, col1_center - ((strlen(msgStr) * WIDTH12x16) / 2), 16, msgStr, FONT_12x16, colorBrake, 1);
     } else {
-      /* Value - "100%" with FONT_12x16: 4 chars × 12px = 48px wide, center at col1_center - 24 */
-      sprintf(msgStr, "%3d%%", brakeValue);
-      obdWriteString(&g_obd, 0, col1_center - 24, 16, msgStr, FONT_12x16, colorBrake, 1);
+      formatPctX10Value(msgStr, sizeof(msgStr), brakeValue);
+      uint8_t valueWidth = (uint8_t)strlen(msgStr) * WIDTH8x8;
+      obdWriteString(&g_obd, 0, col1_center - (valueWidth / 2), 20, msgStr, FONT_8x8, colorBrake, 1);
     }
     lastBrake = brakeValue;
     lastBrakeUsesPot = brakeUsesPot;
@@ -258,7 +264,7 @@ void displayRaceModeSimple(uint8_t selectedItem, bool isEditing) {
       formatExtPotLabel(msgStr, sizeof(msgStr), getExtPotIndexForTarget(EXT_POT_TARGET_SENSI));
       obdWriteString(&g_obd, 0, col2_center - ((strlen(msgStr) * WIDTH12x16) / 2), 16, msgStr, FONT_12x16, colorSensi, 1);
     } else {
-      /* Value in 0.5% resolution, e.g. 20.5% */
+      /* Value in 0.1% resolution, e.g. 20.5% */
       sprintf(msgStr, "%2u.%u%%", sensiRaw / SENSI_SCALE, sensiFracDigit(sensiRaw));
       obdWriteString(&g_obd, 0, col2_center - 30, 16, msgStr, FONT_12x16, colorSensi, 1);
     }
@@ -277,7 +283,7 @@ void displayRaceModeSimple(uint8_t selectedItem, bool isEditing) {
  * @param isEditing True if currently editing a value
  */
 void displayRaceMode(uint8_t selectedItem, bool isEditing) {
-  static uint16_t lastBrake = 999;
+  static uint16_t lastBrake = 0xFFFF;
   static uint16_t lastSensi = 999;
   static bool lastBrakeUsesPot = false;
   static bool lastSensiUsesPot = false;
@@ -296,7 +302,7 @@ void displayRaceMode(uint8_t selectedItem, bool isEditing) {
   /* Check if forced redraw, selection or car changed - force update of ALL items */
   if (g_forceRaceRedraw || selectedItem != lastSelectedItem || isEditing != lastIsEditing || g_carSel != lastCarSel) {
     /* Force redraw of all items when selection changes */
-    lastBrake = 999;
+    lastBrake = 0xFFFF;
     lastSensi = 999;
     lastBrakeUsesPot = false;
     lastSensiUsesPot = false;
@@ -318,7 +324,7 @@ void displayRaceMode(uint8_t selectedItem, bool isEditing) {
 
   /* BRAKE - left column */
   bool brakeUsesPot = isExtPotBrakeTarget() && !(isEditing && selectedItem == 0);
-  uint16_t brakeValue = getEffectiveBrakePct();
+  uint16_t brakeValue = getEffectiveBrakeRaw();
   if (brakeUsesPot != lastBrakeUsesPot || (!brakeUsesPot && brakeValue != lastBrake)) {
     /* Label - using language-specific text, dynamically centered */
     const char* brakeLabel = getRaceLabel(g_storedVar.language, 0);
@@ -328,9 +334,9 @@ void displayRaceMode(uint8_t selectedItem, bool isEditing) {
       formatExtPotLabel(msgStr, sizeof(msgStr), getExtPotIndexForTarget(EXT_POT_TARGET_BRAKE));
       obdWriteString(&g_obd, 0, col1_center - ((strlen(msgStr) * WIDTH8x8) / 2), 12, msgStr, FONT_8x8, colorBrake, 1);
     } else {
-      /* Value - "100%" is 4 chars × 8px = 32px wide, center at col1_center - 16 */
-      sprintf(msgStr, "%3d%%", brakeValue);
-      obdWriteString(&g_obd, 0, col1_center - 16, 12, msgStr, FONT_8x8, colorBrake, 1);
+      formatPctX10Value(msgStr, sizeof(msgStr), brakeValue);
+      uint8_t valueWidth = (uint8_t)strlen(msgStr) * WIDTH8x8;
+      obdWriteString(&g_obd, 0, col1_center - (valueWidth / 2), 12, msgStr, FONT_8x8, colorBrake, 1);
     }
     lastBrake = brakeValue;
     lastBrakeUsesPot = brakeUsesPot;
@@ -348,7 +354,7 @@ void displayRaceMode(uint8_t selectedItem, bool isEditing) {
       formatExtPotLabel(msgStr, sizeof(msgStr), getExtPotIndexForTarget(EXT_POT_TARGET_SENSI));
       obdWriteString(&g_obd, 0, col2_center - ((strlen(msgStr) * WIDTH8x8) / 2), 12, msgStr, FONT_8x8, colorSensi, 1);
     } else {
-      /* Value in 0.5% resolution, e.g. 20.5% */
+      /* Value in 0.1% resolution, e.g. 20.5% */
       sprintf(msgStr, "%2u.%u%%", sensiRaw / SENSI_SCALE, sensiFracDigit(sensiRaw));
       obdWriteString(&g_obd, 0, col2_center - 20, 12, msgStr, FONT_8x8, colorSensi, 1);
     }
@@ -596,10 +602,10 @@ void printMainMenu(MenuState_enum currMenuState)
             if (isExtPotBrakeTarget() && !isSelectedValueEditing) {
               formatExtPotLabel(msgStr, sizeof(msgStr), getExtPotIndexForTarget(EXT_POT_TARGET_BRAKE));
             } else {
-              sprintf(msgStr, "%3d%%", getEffectiveBrakePct());
+              formatPctX10Value(msgStr, sizeof(msgStr), getEffectiveBrakeRaw());
             }
           }
-          /* SENSI is stored in 0.5% steps and shown with one decimal */
+          /* SENSI is stored in 0.1% steps and shown with one decimal */
           else if (strcmp(g_mainMenu.item[menuIndex].name, getMenuName(g_storedVar.language, 1)) == 0) {
             if (isExtPotSensiTarget() && !isSelectedValueEditing) {
               formatExtPotLabel(msgStr, sizeof(msgStr), getExtPotIndexForTarget(EXT_POT_TARGET_SENSI));

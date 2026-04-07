@@ -36,7 +36,7 @@ static uint16_t readExtPotFilteredRaw(uint8_t potIndex) {
   return (uint16_t)g_extPotFilteredRaw[potIndex];
 }
 
-static uint16_t mapExtPotToBrakePct(uint16_t raw) {
+static uint16_t mapExtPotToBrakeRaw(uint16_t raw) {
   return (uint16_t)map(raw, 0, ACD_RESOLUTION_STEPS, 0, BRAKE_MAX_VALUE);
 }
 
@@ -116,13 +116,13 @@ void resetExtPotFilter() {
 }
 
 void updateExtPotRuntimeValues() {
-  g_escVar.effectiveBrake_pct = g_storedVar.carParam[g_carSel].brake;
+  g_escVar.effectiveBrake_raw = g_storedVar.carParam[g_carSel].brake;
   g_escVar.effectiveSensi_raw = g_storedVar.carParam[g_carSel].minSpeed;
 
   for (uint8_t i = 0; i < EXT_POT_COUNT; i++) {
     uint16_t filteredRaw = readExtPotFilteredRaw(i);
     if (g_extPotTarget[i] == EXT_POT_TARGET_BRAKE) {
-      g_escVar.effectiveBrake_pct = constrain(mapExtPotToBrakePct(filteredRaw), 0, BRAKE_MAX_VALUE);
+      g_escVar.effectiveBrake_raw = constrain(mapExtPotToBrakeRaw(filteredRaw), 0, BRAKE_MAX_VALUE);
     } else if (g_extPotTarget[i] == EXT_POT_TARGET_SENSI) {
       g_escVar.effectiveSensi_raw = constrain(mapExtPotToSensiRaw(filteredRaw), 0,
                                               min((uint16_t)MIN_SPEED_MAX_VALUE, (uint16_t)(g_storedVar.carParam[g_carSel].maxSpeed * SENSI_SCALE)));
@@ -130,8 +130,12 @@ void updateExtPotRuntimeValues() {
   }
 }
 
+uint16_t getEffectiveBrakeRaw() {
+  return isExtPotBrakeTarget() ? g_escVar.effectiveBrake_raw : g_storedVar.carParam[g_carSel].brake;
+}
+
 uint16_t getEffectiveBrakePct() {
-  return isExtPotBrakeTarget() ? g_escVar.effectiveBrake_pct : g_storedVar.carParam[g_carSel].brake;
+  return brakeToWholePctRounded(getEffectiveBrakeRaw());
 }
 
 uint16_t getEffectiveSensiRaw() {

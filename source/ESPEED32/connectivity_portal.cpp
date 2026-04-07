@@ -809,6 +809,8 @@ static String buildJsonBackupFromConfig(const StoredVar_type& storedVar,
   sprintf(buf, "  \"antiSpinStepMs\": %u,\n", antiSpinStepMs);         json += buf;
   sprintf(buf, "  \"antiSpinStepPct\": %u,\n", antiSpinStepPct);       json += buf;
   sprintf(buf, "  \"antiSpinDisplayMode\": %u,\n", antiSpinDisplayMode); json += buf;
+  sprintf(buf, "  \"brakeStep\": %u.%u,\n", g_brakeStep / BRAKE_SCALE, brakeFracDigit(g_brakeStep)); json += buf;
+  sprintf(buf, "  \"sensiStep\": %u.%u,\n", g_sensiStep / SENSI_SCALE, sensiFracDigit(g_sensiStep)); json += buf;
   sprintf(buf, "  \"encoderInvert\": %u,\n", encoderInvertEnabled ? 1 : 0); json += buf;
   sprintf(buf, "  \"adcVoltageRangeMv\": %u,\n", adcVoltageRange_mV);  json += buf;
   sprintf(buf, "  \"gridCarSelectEnabled\": %u,\n", storedVar.gridCarSelectEnabled); json += buf;
@@ -841,7 +843,7 @@ static String buildJsonBackupFromConfig(const StoredVar_type& storedVar,
     appendJsonEscaped(json, c.carName);
     json += "\",\n";
     sprintf(buf, "      \"minSpeed\": %u.%u,\n", c.minSpeed / SENSI_SCALE, sensiFracDigit(c.minSpeed)); json += buf;
-    sprintf(buf, "      \"brake\": %u,\n", c.brake);                     json += buf;
+    sprintf(buf, "      \"brake\": %u.%u,\n", c.brake / BRAKE_SCALE, brakeFracDigit(c.brake)); json += buf;
     sprintf(buf, "      \"maxSpeed\": %u,\n", c.maxSpeed);               json += buf;
     sprintf(buf, "      \"curveInput\": %u,\n", c.throttleCurveVertex.inputThrottle); json += buf;
     sprintf(buf, "      \"curveDiff\": %u,\n", c.throttleCurveVertex.curveSpeedDiff); json += buf;
@@ -914,7 +916,7 @@ static bool parseJsonNumberToken(const String& json, const char* key, String& ou
   return outToken.length() > 0;
 }
 
-static bool parseJsonHalfPercent(const String& json, const char* key, uint16_t* outRaw) {
+static bool parseJsonTenthPercent(const String& json, const char* key, uint16_t maxRaw, uint16_t* outRaw) {
   if (outRaw == nullptr) return false;
   String token;
   if (!parseJsonNumberToken(json, key, token)) return false;
@@ -940,10 +942,11 @@ static bool parseJsonHalfPercent(const String& json, const char* key, uint16_t* 
   }
 
   if (whole < 0) return false;
-  if (frac != 0 && frac != 5) return false;  /* only 0.0 or 0.5 */
+  if (frac < 0 || frac > 9) return false;
 
-  uint16_t raw = (uint16_t)(whole * SENSI_SCALE + (frac == 5 ? 1 : 0));
-  if (raw > MIN_SPEED_MAX_VALUE) return false;
+  uint32_t raw32 = (uint32_t)whole * 10U + (uint32_t)frac;
+  if (raw32 > maxRaw) return false;
+  uint16_t raw = (uint16_t)raw32;
   *outRaw = raw;
   return true;
 }
@@ -1153,10 +1156,13 @@ static bool parseAndValidateJson(const String& json, StoredVar_type* sv, uint16_
       inRange(v, ANTISPIN_STEP_PCT_MIN, ANTISPIN_STEP_PCT_MAX)) {
     *antiSpinStepPct = (uint16_t)v;
   }
-  if (parseJsonInt(json, "brakeStep", v) && inRange(v, BRAKE_STEP_MIN, BRAKE_STEP_MAX))
-    g_brakeStep = (uint16_t)v;
-  if (parseJsonInt(json, "sensiStep", v) && inRange(v, SENSI_STEP_MIN, SENSI_STEP_MAX))
-    g_sensiStep = (uint16_t)v;
+  {
+    uint16_t stepRaw = 0;
+    if (parseJsonTenthPercent(json, "brakeStep", BRAKE_STEP_MAX, &stepRaw) && stepRaw >= BRAKE_STEP_MIN)
+      g_brakeStep = stepRaw;
+    if (parseJsonTenthPercent(json, "sensiStep", SENSI_STEP_MAX, &stepRaw) && stepRaw >= SENSI_STEP_MIN)
+      g_sensiStep = stepRaw;
+  }
   if (antiSpinDisplayMode != nullptr &&
       parseJsonInt(json, "antiSpinDisplayMode", v) &&
       inRange(v, ANTISPIN_UI_MODE_MS, ANTISPIN_UI_MODE_TEXT)) {
@@ -1320,15 +1326,16 @@ static bool parseAndValidateJson(const String& json, StoredVar_type* sv, uint16_
 
     /* Numeric fields */
     uint16_t minSpeedRaw = 0;
-    if (!parseJsonHalfPercent(carJson, "minSpeed", &minSpeedRaw)) {
+    if (!parseJsonTenthPercent(carJson, "minSpeed", MIN_SPEED_MAX_VALUE, &minSpeedRaw)) {
       *errorMsg = "Error: invalid minSpeed in car " + String(i); return false;
     }
     c.minSpeed = minSpeedRaw;
 
-    if (!parseJsonInt(carJson, "brake", v) || !inRange(v, 0, BRAKE_MAX_VALUE)) {
+    uint16_t brakeRaw = 0;
+    if (!parseJsonTenthPercent(carJson, "brake", BRAKE_MAX_VALUE, &brakeRaw)) {
       *errorMsg = "Error: invalid brake in car " + String(i); return false;
     }
-    c.brake = v;
+    c.brake = brakeRaw;
 
     if (!parseJsonInt(carJson, "maxSpeed", v) || !inRange(v, 5, 100)) {
       *errorMsg = "Error: invalid maxSpeed in car " + String(i); return false;
@@ -1412,12 +1419,12 @@ static void appendJsonEscaped(String& out, const char* in) {
   }
 }
 
-static void appendHalfPercentField(String& out, const char* key, uint16_t sensiRaw, bool withTrailingComma) {
+static void appendTenthPercentField(String& out, const char* key, uint16_t raw, bool withTrailingComma) {
   char buf[48];
   snprintf(buf, sizeof(buf), "\"%s\":%u.%u%s",
            key,
-           sensiRaw / SENSI_SCALE,
-           sensiFracDigit(sensiRaw),
+           raw / 10U,
+           raw % 10U,
            withTrailingComma ? "," : "");
   out += buf;
 }
@@ -1519,8 +1526,8 @@ static String buildSchemaJson() {
                         "[{\"value\":0,\"label\":\"ms\"},{\"value\":1,\"label\":\"%\"},{\"value\":2,\"label\":\"TEXT\"}]");
   appendSchemaIntField(json, first, "antiSpinStepMs", "ANTIS Step (ms)", ANTISPIN_STEP_MIN, ANTISPIN_STEP_MAX, 1, "ms");
   appendSchemaIntField(json, first, "antiSpinStepPct", "ANTIS Step (%)", ANTISPIN_STEP_PCT_MIN, ANTISPIN_STEP_PCT_MAX, 1, "%");
-  appendSchemaIntField(json, first, "brakeStep", "Brake Step (%)", BRAKE_STEP_MIN, BRAKE_STEP_MAX, 1, "%");
-  appendSchemaIntField(json, first, "sensiStep", "Sensi Step (x0.5%)", SENSI_STEP_MIN, SENSI_STEP_MAX, 1, "x0.5%");
+  appendSchemaNumberField(json, first, "brakeStep", "Brake Step", "0.1", "50.0", "0.1", "%");
+  appendSchemaNumberField(json, first, "sensiStep", "Sensi Step", "0.1", "5.0", "0.1", "%");
   appendSchemaEnumField(json, first, "encoderInvert", "ENC INV",
                         "[{\"value\":0,\"label\":\"OFF\"},{\"value\":1,\"label\":\"ON\"}]");
   appendSchemaIntField(json, first, "adcVoltageRangeMv", "VIN CAL ADC", ADC_VOLTAGE_RANGE_MIN_MVOLTS, ADC_VOLTAGE_RANGE_MAX_MVOLTS, 1, "mV");
@@ -1559,8 +1566,8 @@ static String buildSchemaJson() {
   json += "\"car\":[";
   first = true;
   appendSchemaStringField(json, first, "carName", "Profile Name", CAR_NAME_MAX_SIZE - 1);
-  appendSchemaNumberField(json, first, "minSpeed", "SENSI", "0.0", "90.0", "0.5", "%");
-  appendSchemaIntField(json, first, "brake", "BRAKE", 0, BRAKE_MAX_VALUE, 1, "%");
+  appendSchemaNumberField(json, first, "minSpeed", "SENSI", "0.0", "90.0", "0.1", "%");
+  appendSchemaNumberField(json, first, "brake", "BRAKE", "0.0", "100.0", "0.1", "%");
   appendSchemaIntField(json, first, "maxSpeed", "LIMIT", 5, 100, 1, "%");
   appendSchemaIntField(json, first, "curveDiff", "CURVE", THROTTLE_CURVE_SPEED_DIFF_MIN_VALUE, THROTTLE_CURVE_SPEED_DIFF_MAX_VALUE, 1, "%");
   appendSchemaIntField(json, first, "fade", "FADE", 0, FADE_MAX_VALUE, 1, "%");
@@ -1610,8 +1617,8 @@ static String buildStateJson(uint8_t carIndex) {
   snprintf(buf, sizeof(buf), "\"antiSpinDisplayMode\":%u,", g_antiSpinDisplayMode); json += buf;
   snprintf(buf, sizeof(buf), "\"antiSpinStepMs\":%u,", g_antiSpinStepMs); json += buf;
   snprintf(buf, sizeof(buf), "\"antiSpinStepPct\":%u,", g_antiSpinStepPct); json += buf;
-  snprintf(buf, sizeof(buf), "\"brakeStep\":%u,", g_brakeStep); json += buf;
-  snprintf(buf, sizeof(buf), "\"sensiStep\":%u,", g_sensiStep); json += buf;
+  snprintf(buf, sizeof(buf), "\"brakeStep\":%u.%u,", g_brakeStep / BRAKE_SCALE, brakeFracDigit(g_brakeStep)); json += buf;
+  snprintf(buf, sizeof(buf), "\"sensiStep\":%u.%u,", g_sensiStep / SENSI_SCALE, sensiFracDigit(g_sensiStep)); json += buf;
   snprintf(buf, sizeof(buf), "\"encoderInvert\":%u,", g_encoderInvertEnabled ? 1 : 0); json += buf;
   snprintf(buf, sizeof(buf), "\"adcVoltageRangeMv\":%u,", g_adcVoltageRange_mV); json += buf;
   snprintf(buf, sizeof(buf), "\"gridCarSelectEnabled\":%u,", g_storedVar.gridCarSelectEnabled); json += buf;
@@ -1642,8 +1649,8 @@ static String buildStateJson(uint8_t carIndex) {
   json += "\"carName\":\"";
   appendJsonEscaped(json, c.carName);
   json += "\",";
-  appendHalfPercentField(json, "minSpeed", c.minSpeed, true);
-  snprintf(buf, sizeof(buf), "\"brake\":%u,", c.brake); json += buf;
+  appendTenthPercentField(json, "minSpeed", c.minSpeed, true);
+  appendTenthPercentField(json, "brake", c.brake, true);
   snprintf(buf, sizeof(buf), "\"maxSpeed\":%u,", c.maxSpeed); json += buf;
   snprintf(buf, sizeof(buf), "\"curveDiff\":%u,", c.throttleCurveVertex.curveSpeedDiff); json += buf;
   snprintf(buf, sizeof(buf), "\"fade\":%u,", c.fade); json += buf;
@@ -1732,13 +1739,19 @@ static bool parseAndApplyWebPatch(const String& json, String* errorMsg, uint8_t*
     if (!inRange(v, ANTISPIN_STEP_PCT_MIN, ANTISPIN_STEP_PCT_MAX)) { *errorMsg = "Error: invalid antiSpinStepPct"; return false; }
     g_antiSpinStepPct = (uint16_t)v;
   }
-  if (parseJsonInt(json, "brakeStep", v)) {
-    if (!inRange(v, BRAKE_STEP_MIN, BRAKE_STEP_MAX)) { *errorMsg = "Error: invalid brakeStep"; return false; }
-    g_brakeStep = (uint16_t)v;
+  if (jsonHasKey(json, "brakeStep")) {
+    uint16_t stepRaw = 0;
+    if (!parseJsonTenthPercent(json, "brakeStep", BRAKE_STEP_MAX, &stepRaw) || stepRaw < BRAKE_STEP_MIN) {
+      *errorMsg = "Error: invalid brakeStep"; return false;
+    }
+    g_brakeStep = stepRaw;
   }
-  if (parseJsonInt(json, "sensiStep", v)) {
-    if (!inRange(v, SENSI_STEP_MIN, SENSI_STEP_MAX)) { *errorMsg = "Error: invalid sensiStep"; return false; }
-    g_sensiStep = (uint16_t)v;
+  if (jsonHasKey(json, "sensiStep")) {
+    uint16_t stepRaw = 0;
+    if (!parseJsonTenthPercent(json, "sensiStep", SENSI_STEP_MAX, &stepRaw) || stepRaw < SENSI_STEP_MIN) {
+      *errorMsg = "Error: invalid sensiStep"; return false;
+    }
+    g_sensiStep = stepRaw;
   }
   if (parseJsonInt(json, "encoderInvert", v)) {
     if (!inRange(v, 0, 1)) { *errorMsg = "Error: invalid encoderInvert"; return false; }
@@ -1865,7 +1878,7 @@ static bool parseAndApplyWebPatch(const String& json, String* errorMsg, uint8_t*
   uint16_t maxSpeed = car.maxSpeed;
 
   if (json.indexOf("\"minSpeed\"") >= 0) {
-    if (!parseJsonHalfPercent(json, "minSpeed", &minSpeedRaw)) { *errorMsg = "Error: invalid minSpeed"; return false; }
+    if (!parseJsonTenthPercent(json, "minSpeed", MIN_SPEED_MAX_VALUE, &minSpeedRaw)) { *errorMsg = "Error: invalid minSpeed"; return false; }
   }
   if (parseJsonInt(json, "maxSpeed", v)) {
     if (!inRange(v, 5, 100)) { *errorMsg = "Error: invalid maxSpeed"; return false; }
@@ -1878,9 +1891,10 @@ static bool parseAndApplyWebPatch(const String& json, String* errorMsg, uint8_t*
   car.minSpeed = minSpeedRaw;
   car.maxSpeed = maxSpeed;
 
-  if (parseJsonInt(json, "brake", v)) {
-    if (!inRange(v, 0, BRAKE_MAX_VALUE)) { *errorMsg = "Error: invalid brake"; return false; }
-    car.brake = (uint16_t)v;
+  if (jsonHasKey(json, "brake")) {
+    uint16_t brakeRaw = 0;
+    if (!parseJsonTenthPercent(json, "brake", BRAKE_MAX_VALUE, &brakeRaw)) { *errorMsg = "Error: invalid brake"; return false; }
+    car.brake = brakeRaw;
   }
   if (parseJsonInt(json, "curveDiff", v)) {
     if (!inRange(v, THROTTLE_CURVE_SPEED_DIFF_MIN_VALUE, THROTTLE_CURVE_SPEED_DIFF_MAX_VALUE)) {
@@ -2556,11 +2570,17 @@ static size_t getTelemetryLiveLimit() {
   return (size_t)limit;
 }
 
-static void formatHalfPercentValue(uint16_t raw, char* out, size_t outLen) {
+static void formatTenthPercentValue(uint16_t raw, char* out, size_t outLen) {
   if (out == nullptr || outLen == 0) {
     return;
   }
-  snprintf(out, outLen, "%u.%u", raw / SENSI_SCALE, sensiFracDigit(raw));
+  snprintf(out, outLen, "%u.%u", raw / 10U, raw % 10U);
+}
+
+static void appendPercentX10JsonValue(String& out, uint16_t raw) {
+  out += String((unsigned int)(raw / 10U));
+  out += ".";
+  out += String((unsigned int)(raw % 10U));
 }
 
 static const char* getTelemetryReleaseModeLabel(uint8_t mode) {
@@ -2578,12 +2598,13 @@ static void appendTelemetryCarParamJson(String& json, const CarParam_type& car) 
   appendJsonEscaped(json, car.carName);
   json += "\"";
   snprintf(buf, sizeof(buf),
-           ",\"carNumber\":%u,\"minSpeedHalfPct\":%u,\"brake\":%u,\"maxSpeed\":%u,"
+           ",\"carNumber\":%u,\"minSpeedHalfPct\":%u,\"brake\":%u.%u,\"maxSpeed\":%u,"
            "\"curveInputPct\":%u,\"curveDiffPct\":%u,\"fade\":%u,\"antiSpin\":%u,"
            "\"freqPwm100Hz\":%u,\"brakeButton\":%u,\"releaseMode\":%u,\"releaseZone\":%u,\"releaseLevel\":%u",
            (unsigned int)car.carNumber,
            (unsigned int)car.minSpeed,
-           (unsigned int)car.brake,
+           (unsigned int)(car.brake / BRAKE_SCALE),
+           (unsigned int)brakeFracDigit(car.brake),
            (unsigned int)car.maxSpeed,
            (unsigned int)car.throttleCurveVertex.inputThrottle,
            (unsigned int)car.throttleCurveVertex.curveSpeedDiff,
@@ -2670,9 +2691,9 @@ static void appendTelemetryStatusFields(String& json, const TelemetryStatus& sta
   uint8_t currentCarIndex = (g_carSel < CAR_MAX_COUNT) ? (uint8_t)g_carSel : (uint8_t)g_storedVar.selectedCarNumber;
   uint8_t triggerPct = (uint8_t)(((uint32_t)g_escVar.trigger_norm * 100U) / THROTTLE_NORMALIZED);
   uint8_t outputPct = (uint8_t)constrain((int)g_escVar.outputSpeed_pct, 0, 100);
-  uint8_t brakePct = (uint8_t)constrain((int)g_escVar.effectiveBrake_pct, 0, 100);
+  uint16_t brakePct = constrain(g_escVar.effectiveBrake_raw, 0, BRAKE_MAX_VALUE);
   if (digitalRead(BUTT_PIN) == BUTTON_PRESSED && g_escVar.trigger_norm == 0) {
-    brakePct = (uint8_t)constrain((int)g_storedVar.carParam[currentCarIndex].brakeButtonReduction, 0, 100);
+    brakePct = constrain(g_storedVar.carParam[currentCarIndex].brakeButtonReduction * BRAKE_SCALE, 0, BRAKE_MAX_VALUE);
   }
 
   snprintf(buf, sizeof(buf),
@@ -2707,11 +2728,12 @@ static void appendTelemetryStatusFields(String& json, const TelemetryStatus& sta
   json += "\",\"current\":{";
 
   snprintf(buf, sizeof(buf),
-           "\"triggerPct\":%u,\"outputPct\":%u,\"brakePct\":%u,\"sensiHalfPct\":%u,"
+           "\"triggerPct\":%u,\"outputPct\":%u,\"brakePct\":%u.%u,\"sensiHalfPct\":%u,"
            "\"vinMv\":%u,\"currentMa\":%u,\"releaseMode\":%u,\"currentSense\":%u",
            triggerPct,
            outputPct,
-           brakePct,
+           (unsigned int)(brakePct / BRAKE_SCALE),
+           (unsigned int)brakeFracDigit(brakePct),
            g_escVar.effectiveSensi_raw,
            g_escVar.Vin_mV,
            g_escVar.motorCurrent_mA,
@@ -2793,7 +2815,7 @@ static String buildTelemetryLivePayload(uint32_t afterSeq, size_t limit) {
     json += ",";
     json += String((unsigned int)s.current_mA);
     json += ",";
-    json += String((unsigned int)s.brake_pct);
+    appendPercentX10JsonValue(json, s.brake_pct);
     json += ",";
     json += String((unsigned int)s.sensi_halfPct);
     json += ",";
@@ -2909,16 +2931,18 @@ static void handleTelemetryExportCsv() {
       const TelemetrySample& s = batch[i];
       char sensiBuf[12];
       char row[192];
-      formatHalfPercentValue(s.sensi_halfPct, sensiBuf, sizeof(sensiBuf));
+      char brakeBuf[12];
+      formatTenthPercentValue(s.sensi_halfPct, sensiBuf, sizeof(sensiBuf));
+      snprintf(brakeBuf, sizeof(brakeBuf), "%u.%u", (unsigned int)(s.brake_pct / BRAKE_SCALE), (unsigned int)brakeFracDigit(s.brake_pct));
       snprintf(row, sizeof(row),
-               "%lu,%lu,%u,%s,%u,%u,%u,%s,%u,%u,%s,%u,%u,%u,%u,%u\n",
+               "%lu,%lu,%u,%s,%u,%u,%s,%s,%u,%u,%s,%u,%u,%u,%u,%u\n",
                (unsigned long)s.seq,
                (unsigned long)s.t_ms,
                (unsigned int)s.carIndex,
                snapshot.storedVar.carParam[s.carIndex].carName,
                (unsigned int)s.trigger_pct,
                (unsigned int)s.output_pct,
-               (unsigned int)s.brake_pct,
+               brakeBuf,
                sensiBuf,
                (unsigned int)s.vin_mV,
                (unsigned int)s.current_mA,
@@ -3038,7 +3062,7 @@ static void handleTelemetryExportJson() {
       chunk += ",\"currentMa\":";
       chunk += String((unsigned int)s.current_mA);
       chunk += ",\"brakePct\":";
-      chunk += String((unsigned int)s.brake_pct);
+      appendPercentX10JsonValue(chunk, s.brake_pct);
       chunk += ",\"sensiHalfPct\":";
       chunk += String((unsigned int)s.sensi_halfPct);
       chunk += ",\"carIndex\":";

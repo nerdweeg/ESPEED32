@@ -15,6 +15,7 @@ void cycleExtPotTarget(uint8_t potIndex);
 void sanitizeExtPotTargets(int8_t preferredPotIndex);
 void resetExtPotFilter();
 void updateExtPotRuntimeValues();
+uint16_t getEffectiveBrakeRaw();
 uint16_t getEffectiveBrakePct();
 uint16_t getEffectiveSensiRaw();
 

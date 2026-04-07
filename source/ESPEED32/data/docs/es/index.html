@@ -240,6 +240,9 @@ details.doc-fold>:not(summary){margin-top:8px}
       <li><code>DISPLAY -&gt; CASE</code> decide si las etiquetas se muestran en <code>UPPER</code> o <code>Pascal</code>.</li>
       <li><code>DISPLAY -&gt; FONT SIZE</code> cambia la vista de listas y menus entre <code>LARGE</code> y <code>small</code>.</li>
       <li><code>PANTALLA -&gt; ANTISPIN</code> abre el submenu de configuracion antispin donde seleccionas la unidad de visualizacion (<code>MS</code> / <code>%</code> / <code>TEXT</code>) y el paso del encoder para cada unidad.</li>
+      <li><code>PANTALLA -&gt; PASO FRENO</code> establece cuantos por ciento mueve el encoder el FRENO por clic (0,1–50,0%, por defecto 1,0%). Se configura en <code>AJUSTES → PANTALLA → PASO FRENO</code>.</li>
+      <li><code>PANTALLA -&gt; PASO SENSI</code> establece el paso del encoder para SENSI en incrementos de 0,1% (0,1–5,0%, por defecto 0,5%). Se configura en <code>AJUSTES → PANTALLA → PASO SENSI</code>.</li>
+      <li>La salida PWM del motor usa resolución de duty de 10 bits, por lo que los pasos de 0,1% de FRENO/SENSI se conservan en los cálculos y en la conversión PWM.</li>
     </ul>
     <h3>Vista de carrera (LIST vs GRID)</h3>
     <ul>
@@ -330,8 +333,8 @@ details.doc-fold>:not(summary){margin-top:8px}
         <tr><th>Item</th><th>Rango</th><th>Default</th><th>Descripcion</th></tr>
       </thead>
       <tbody>
-        <tr><td><code>BRAKE</code></td><td>0-100 %</td><td>95</td><td>Frenado con trigger suelto.</td></tr>
-        <tr><td><code>SENSI</code></td><td>0-90 % (y &lt;= LIMIT)</td><td>20</td><td>Potencia minima al primer movimiento de trigger.</td></tr>
+        <tr><td><code>BRAKE</code></td><td>0,0-100,0 %</td><td>95,0</td><td>Frenado con trigger suelto.</td></tr>
+        <tr><td><code>SENSI</code></td><td>0,0-90,0 % (y &lt;= LIMIT)</td><td>20,0</td><td>Potencia minima al primer movimiento de trigger.</td></tr>
         <tr><td><code>ANTIS</code></td><td>0-999 ms</td><td>30</td><td>Tiempo de rampa anti-spin por encima del bypass de baja salida. Valor alto = subida de potencia mas larga/lenta. No es un delay puro del trigger. Unidad de visualizacion y paso del encoder se configuran en <code>PANTALLA -&gt; ANTISPIN</code> (MS / % / TEXT).</td></tr>
         <tr><td><code>CURVE</code></td><td>10-90 %</td><td>50</td><td>Mapa de trigger. 50 = lineal.</td></tr>
         <tr><td><code>FADE</code></td><td>0-30 %</td><td>0</td><td>Zona de salida suave. 0 = desactivado / comportamiento antiguo. Por encima de 0, la primera parte del trigger sube de 0 a SENSI antes de que siga la CURVE normal.</td></tr>
@@ -593,6 +596,12 @@ details.doc-fold>:not(summary){margin-top:8px}
 |  |  |  |- TIPO REG (MS / % / TEXT, predeterminado MS)
 |  |  |  |- PASO MS (1-50 ms, predeterminado 5)  [oculto en modo TEXT]
 |  |  |  |- PASO % (1-100 %, predeterminado 1)   [solo visible en modo %]
+|  |  |  `- ATRAS
+|  |  |- PASO FRENO
+|  |  |  |- PASO FRENO (0,1-50,0 %, por defecto 1,0%)
+|  |  |  `- ATRAS
+|  |  |- PASO SENSI
+|  |  |  |- PASO SENSI (0,1-5,0 % en pasos de 0,1%, por defecto 0,5%)
 |  |  |  `- ATRAS
 |  |  |- STATUS BAR
 |  |  |  |- SLOT 1

@@ -54,6 +54,15 @@ void HalfBridge_SetPwmDrag(uint8_t duty_pct, uint8_t drag_pct) {
 }
 
 /**
+ * @brief Set PWM duty cycle with drag brake in 0.1% units
+ * @param duty_x10 Motor duty cycle [0-1000] where 1000 = 100.0%
+ * @param drag_x10 Drag brake percentage [0-1000] where 1000 = 100.0%
+ */
+void HalfBridge_SetPwmDragX10(uint16_t duty_x10, uint16_t drag_x10) {
+  halfBridge.set_pwm_drag_x10(duty_x10, drag_x10);
+}
+
+/**
  * @brief Enable half-bridge output
  */
 void HalfBridge_Enable() {

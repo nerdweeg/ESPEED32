@@ -71,7 +71,8 @@
 #define THR_IN_PWM_CHAN   0     /* PWM channel for motor input */
 #define THR_INH_PWM_CHAN  1     /* PWM channel for motor inhibit */
 #define BUZZ_CHAN         6     /* PWM channel for buzzer */
-#define THR_PWM_RES_BIT   8     /* PWM resolution in bits */ 
+#define THR_PWM_RES_BIT   10    /* Motor PWM resolution: 10-bit gives ~0.1% duty granularity */
+#define THR_PWM_MAX_DUTY  ((1U << THR_PWM_RES_BIT) - 1U)
 
 /* Trigger Sensor Family Selection
  * Select exactly one sensor family at compile time.

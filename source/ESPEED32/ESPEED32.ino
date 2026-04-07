@@ -83,8 +83,8 @@ uint16_t g_statsEnabled = STATS_ENABLED_DEFAULT;  /* Main menu STATS visibility:
 uint16_t g_antiSpinStepMs = ANTISPIN_STEP_DEFAULT; /* Global encoder step when editing ANTIS */
 uint16_t g_antiSpinStepPct = ANTISPIN_STEP_PCT_DEFAULT; /* Global encoder step when editing ANTIS in percent mode */
 uint16_t g_antiSpinDisplayMode = ANTISPIN_UI_MODE_DEFAULT; /* Global ANTIS display/edit mode: ms, %, or text */
-uint16_t g_brakeStep = BRAKE_STEP_DEFAULT;   /* Global encoder step when editing BRAKE [raw units = 1% each] */
-uint16_t g_sensiStep = SENSI_STEP_DEFAULT;   /* Global encoder step when editing SENSI [raw units = 0.5% each] */
+uint16_t g_brakeStep = BRAKE_STEP_DEFAULT;   /* Global encoder step when editing BRAKE [raw units = 0.1% each] */
+uint16_t g_sensiStep = SENSI_STEP_DEFAULT;   /* Global encoder step when editing SENSI [raw units = 0.1% each] */
 uint16_t g_encoderInvertEnabled = ENCODER_INVERT_DEFAULT; /* Global encoder direction: 0=default, 1=inverted */
 uint16_t g_adcVoltageRange_mV = ACD_VOLTAGE_RANGE_DEFAULT_MVOLTS; /* Global ADC voltage scale used for VIN/current conversion */
 
@@ -96,7 +96,7 @@ ESC_type g_escVar {
   .encoderPos = 1,
   .Vin_mV = 0,
   .motorCurrent_mA = 0,
-  .effectiveBrake_pct = BRAKE_DEFAULT,
+  .effectiveBrake_raw = BRAKE_DEFAULT,
   .effectiveSensi_raw = MIN_SPEED_DEFAULT,
   .lapCount = 0,
   .bestLapTime_ms = 0,
@@ -169,6 +169,24 @@ static const char* PREF_KEY_EXT_POT2_TARGET = "ext_pot2_tgt";
 static const char* PREF_KEY_EXT_POT_ENABLED_LEGACY = "ext_pot_en";
 static const char* PREF_KEY_EXT_POT_TARGET_LEGACY = "ext_pot_tgt";
 static bool g_startWiFiAfterOtaBoot = false;
+
+static bool canMigrateStoredVarVersion(uint8_t storedVarVersion) {
+  return storedVarVersion == 22U || storedVarVersion == 23U;
+}
+
+static void migrateStoredVarFromHalfPctToTenthPct(StoredVar_type* storedVar) {
+  if (storedVar == nullptr) return;
+
+  for (uint8_t i = 0; i < CAR_MAX_COUNT; i++) {
+    CarParam_type& car = storedVar->carParam[i];
+    uint32_t migratedSensi = (uint32_t)car.minSpeed * (SENSI_SCALE / 2U);  /* old raw unit was 0.5% */
+    uint32_t migratedBrake = (uint32_t)car.brake * BRAKE_SCALE;            /* old brake unit was 1% */
+
+    uint32_t carMaxSensi = (uint32_t)car.maxSpeed * SENSI_SCALE;
+    car.minSpeed = (uint16_t)min((uint32_t)MIN_SPEED_MAX_VALUE, min(carMaxSensi, migratedSensi));
+    car.brake = (uint16_t)min((uint32_t)BRAKE_MAX_VALUE, migratedBrake);
+  }
+}
 
 /* Long press tracking shared across all submenus (only one active at a time) */
 static uint32_t g_lpRaceStart = 0;
@@ -277,7 +295,9 @@ static void applyValueEditFromEncoder(uint16_t encoderValue) {
     int32_t delta = (int32_t)encoderValue - (int32_t)g_sensiEditLastEncoder;
     if (delta == 0) return;
     int32_t newValue = (int32_t)(*g_encoderSelectedValuePtr) + (delta * (int32_t)g_sensiStep);
-    *g_encoderSelectedValuePtr = (uint16_t)constrain(newValue, 0, MIN_SPEED_MAX_VALUE);
+    uint16_t maxSensiRaw = min((uint16_t)MIN_SPEED_MAX_VALUE,
+                               (uint16_t)(g_storedVar.carParam[g_carSel].maxSpeed * SENSI_SCALE));
+    *g_encoderSelectedValuePtr = (uint16_t)constrain(newValue, 0, maxSensiRaw);
     g_sensiEditLastEncoder = encoderValue;
   } else {
     *g_encoderSelectedValuePtr = encoderValue;
@@ -610,9 +630,14 @@ void Task1code(void *pvParameters) {
           swMinVer = g_pref.getUChar("sw_min_ver");
           storedVarVersion = g_pref.getUChar("stored_var_ver");
 
-          if ((storedVarVersion == STORED_VAR_VERSION) ) /* If the storedVariable version keys is equal to the STORED_VAR MACRO, then the stored param are already initialized woh the proper format*/
+          if ((storedVarVersion == STORED_VAR_VERSION) || canMigrateStoredVarVersion(storedVarVersion)) /* Load current storage directly, or migrate v22/v23 in-place to 0.1% BRAKE/SENSI */
           {
             g_pref.getBytes("user_param", &g_storedVar, sizeof(g_storedVar)); /* Get the value of the stored user_param */
+            bool migratedToTenths = false;
+            if (storedVarVersion != STORED_VAR_VERSION) {
+              migrateStoredVarFromHalfPctToTenthPct(&g_storedVar);
+              migratedToTenths = true;
+            }
             g_statsEnabled = g_pref.getUChar(PREF_KEY_STATS_ENABLED, STATS_ENABLED_DEFAULT) ? 1 : 0;
             g_encoderInvertEnabled = g_pref.getUChar(PREF_KEY_ENC_INVERT, ENCODER_INVERT_DEFAULT) ? 1 : 0;
             applyAdcVoltageRangeMilliVolts(g_pref.getUShort(PREF_KEY_ADC_RANGE, ACD_VOLTAGE_RANGE_DEFAULT_MVOLTS));
@@ -632,10 +657,20 @@ void Task1code(void *pvParameters) {
             }
             sanitizeExtPotTargets(0);
             resetExtPotFilter();
-            g_brakeStep = constrain(g_pref.getUShort(PREF_KEY_BRAKE_STEP, BRAKE_STEP_DEFAULT),
-                                        BRAKE_STEP_MIN, BRAKE_STEP_MAX);
-            g_sensiStep = constrain(g_pref.getUShort(PREF_KEY_SENSI_STEP, SENSI_STEP_DEFAULT),
-                                        SENSI_STEP_MIN, SENSI_STEP_MAX);
+            {
+              uint32_t storedBrakeStep = g_pref.getUShort(PREF_KEY_BRAKE_STEP, BRAKE_STEP_DEFAULT);
+              uint32_t storedSensiStep = g_pref.getUShort(PREF_KEY_SENSI_STEP, SENSI_STEP_DEFAULT);
+              if (storedVarVersion == 23U && g_pref.isKey(PREF_KEY_BRAKE_STEP)) {
+                storedBrakeStep *= BRAKE_SCALE;          /* v23 stored BRAKE STEP as whole-percent units */
+              }
+              if (storedVarVersion == 23U && g_pref.isKey(PREF_KEY_SENSI_STEP)) {
+                storedSensiStep *= (SENSI_SCALE / 2U);   /* v23 stored SENSI STEP as 0.5%-raw units */
+              }
+              g_brakeStep = constrain((uint16_t)min(storedBrakeStep, (uint32_t)UINT16_MAX),
+                                      BRAKE_STEP_MIN, BRAKE_STEP_MAX);
+              g_sensiStep = constrain((uint16_t)min(storedSensiStep, (uint32_t)UINT16_MAX),
+                                      SENSI_STEP_MIN, SENSI_STEP_MAX);
+            }
             g_antiSpinStepMs = constrain(g_pref.getUShort(PREF_KEY_ANTIS_STEP, ANTISPIN_STEP_DEFAULT),
                                          ANTISPIN_STEP_MIN, ANTISPIN_STEP_MAX);
             g_antiSpinStepPct = constrain(g_pref.getUShort(PREF_KEY_ANTIS_STEP_PCT, ANTISPIN_STEP_PCT_DEFAULT),
@@ -644,13 +679,22 @@ void Task1code(void *pvParameters) {
                                               ANTISPIN_UI_MODE_MS, ANTISPIN_UI_MODE_TEXT);
 
             /* One-time migration: old firmware stored SENSI in whole-percent units. */
-            if (!g_pref.getBool(PREF_KEY_SENSI_HALF, false)) {
+            if (!migratedToTenths && !g_pref.getBool(PREF_KEY_SENSI_HALF, false)) {
               for (uint8_t i = 0; i < CAR_MAX_COUNT; i++) {
                 uint32_t migrated = (uint32_t)g_storedVar.carParam[i].minSpeed * SENSI_SCALE;
                 g_storedVar.carParam[i].minSpeed = (uint16_t)min((uint32_t)MIN_SPEED_MAX_VALUE, migrated);
               }
               g_pref.putBytes("user_param", &g_storedVar, sizeof(g_storedVar));
               g_pref.putBool(PREF_KEY_SENSI_HALF, true);
+            }
+            if (migratedToTenths) {
+              g_pref.putBytes("user_param", &g_storedVar, sizeof(g_storedVar));
+              g_pref.putUChar("sw_maj_ver", SW_MAJOR_VERSION);
+              g_pref.putUChar("sw_min_ver", SW_MINOR_VERSION);
+              g_pref.putUChar("stored_var_ver", STORED_VAR_VERSION);
+              g_pref.putBool(PREF_KEY_SENSI_HALF, true);
+              g_pref.putUShort(PREF_KEY_BRAKE_STEP, g_brakeStep);
+              g_pref.putUShort(PREF_KEY_SENSI_STEP, g_sensiStep);
             }
             initMenuItems();                                                  /* init menu items with EEPROM stored variables */
             g_startWiFiAfterOtaBoot = consumeWiFiAutoStartOnNextBootRequest();
@@ -1150,10 +1194,10 @@ void showScreenCalibration(int16_t adcRaw)
  *          - High antiSpin (200ms) = Low threshold (powerful motor/slippery track)
  *          - Low antiSpin = High threshold (good traction)
  * 
- * @param requestedSpeed [%] Requested output speed (0-100%)
- * @return [%] Actual output speed respecting anti-spin ramp limits
+ * @param requestedSpeedX10 [0.1%] Requested output speed (0-1000)
+ * @return [0.1%] Actual output speed respecting anti-spin ramp limits
  */
-uint16_t throttleAntiSpin3(uint16_t requestedSpeed) {
+uint16_t throttleAntiSpin3(uint16_t requestedSpeedX10) {
   static uint32_t lastOutputSpeedx1000 = 0;
   static unsigned long prevCall_uS = 0;
   
@@ -1168,47 +1212,52 @@ uint16_t throttleAntiSpin3(uint16_t requestedSpeed) {
 
   /* Bypass anti-spin if disabled */
   if (g_storedVar.carParam[g_carSel].antiSpin == 0) {
-    lastOutputSpeedx1000 = getEffectiveSensiRaw() * 500;
-    return requestedSpeed;
+    lastOutputSpeedx1000 = (uint32_t)getEffectiveSensiRaw() * 100U;
+    return requestedSpeedX10;
   }
 
   /* Bypass anti-spin at low speeds (insufficient current for wheel spin) */
-  if (requestedSpeed < antispinPercStart) {
-    lastOutputSpeedx1000 = requestedSpeed * 1000;
-    return requestedSpeed;
+  if (requestedSpeedX10 < antispinPercStartRaw) {
+    lastOutputSpeedx1000 = (uint32_t)requestedSpeedX10 * 100U;
+    return requestedSpeedX10;
   }
 
   /* Allow immediate deceleration (braking) */
-  if ((uint32_t)requestedSpeed * 1000 <= lastOutputSpeedx1000) {
-    lastOutputSpeedx1000 = requestedSpeed * 1000;
-    return requestedSpeed;
+  if ((uint32_t)requestedSpeedX10 * 100U <= lastOutputSpeedx1000) {
+    lastOutputSpeedx1000 = (uint32_t)requestedSpeedX10 * 100U;
+    return requestedSpeedX10;
   }
 
   /* Apply anti-spin ramp for acceleration */
   uint16_t minSpeedTmpRaw = max(getEffectiveSensiRaw(), antispinPercStartRaw);
   uint16_t maxSpeedRaw = g_storedVar.carParam[g_carSel].maxSpeed * SENSI_SCALE;
+  if (maxSpeedRaw <= minSpeedTmpRaw) {
+    lastOutputSpeedx1000 = (uint32_t)requestedSpeedX10 * 100U;
+    return requestedSpeedX10;
+  }
   
-  /* Convert the 0.5%-unit span into the existing x1000-percent ramp units.
-   * deltaTime is in us while antiSpin is in ms, so the required conversion is /2 overall. */
+  /* Convert the 0.1%-unit span into x1000-percent ramp units.
+   * deltaTime is in us while antiSpin is in ms, so denominator is antiSpin * scale. */
   uint32_t maxDeltaSpeedx1000 = ((uint32_t)(maxSpeedRaw - minSpeedTmpRaw) * deltaTime_uS) /
-                                 ((uint32_t)g_storedVar.carParam[g_carSel].antiSpin * 2UL);
+                                 ((uint32_t)g_storedVar.carParam[g_carSel].antiSpin * (uint32_t)SENSI_SCALE);
 
   uint32_t outputSpeedX1000;
+  uint32_t targetSpeedX1000 = (uint32_t)requestedSpeedX10 * 100U;
   
   /* Check if we can increase speed by full delta or if we're close to target */
-  if (lastOutputSpeedx1000 < ((uint32_t)requestedSpeed * 1000 - maxDeltaSpeedx1000)) {
+  if (maxDeltaSpeedx1000 < (targetSpeedX1000 - lastOutputSpeedx1000)) {
     outputSpeedX1000 = lastOutputSpeedx1000 + maxDeltaSpeedx1000;
   } else {
-    outputSpeedX1000 = requestedSpeed * 1000;  /* Target reached */
+    outputSpeedX1000 = targetSpeedX1000;  /* Target reached */
   }
 
   /* Ensure ramp starts from minSpeed, not zero */
-  if (outputSpeedX1000 < getEffectiveSensiRaw() * 500) {
-    outputSpeedX1000 = getEffectiveSensiRaw() * 500;
+  if (outputSpeedX1000 < (uint32_t)getEffectiveSensiRaw() * 100U) {
+    outputSpeedX1000 = (uint32_t)getEffectiveSensiRaw() * 100U;
   }
 
   lastOutputSpeedx1000 = outputSpeedX1000;
-  return outputSpeedX1000 / 1000;
+  return (uint16_t)((outputSpeedX1000 + 50U) / 100U);
 }
 
 
@@ -1251,21 +1300,23 @@ uint16_t addDeadBand(uint16_t inputVal, uint16_t minVal, uint16_t maxVal, uint16
  * throttleCurve2: Map trigger position(throttle) to speed (duty) on a broken line curve, with midpoint set as throttleCurveVertex
  * dual throttle curve: When decelerating , if dragB is higher than 100%-minSpeed, then set a lower minSpeed
  * @param inputThrottleNorm The input Trigger value, normalized between 0 and THROTTLE_NORMALIZED
- * @return duty cyle to be applied at that specific thrigger position on the selected curve
+ * @return duty cycle in 0.1% units to be applied at that trigger position on the selected curve
  */
 uint16_t throttleCurve2(uint16_t inputThrottleNorm )
 {
-  uint16_t outputSpeed = 0;           /* The requested output speed (duty cycle) from 0% to 100% */
-  uint32_t throttleCurveVertexSpeedRaw;  /* Output speed in 0.5% units at the curve vertex */
-  uint16_t outputSpeedRaw = 0;           /* Output speed in 0.5% units */
-  uint16_t tmpMinSpeedRaw;               /* Minimum speed in 0.5% units */
-  uint16_t maxSpeedRaw;                  /* Maximum speed in 0.5% units */
+  uint32_t throttleCurveVertexSpeedRaw;  /* Output speed in 0.1% units at the curve vertex */
+  uint16_t outputSpeedRaw = 0;           /* Output speed in 0.1% units */
+  uint16_t tmpMinSpeedRaw;               /* Minimum speed in 0.1% units */
+  uint16_t maxSpeedRaw;                  /* Maximum speed in 0.1% units */
   uint16_t fadeThrottleNorm;
   uint16_t curveVertexInputNorm;
 
   /* dual throttle curve: When decelerating , if dragB is higher than 100%-minSpeed, then set a lower minSpeed on the curve to allow the desired drag brake to be applied*/
   tmpMinSpeedRaw = getEffectiveSensiRaw();
   maxSpeedRaw = g_storedVar.carParam[g_carSel].maxSpeed * SENSI_SCALE;
+  if (maxSpeedRaw < tmpMinSpeedRaw) {
+    maxSpeedRaw = tmpMinSpeedRaw;
+  }
   fadeThrottleNorm = fadePctToThrottleNorm(min((uint16_t)FADE_MAX_VALUE, g_storedVar.carParam[g_carSel].fade));
   curveVertexInputNorm = curveVertexInputWithFade(fadeThrottleNorm, g_storedVar.carParam[g_carSel].throttleCurveVertex.inputThrottle);
 
@@ -1305,8 +1356,7 @@ uint16_t throttleCurve2(uint16_t inputThrottleNorm )
     }
   }
 
-  outputSpeed = (outputSpeedRaw + 1U) / SENSI_SCALE;  /* round to nearest whole percent */
-  return outputSpeed;
+  return outputSpeedRaw;
 }
 
 /**
@@ -1375,7 +1425,7 @@ MenuState_enum rotary_onButtonClick(MenuState_enum currMenuState)
             break;
           case 1:  /* SENSI (minSpeed) */
             g_encoderSelectedValuePtr = &g_storedVar.carParam[g_carSel].minSpeed;
-            selectedParamMaxValue = MIN_SPEED_MAX_VALUE;
+            selectedParamMaxValue = min(MIN_SPEED_MAX_VALUE, (int)g_storedVar.carParam[g_carSel].maxSpeed * SENSI_SCALE);
             selectedParamMinValue = 0;
             break;
           case 2:  /* CAR - select different car */
@@ -1398,7 +1448,7 @@ MenuState_enum rotary_onButtonClick(MenuState_enum currMenuState)
             break;
           case 1:  /* SENSI (minSpeed) */
             g_encoderSelectedValuePtr = &g_storedVar.carParam[g_carSel].minSpeed;
-            selectedParamMaxValue = MIN_SPEED_MAX_VALUE;
+            selectedParamMaxValue = min(MIN_SPEED_MAX_VALUE, (int)g_storedVar.carParam[g_carSel].maxSpeed * SENSI_SCALE);
             selectedParamMinValue = 0;
             break;
           case 2:  /* ANTIS (antiSpin) */

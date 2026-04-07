@@ -241,6 +241,9 @@ details.doc-fold>:not(summary){margin-top:8px}
       <li><code>DISPLAY -&gt; CASE</code> bepaalt of labels in <code>UPPER</code> of <code>Pascal</code> worden getoond.</li>
       <li><code>DISPLAY -&gt; FONT SIZE</code> verandert de tekstdichtheid van lijsten/menu's tussen <code>LARGE</code> en <code>small</code>.</li>
       <li><code>DISPLAY -&gt; ANTISPIN</code> opent het antispin-instellingenmenu waar je de weergave-eenheid kiest (<code>MS</code> / <code>%</code> / <code>TEXT</code>) en de encoderstap per eenheid instelt.</li>
+      <li><code>DISPLAY -&gt; STAP REM</code> stelt in hoeveel procent de encoder REM per klik verplaatst (0,1–50,0%, standaard 1,0%). In te stellen via <code>INSTELLINGEN → DISPLAY → STAP REM</code>.</li>
+      <li><code>DISPLAY -&gt; STAP SENSI</code> stelt de encoderstap voor SENSI in stappen van 0,1% in (0,1–5,0%, standaard 0,5%). In te stellen via <code>INSTELLINGEN → DISPLAY → STAP SENSI</code>.</li>
+      <li>De motor-PWM-uitgang gebruikt 10-bit duty-resolutie, zodat 0,1%-stappen voor REM/SENSI behouden blijven in de regelberekening en PWM-conversie.</li>
     </ul>
     <h3>Gedrag van raceweergave (LIST vs GRID)</h3>
     <ul>
@@ -318,8 +321,8 @@ details.doc-fold>:not(summary){margin-top:8px}
         <tr><th>Item</th><th>Bereik</th><th>Standaard</th><th>Beschrijving</th></tr>
       </thead>
       <tbody>
-        <tr><td><code>BRAKE</code></td><td>0-100 %</td><td>95</td><td>Remkracht wanneer de trigger wordt losgelaten.</td></tr>
-        <tr><td><code>SENSI</code></td><td>0-90 % (en &lt;= LIMIT)</td><td>20</td><td>Minimale motoroutput bij de eerste meetbare triggerbeweging.</td></tr>
+        <tr><td><code>BRAKE</code></td><td>0,0-100,0 %</td><td>95,0</td><td>Remkracht wanneer de trigger wordt losgelaten.</td></tr>
+        <tr><td><code>SENSI</code></td><td>0,0-90,0 % (en &lt;= LIMIT)</td><td>20,0</td><td>Minimale motoroutput bij de eerste meetbare triggerbeweging.</td></tr>
         <tr><td><code>ANTIS</code></td><td>0-999 ms</td><td>30</td><td>Tijd van de anti-spin-ramp boven de low-output-bypass. Hogere waarde = langere/langzamere opbouw van vermogen. Het is geen pure trigger-delay. Weergave-eenheid en encoderstap worden ingesteld in <code>DISPLAY -&gt; ANTISPIN</code> (MS / % / TEXT).</td></tr>
         <tr><td><code>CURVE</code></td><td>10-90 %</td><td>50</td><td>Throttle-mapping. 50 = lineair. &lt;50 zachtere start, &gt;50 scherpere start.</td></tr>
         <tr><td><code>FADE</code></td><td>0-30 %</td><td>0</td><td>Soft-start-zone. 0 = uitgeschakeld / oud gedrag. Boven 0 loopt het eerste deel van de triggerslag van 0 naar SENSI voordat normale CURVE het overneemt.</td></tr>
@@ -608,6 +611,12 @@ details.doc-fold>:not(summary){margin-top:8px}
 |  |  |  |- REG.TYPE (MS / % / TEXT, standaard MS)
 |  |  |  |- STAP MS (1-50 ms, standaard 5)  [verborgen in TEXT-modus]
 |  |  |  |- STAP % (1-100 %, standaard 1)   [alleen zichtbaar in %-modus]
+|  |  |  `- TERUG
+|  |  |- STAP REM
+|  |  |  |- STAP REM (0,1-50,0 %, standaard 1,0%)
+|  |  |  `- TERUG
+|  |  |- STAP SENSI
+|  |  |  |- STAP SENSI (0,1-5,0 % in stappen van 0,1%, standaard 0,5%)
 |  |  |  `- TERUG
 |  |  |- STATUS BAR
 |  |  |  |- SLOT 1

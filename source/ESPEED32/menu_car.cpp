@@ -876,7 +876,7 @@ static uint8_t graphYFromPercentX10(uint16_t pctX10) {
 }
 
 static uint8_t graphYFromSpeedRaw(uint16_t speedRaw) {
-  return graphYFromPercentX10((uint16_t)(speedRaw * 5U));
+  return graphYFromPercentX10(sensiToPctX10(speedRaw));
 }
 
 static uint8_t graphXFromThrottleNorm(uint16_t throttleNorm) {

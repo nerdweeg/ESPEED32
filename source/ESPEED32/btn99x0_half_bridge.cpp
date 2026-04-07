@@ -111,12 +111,12 @@ void HalfBridge::set_pwm(uint8_t duty)
  */
 void HalfBridge::set_pwm_in_percentage(uint8_t duty_in_pct)
 {
-    uint8_t duty8bit;
+    uint16_t dutyPwm;
     if((duty_in_pct <= 100) & (duty_in_pct >= 0))
     {
-      duty8bit = duty_in_pct*255/100;
-      HALanalogWrite(THR_IN_PWM_CHAN, duty8bit);
-      HALanalogWrite(THR_INH_PWM_CHAN, 255);
+      dutyPwm = ((uint32_t)duty_in_pct * THR_PWM_MAX_DUTY + 50U) / 100U;
+      HALanalogWrite(THR_IN_PWM_CHAN, dutyPwm);
+      HALanalogWrite(THR_INH_PWM_CHAN, THR_PWM_MAX_DUTY);
     };
 }
 
@@ -128,12 +128,12 @@ void HalfBridge::set_pwm_in_percentage(uint8_t duty_in_pct)
  */
 void HalfBridge::set_pwm_inh_percentage(uint8_t duty_in_pct)
 {
-  uint8_t duty8bit;
+  uint16_t dutyPwm;
   if((duty_in_pct <= 100) & (duty_in_pct >= 0))
   {
-    duty8bit = duty_in_pct*255/100;
-    HALanalogWrite(THR_IN_PWM_CHAN, 255);
-    HALanalogWrite(THR_INH_PWM_CHAN, duty8bit);
+    dutyPwm = ((uint32_t)duty_in_pct * THR_PWM_MAX_DUTY + 50U) / 100U;
+    HALanalogWrite(THR_IN_PWM_CHAN, THR_PWM_MAX_DUTY);
+    HALanalogWrite(THR_INH_PWM_CHAN, dutyPwm);
   };
 }
 
@@ -147,22 +147,27 @@ void HalfBridge::set_pwm_inh_percentage(uint8_t duty_in_pct)
  */
 void HalfBridge::set_pwm_drag(uint8_t duty_in_pct, uint8_t drag_pct)
 {
-  uint16_t drag8bit,duty8bit,inh8bit;
+  set_pwm_drag_x10((uint16_t)duty_in_pct * 10U, (uint16_t)drag_pct * 10U);
+}
+
+void HalfBridge::set_pwm_drag_x10(uint16_t duty_x10, uint16_t drag_x10)
+{
+  uint16_t dragPwm,dutyPwm,inhPwm;
   
-  duty_in_pct = constrain(duty_in_pct,0,100); // limit in put parameters to 0-100[%]
-  drag_pct = constrain(drag_pct,0,100);
+  duty_x10 = constrain(duty_x10,0,1000); // limit input parameters to 0.0-100.0[%]
+  drag_x10 = constrain(drag_x10,0,1000);
   
-  duty8bit = ((uint16_t)duty_in_pct*255 )/100;
+  dutyPwm = ((uint32_t)duty_x10 * THR_PWM_MAX_DUTY + 500U) / 1000U;
 
-  drag8bit = ((uint16_t)drag_pct*255 )/100;
+  dragPwm = ((uint32_t)drag_x10 * THR_PWM_MAX_DUTY + 500U) / 1000U;
 
-  inh8bit = (duty8bit + drag8bit);          //HBridge enable has to last for the high side on phase+ drag (where Low side will be activated)
+  inhPwm = (dutyPwm + dragPwm);          //HBridge enable has to last for the high side on phase+ drag (where Low side will be activated)
   
-  inh8bit = constrain(inh8bit,0,255);
+  inhPwm = constrain(inhPwm,0,THR_PWM_MAX_DUTY);
 
-  HALanalogWrite(THR_IN_PWM_CHAN, duty8bit);
+  HALanalogWrite(THR_IN_PWM_CHAN, dutyPwm);
 
-  HALanalogWrite(THR_INH_PWM_CHAN, inh8bit);
+  HALanalogWrite(THR_INH_PWM_CHAN, inhPwm);
 
 }
 

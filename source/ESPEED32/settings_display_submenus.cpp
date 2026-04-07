@@ -857,7 +857,7 @@ void showStatusSettings() {
 
 /**
  * Brake step settings submenu.
- * Items: STEP (1–50, each = 1%) + BACK.
+ * Items: STEP (0.1–50.0%, each raw unit = 0.1%) + BACK.
  */
 void showBrakeStepSettings() {
   const char* lblStepUpper[9] = {"STEG BREMS", "BRAKE STEP", "BRAKE STEP", "BRAKE STEP", "PASO FRENO", "BRK SCHRITT", "PASSO FRENO", "STAP REM",   "PASSO FREIO"};
@@ -963,7 +963,7 @@ void showBrakeStepSettings() {
       bool eStep = editing;
       obdWriteString(&g_obd, 0, 0, 0, stepLabel, menuFont, (sStep || eStep) ? OBD_WHITE : OBD_BLACK, 1);
       uint16_t shown = editing ? tempStep : g_brakeStep;
-      snprintf(msgStr, sizeof(msgStr), "%2d%%", (int)shown);
+      snprintf(msgStr, sizeof(msgStr), "%u.%u%%", (unsigned int)(shown / BRAKE_SCALE), (unsigned int)brakeFracDigit(shown));
       uint8_t valX = OLED_WIDTH - (uint8_t)(strlen(msgStr) * WIDTH8x8);
       obdWriteString(&g_obd, 0, valX, 0, msgStr, menuFont, (sStep || eStep) ? OBD_WHITE : OBD_BLACK, 1);
 
@@ -982,8 +982,7 @@ void showBrakeStepSettings() {
 
 /**
  * Sensi step settings submenu.
- * Items: STEP (1–10 raw units, each = 0.5%) + BACK.
- * Displayed as "0.5%" to "5.0%".
+ * Items: STEP (0.1–5.0%, each raw unit = 0.1%) + BACK.
  */
 void showSensiStepSettings() {
   const char* lblStepUpper[9] = {"STEG SENSI", "SENSI STEP", "SENSI STEP", "SENSI STEP", "PASO SENSI", "SEN SCHRITT", "PASSO SENSI", "STAP SENSI", "PASSO SENSI"};
@@ -1089,8 +1088,7 @@ void showSensiStepSettings() {
       bool eStep = editing;
       obdWriteString(&g_obd, 0, 0, 0, stepLabel, menuFont, (sStep || eStep) ? OBD_WHITE : OBD_BLACK, 1);
       uint16_t shown = editing ? tempStep : g_sensiStep;
-      /* shown is raw 0.5% units: 1=0.5%, 2=1.0%, ..., 10=5.0% */
-      snprintf(msgStr, sizeof(msgStr), "%d.%d%%", (int)(shown / 2), (shown % 2) * 5);
+      snprintf(msgStr, sizeof(msgStr), "%u.%u%%", (unsigned int)(shown / SENSI_SCALE), (unsigned int)sensiFracDigit(shown));
       uint8_t valX = OLED_WIDTH - (uint8_t)(strlen(msgStr) * WIDTH8x8);
       obdWriteString(&g_obd, 0, valX, 0, msgStr, menuFont, (sStep || eStep) ? OBD_WHITE : OBD_BLACK, 1);
 

@@ -20,7 +20,7 @@
 #define SW_MINOR_VERSION 9
 
 /* Stored Variable Version */
-#define STORED_VAR_VERSION 23 /* Increment when StoredVar_type structure changes */
+#define STORED_VAR_VERSION 24 /* Increment when stored value scale/format changes */
 
 /* Menu Configuration */
 #define MENU_ITEMS_COUNT    12    /* Number of possible items in main menu (including optional STATS, LOCK and CAR) */
@@ -63,9 +63,10 @@
 #define LANG_DEFAULT        LANG_ENG
 
 /* Default Parameter Values */
-#define SENSI_SCALE               2     /* 0.5% resolution: stored value = percent * 2 */
-#define MIN_SPEED_DEFAULT         40    /* [0.5%] 20.0% default sensitivity */
-#define BRAKE_DEFAULT             95    /* [%] Brake strength */
+#define BRAKE_SCALE              10     /* 0.1% resolution: stored value = percent * 10 */
+#define SENSI_SCALE              10     /* 0.1% resolution: stored value = percent * 10 */
+#define MIN_SPEED_DEFAULT        200    /* [0.1%] 20.0% default sensitivity */
+#define BRAKE_DEFAULT            950    /* [0.1%] 95.0% brake strength */
 #define ANTISPIN_DEFAULT          30    /* [ms] Anti-spin ramp time */
 #define ANTISPIN_STEP_DEFAULT      5    /* [ms] Default encoder step when editing ANTIS */
 #define ANTISPIN_STEP_PCT_DEFAULT  1    /* [%] Default encoder step when editing ANTIS in percent mode */
@@ -82,10 +83,10 @@
 #define QUICK_BRAKE_STRENGTH_DEFAULT    60   /* [%] Brake force in quick brake zone */
 
 /* Parameter Limits */
-#define MIN_SPEED_MAX_VALUE       180   /* [0.5%] 90.0% max sensitivity */
+#define MIN_SPEED_MAX_VALUE       900   /* [0.1%] 90.0% max sensitivity */
 #define DRAG_MAX_VALUE            100   /* [%] Maximum drag brake */
 #define FREQ_MAX_VALUE            5000  /* [Hz] Maximum PWM frequency */
-#define BRAKE_MAX_VALUE           100   /* [%] Maximum brake strength */
+#define BRAKE_MAX_VALUE          1000   /* [0.1%] Maximum brake strength */
 #define THROTTLE_CURVE_SPEED_DIFF_MAX_VALUE  90   /* [%] Throttle curve max */
 #define THROTTLE_CURVE_SPEED_DIFF_MIN_VALUE  10   /* [%] Throttle curve min */
 #define FADE_MAX_VALUE            30    /* [%] Maximum trigger travel used for fade-in to SENSI */
@@ -94,14 +95,14 @@
 #define ANTISPIN_STEP_MAX          50   /* [ms] Maximum ANTIS encoder step */
 #define ANTISPIN_STEP_PCT_MIN       1   /* [%] Minimum ANTIS encoder step in percent mode */
 #define ANTISPIN_STEP_PCT_MAX     100   /* [%] Maximum ANTIS encoder step in percent mode */
-/* Brake encoder step (raw units, 1 unit = 1%) */
-#define BRAKE_STEP_DEFAULT          1   /* [% raw] Default brake encoder step (1%) */
-#define BRAKE_STEP_MIN              1   /* [% raw] Minimum brake step (1%) */
-#define BRAKE_STEP_MAX             50   /* [% raw] Maximum brake step (50%) */
-/* Sensi encoder step (raw units, 1 unit = 0.5%) */
-#define SENSI_STEP_DEFAULT          1   /* [0.5% raw] Default sensi encoder step (0.5%) */
-#define SENSI_STEP_MIN              1   /* [0.5% raw] Minimum sensi step (0.5%) */
-#define SENSI_STEP_MAX             10   /* [0.5% raw] Maximum sensi step (5.0%) */
+/* Brake encoder step (raw units, 1 unit = 0.1%) */
+#define BRAKE_STEP_DEFAULT         10   /* [0.1% raw] Default brake encoder step (1.0%) */
+#define BRAKE_STEP_MIN              1   /* [0.1% raw] Minimum brake step (0.1%) */
+#define BRAKE_STEP_MAX            500   /* [0.1% raw] Maximum brake step (50.0%) */
+/* Sensi encoder step (raw units, 1 unit = 0.1%) */
+#define SENSI_STEP_DEFAULT          5   /* [0.1% raw] Default sensi encoder step (0.5%) */
+#define SENSI_STEP_MIN              1   /* [0.1% raw] Minimum sensi step (0.1%) */
+#define SENSI_STEP_MAX             50   /* [0.1% raw] Maximum sensi step (5.0%) */
 #define FREQ_MIN_VALUE            1000  /* [Hz] Minimum PWM frequency */
 #define QUICK_BRAKE_THRESHOLD_MAX 50    /* [%] Maximum quick brake threshold */
 #define QUICK_BRAKE_STRENGTH_MAX  100   /* [%] Maximum quick brake strength */
@@ -374,8 +375,8 @@ typedef struct {
  * @details Contains all ESC behavior settings for a specific car/track configuration
  */
 typedef struct {
-  uint16_t minSpeed;                        /* [0.5%] Minimum motor speed (0.0-90.0%) */
-  uint16_t brake;                           /* [%] Brake strength (0-100%) */
+  uint16_t minSpeed;                        /* [0.1%] Minimum motor speed (0.0-90.0%) */
+  uint16_t brake;                           /* [0.1%] Brake strength (0.0-100.0%) */
   uint16_t maxSpeed;                        /* [%] Maximum motor speed (5-100%) */
   ThrottleCurveVertex_type throttleCurveVertex;  /* Throttle response curve */
   uint16_t fade;                            /* [%] Initial trigger zone that ramps from 0 to SENSI */
@@ -430,8 +431,8 @@ typedef struct {
   uint16_t encoderPos;        /* Current rotary encoder position */
   uint16_t Vin_mV;            /* [mV] Input voltage */
   uint16_t motorCurrent_mA;   /* [mA] Motor current */
-  uint16_t effectiveBrake_pct; /* [%] Active brake value after external overrides */
-  uint16_t effectiveSensi_raw; /* [0.5%] Active SENSI value after external overrides */
+  uint16_t effectiveBrake_raw; /* [0.1%] Active brake value after external overrides */
+  uint16_t effectiveSensi_raw; /* [0.1%] Active SENSI value after external overrides */
   uint8_t activeBrakeKind;     /* ACTIVE_BRAKE_* runtime state */
   uint8_t activeBrake_pct;     /* [%] Brake value currently being applied */
   /* Lap detection */
@@ -469,7 +470,27 @@ typedef struct {
   uint16_t lines;                 /* Number of visible lines */
 } Menu_type;
 
-/* SENSI conversion helpers (stored in 0.5% units) */
+/* 0.1% conversion helpers */
+static inline uint16_t pctX10ToWholePctRounded(uint16_t pctX10) {
+  return (pctX10 + 5U) / 10U;
+}
+
+static inline uint16_t brakeToWholePctFloor(uint16_t brakeRaw) {
+  return brakeRaw / BRAKE_SCALE;
+}
+
+static inline uint16_t brakeToWholePctRounded(uint16_t brakeRaw) {
+  return pctX10ToWholePctRounded(brakeRaw);
+}
+
+static inline uint16_t brakeToPctX10(uint16_t brakeRaw) {
+  return brakeRaw;
+}
+
+static inline uint8_t brakeFracDigit(uint16_t brakeRaw) {
+  return (uint8_t)(brakeRaw % BRAKE_SCALE);
+}
+
 static inline uint16_t sensiToWholePctFloor(uint16_t sensiRaw) {
   return sensiRaw / SENSI_SCALE;
 }
@@ -495,11 +516,11 @@ static inline uint16_t sensiToWholePctCeil(uint16_t sensiRaw) {
 }
 
 static inline uint16_t sensiToPctX10(uint16_t sensiRaw) {
-  return sensiRaw * 5U;  /* 0.5% steps -> 5 tenths */
+  return sensiRaw;
 }
 
 static inline uint8_t sensiFracDigit(uint16_t sensiRaw) {
-  return (sensiRaw & 1U) ? 5U : 0U;
+  return (uint8_t)(sensiRaw % SENSI_SCALE);
 }
 
 static inline uint16_t sensiFromWholePct(uint16_t pct) {

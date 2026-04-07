@@ -36,6 +36,7 @@ namespace btn99x0
             void set_pwm_in_percentage(uint8_t duty_in_pct);
             void set_pwm_inh_percentage(uint8_t duty_in_pct);
             void set_pwm_drag(uint8_t duty_in_pct,uint8_t drag_pct);
+            void set_pwm_drag_x10(uint16_t duty_x10,uint16_t drag_x10);
             
             uint16_t set_slew_rate(slew_rate_level_t sr_level);
             /* Experimental value setting */

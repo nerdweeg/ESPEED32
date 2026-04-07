@@ -2473,8 +2473,8 @@ function telemetryBuildCsvExport(samples,snapshot){
       telemetryCsvEscape(carName),
       Number(sample[TELEMETRY_FIELDS.TRIGGER]||0),
       Number(sample[TELEMETRY_FIELDS.OUTPUT]||0),
-      Number(sample[TELEMETRY_FIELDS.BRAKE]||0),
-      telemetryCsvEscape((Number(sample[TELEMETRY_FIELDS.SENSI_HALF]||0)/2).toFixed(1)),
+      Number(sample[TELEMETRY_FIELDS.BRAKE]||0).toFixed(1),
+      telemetryCsvEscape((Number(sample[TELEMETRY_FIELDS.SENSI_HALF]||0)/10).toFixed(1)),
       Number(sample[TELEMETRY_FIELDS.VIN_MV]||0),
       Number(sample[TELEMETRY_FIELDS.CURRENT_MA]||0),
       telemetryCsvEscape(telemetryGetReleaseModeLabel(sample[TELEMETRY_FIELDS.RELEASE_MODE]||0)),
@@ -2644,7 +2644,13 @@ function setAnchorDisabled(id,disabled,href){
 function telemetryHalfPctToString(raw){
   var n=Number(raw||0);
   if(!isFinite(n)) n=0;
-  return (n/2).toFixed(1)+'%';
+  return (n/10).toFixed(1)+'%';
+}
+
+function telemetryPctToString(value){
+  var n=Number(value||0);
+  if(!isFinite(n)) n=0;
+  return n.toFixed(1)+'%';
 }
 
 function formatTelemetryVoltage(mv){
@@ -2693,7 +2699,7 @@ function telemetryBuildEventDetailParts(event){
   var parts=[];
   var releaseBits=TELEMETRY_CHANGE_RELEASE_MODE|TELEMETRY_CHANGE_RELEASE_ZONE|TELEMETRY_CHANGE_RELEASE_LEVEL;
   if(mask&TELEMETRY_CHANGE_MIN_SPEED) parts.push('Sensi '+telemetryHalfPctToString(car.minSpeedHalfPct));
-  if(mask&TELEMETRY_CHANGE_BRAKE) parts.push('Brake '+String(Number(car.brake||0))+'%');
+  if(mask&TELEMETRY_CHANGE_BRAKE) parts.push('Brake '+telemetryPctToString(car.brake));
   if(mask&TELEMETRY_CHANGE_MAX_SPEED) parts.push('Max '+String(Number(car.maxSpeed||0))+'%');
   if(mask&TELEMETRY_CHANGE_CURVE_INPUT) parts.push('Curve in '+String(Number(car.curveInputPct||0))+'%');
   if(mask&TELEMETRY_CHANGE_CURVE_DIFF) parts.push('Curve '+String(Number(car.curveDiffPct||0))+'%');
@@ -4244,7 +4250,7 @@ function renderField(prefix,field,val){
 function categorizeGlobalField(id){
   if(id==='selectedCarNumber' || id==='viewMode' || id==='gridCarSelectEnabled' || id==='raceViewMode') return 'Race & Driving';
   if(id==='screensaverTimeout' || id==='powerSaveTimeout' || id==='deepSleepTimeout' || id==='startupDelay') return 'Power & Startup';
-  if(id==='antiSpinDisplayMode' || id==='antiSpinStepMs' || id==='antiSpinStepPct' || id==='antiSpinStep') return 'Display & Language';
+  if(id==='antiSpinDisplayMode' || id==='antiSpinStepMs' || id==='antiSpinStepPct' || id==='antiSpinStep' || id==='brakeStep' || id==='sensiStep') return 'Display & Language';
   if(id==='wifiMode' || id==='wifiStaSsid' || id==='wifiStaPassword' || id==='wifiStaPasswordClear') return 'Network';
   if(id==='uiAuthPassword' || id==='uiAuthResetDefault') return 'Controller Access';
   if(id==='language' || id==='textCase' || id==='listFontSize') return 'Display & Language';

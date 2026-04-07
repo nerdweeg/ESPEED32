@@ -12,6 +12,7 @@
 /*********************************************************************************************************************/
 void HalfBridge_Setup();
 void HalfBridge_SetPwmDrag(uint8_t duty_pct, uint8_t drag_pct);
+void HalfBridge_SetPwmDragX10(uint16_t duty_x10, uint16_t drag_x10);
 void HalfBridge_Enable();
 void HalfBridge_TestMotor();
 uint16_t HalfBridge_GetDiagnosis();
