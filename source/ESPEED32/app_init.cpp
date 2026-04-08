@@ -401,20 +401,20 @@ void initDisplayMenuItems() {
   g_settingsMenu.item[i].minValue = 0;
   g_settingsMenu.item[i].callback = ITEM_NO_CALLBACK;
 
-  sprintf(g_settingsMenu.item[++i].name, "%s", getDisplayMenuName(lang, 5));  /* BRAKE STEP - opens submenu */
-  g_settingsMenu.item[i].value = ITEM_NO_VALUE;
+  sprintf(g_settingsMenu.item[++i].name, "%s", getDisplayMenuName(lang, 5));  /* BRAKE STEP */
+  g_settingsMenu.item[i].value = (void *)&g_brakeStep;
   g_settingsMenu.item[i].type = VALUE_TYPE_INTEGER;
   sprintf(g_settingsMenu.item[i].unit, "");
-  g_settingsMenu.item[i].maxValue = 0;
-  g_settingsMenu.item[i].minValue = 0;
+  g_settingsMenu.item[i].maxValue = BRAKE_STEP_MAX;
+  g_settingsMenu.item[i].minValue = BRAKE_STEP_MIN;
   g_settingsMenu.item[i].callback = ITEM_NO_CALLBACK;
 
-  sprintf(g_settingsMenu.item[++i].name, "%s", getDisplayMenuName(lang, 6));  /* SENSI STEP - opens submenu */
-  g_settingsMenu.item[i].value = ITEM_NO_VALUE;
+  sprintf(g_settingsMenu.item[++i].name, "%s", getDisplayMenuName(lang, 6));  /* SENSI STEP */
+  g_settingsMenu.item[i].value = (void *)&g_sensiStep;
   g_settingsMenu.item[i].type = VALUE_TYPE_INTEGER;
   sprintf(g_settingsMenu.item[i].unit, "");
-  g_settingsMenu.item[i].maxValue = 0;
-  g_settingsMenu.item[i].minValue = 0;
+  g_settingsMenu.item[i].maxValue = SENSI_STEP_MAX;
+  g_settingsMenu.item[i].minValue = SENSI_STEP_MIN;
   g_settingsMenu.item[i].callback = ITEM_NO_CALLBACK;
 
   sprintf(g_settingsMenu.item[++i].name, "%s", getDisplayMenuName(lang, 7));  /* STATUS - opens submenu */

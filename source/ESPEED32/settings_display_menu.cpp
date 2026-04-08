@@ -25,6 +25,15 @@ extern void initMenuItems();
 extern void initSettingsMenuItems();
 extern void initDisplayMenuItems();
 
+static void formatDisplayStepPercentValue(char* out, size_t outSize, uint16_t stepRaw, uint16_t scale) {
+  if (out == NULL || outSize == 0 || scale == 0) return;
+  if ((stepRaw % scale) == 0) {
+    snprintf(out, outSize, "%u%%", (unsigned int)(stepRaw / scale));
+  } else {
+    snprintf(out, outSize, "%u.%u%%", (unsigned int)(stepRaw / scale), (unsigned int)(stepRaw % scale));
+  }
+}
+
 /**
  * Display settings submenu: VIEW, LANG, CASE, FSIZE, ANTISPIN, BRAKE STEP, SENSI STEP, STATUS, BACK.
  * Handles value editing for display-related parameters.
@@ -104,28 +113,6 @@ void showDisplaySettings() {
         }
         if (sel == DISPLAY_ITEMS_COUNT - 4) {  /* ANTISPIN submenu */
           showAntiSpinSettings();
-          if (isEscapeToMainRequested()) break;
-          initDisplayMenuItems();
-          g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
-          setUiEncoderBoundaries(1, DISPLAY_ITEMS_COUNT, false);
-          resetUiEncoder(sel);
-          obdFill(&g_obd, OBD_WHITE, 1);
-          prevSel = 0;
-          continue;
-        }
-        if (sel == DISPLAY_ITEMS_COUNT - 3) {  /* BRAKE STEP submenu */
-          showBrakeStepSettings();
-          if (isEscapeToMainRequested()) break;
-          initDisplayMenuItems();
-          g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
-          setUiEncoderBoundaries(1, DISPLAY_ITEMS_COUNT, false);
-          resetUiEncoder(sel);
-          obdFill(&g_obd, OBD_WHITE, 1);
-          prevSel = 0;
-          continue;
-        }
-        if (sel == DISPLAY_ITEMS_COUNT - 2) {  /* SENSI STEP submenu */
-          showSensiStepSettings();
           if (isEscapeToMainRequested()) break;
           initDisplayMenuItems();
           g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
@@ -294,6 +281,10 @@ void showDisplaySettings() {
         } else if (itemIdx == 3) {  /* FSIZE */
           uint16_t dispFS = (isEditingFontSize && isValueSel) ? tempFontSize : value;
           sprintf(msgStr, "%5s", FONT_SIZE_LABELS[g_storedVar.language][dispFS]);
+        } else if (itemIdx == DISPLAY_ITEMS_COUNT - 3) {  /* BRAKE STEP */
+          formatDisplayStepPercentValue(msgStr, sizeof(msgStr), value, BRAKE_SCALE);
+        } else if (itemIdx == DISPLAY_ITEMS_COUNT - 2) {  /* SENSI STEP */
+          formatDisplayStepPercentValue(msgStr, sizeof(msgStr), value, SENSI_SCALE);
         } else if (g_settingsMenu.item[itemIdx].unit[0] != '\0') {
           snprintf(msgStr, sizeof(msgStr), "%2d %s", value, g_settingsMenu.item[itemIdx].unit);
         } else {
