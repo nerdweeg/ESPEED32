@@ -2728,12 +2728,13 @@ static void appendTelemetryStatusFields(String& json, const TelemetryStatus& sta
   json += "\",\"current\":{";
 
   snprintf(buf, sizeof(buf),
-           "\"triggerPct\":%u,\"outputPct\":%u,\"brakePct\":%u.%u,\"sensiHalfPct\":%u,"
+           "\"triggerPct\":%u,\"outputPct\":%u,\"brakePct\":%u.%u,\"sensiPct\":%u,\"sensiHalfPct\":%u,"
            "\"vinMv\":%u,\"currentMa\":%u,\"releaseMode\":%u,\"currentSense\":%u",
            triggerPct,
            outputPct,
            (unsigned int)(brakePct / BRAKE_SCALE),
            (unsigned int)brakeFracDigit(brakePct),
+           g_escVar.effectiveSensi_raw,
            g_escVar.effectiveSensi_raw,
            g_escVar.Vin_mV,
            g_escVar.motorCurrent_mA,
@@ -3063,6 +3064,8 @@ static void handleTelemetryExportJson() {
       chunk += String((unsigned int)s.current_mA);
       chunk += ",\"brakePct\":";
       appendPercentX10JsonValue(chunk, s.brake_pct);
+      chunk += ",\"sensiPct\":";
+      chunk += String((unsigned int)s.sensi_halfPct);
       chunk += ",\"sensiHalfPct\":";
       chunk += String((unsigned int)s.sensi_halfPct);
       chunk += ",\"carIndex\":";

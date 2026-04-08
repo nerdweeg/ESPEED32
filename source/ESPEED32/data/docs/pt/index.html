@@ -206,6 +206,7 @@ details.doc-fold>:not(summary){margin-top:8px}
       <li>Recalibre o gatilho depois de uma atualizacao de firmware ou sempre que a mecanica do gatilho mudar.</li>
       <li><code>Power ON</code>: arranque normal e depois modo RUNNING.</li>
       <li>Nas builds <code>TLE493D</code>, a variante e o endereco do sensor sao detetados automaticamente durante o arranque.</li>
+      <li>A familia do sensor do gatilho e escolhida na compilacao. A release/build padrao usa <code>TLE493D</code>; controladores com <code>AS5600</code>, <code>AS5600L</code>, <code>MT6701</code> ou <code>ANALOG</code> devem usar firmware compilado para essa familia.</li>
       <li>Mantenha o <code>botao do encoder</code> premido durante o arranque para entrar na calibracao do gatilho.</li>
       <li>Mantenha o <code>botao de travao</code> premido durante o arranque para iniciar o auto-teste de 9 passos.</li>
     </ul>
@@ -562,6 +563,9 @@ details.doc-fold>:not(summary){margin-top:8px}
       <li>Abra <code>SETTINGS -&gt; USB INFO</code>.</li>
       <li>Use Chrome/Edge (WebSerial).</li>
       <li>Backup/restauro funciona via USB; OTA exige modo WiFi.</li>
+      <li>A OTA automatica emparelhada instala a release oficial padrao, que usa o firmware <code>TLE493D</code> predefinido.</li>
+      <li>Se o controlador usar outra familia de sensor do gatilho, carregue manualmente o firmware especifico desse sensor juntamente com o ficheiro SPIFFS da mesma release.</li>
+      <li>No Windows, <code>flash_all.sh</code> normalmente significa Git Bash ou WSL. O Arduino IDE pode carregar o sketch, mas a familia do sensor continua a ser uma escolha de compilacao.</li>
     </ol>
     <p class="warn">Nunca desligue a alimentacao durante um upload OTA.</p>
   </section>

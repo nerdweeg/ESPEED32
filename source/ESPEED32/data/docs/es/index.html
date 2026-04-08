@@ -205,6 +205,7 @@ details.doc-fold>:not(summary){margin-top:8px}
     <ul>
       <li>Recalibra el trigger despues de actualizar firmware o si cambias su mecanica.</li>
       <li><code>Power ON</code>: arranque normal y luego modo RUNNING.</li>
+      <li>La familia del sensor trigger se elige al compilar el firmware. El build por defecto usa <code>TLE493D</code>; controladores con <code>AS5600</code>, <code>AS5600L</code>, <code>MT6701</code> o <code>ANALOG</code> deben usar firmware compilado para esa familia.</li>
       <li>Mantener <code>encoder button</code> al encender: calibracion del trigger.</li>
       <li>Mantener <code>brake button</code> al encender: Self-Test (9 pasos).</li>
     </ul>
@@ -547,6 +548,9 @@ details.doc-fold>:not(summary){margin-top:8px}
       <li>Entrar en <code>SETTINGS -> USB INFO</code>.</li>
       <li>Usar Chrome/Edge (WebSerial).</li>
       <li>Backup/restore funciona por USB; OTA requiere modo WiFi.</li>
+      <li>La OTA automatica emparejada instala la release oficial estandar, que usa el firmware <code>TLE493D</code> por defecto.</li>
+      <li>Si tu controlador usa otra familia de sensor trigger, sube manualmente el firmware especifico de ese sensor junto con el archivo SPIFFS de la misma release.</li>
+      <li>En Windows, <code>flash_all.sh</code> normalmente significa Git Bash o WSL. Arduino IDE puede subir el sketch, pero la familia del sensor sigue siendo una eleccion de compilacion.</li>
     </ol>
     <p class="warn">No cortes alimentacion durante OTA.</p>
   </section>

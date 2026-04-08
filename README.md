@@ -66,6 +66,36 @@ arduino-cli compile \
 
 Legacy manual selection in `source/ESPEED32/HAL.h` still works if you prefer editing the header directly.
 
+### Windows / Arduino IDE
+
+`flash_all.sh` is a Bash helper around `arduino-cli`. On Windows that usually means Git Bash or WSL.
+
+If you prefer Arduino IDE:
+
+- open `source/ESPEED32/ESPEED32.ino`
+- select the normal ESP32 board target
+- choose the trigger sensor family before compiling
+- then use Arduino IDE's normal verify/upload flow
+
+Important:
+
+- the trigger sensor family is still a compile-time choice
+- Arduino IDE does not provide a firmware menu for sensor family selection
+- for Arduino IDE users, the practical workaround is usually the legacy manual selection in `source/ESPEED32/HAL.h`
+- if you compile the default build unchanged, it targets `TLE493D`
+
+### Official releases, manual sensor builds, and OTA
+
+Automatic paired OTA installs the standard official release pair. That standard firmware build remains the default `TLE493D` variant.
+
+If your controller uses another trigger sensor family such as `AS5600`, `AS5600L`, `MT6701`, or `ANALOG`, use the matching firmware build for that sensor family together with the SPIFFS image from the same release.
+
+In other words:
+
+- automatic paired OTA = standard `TLE493D` release path
+- sensor-specific firmware builds = manual firmware selection/upload unless explicitly stated otherwise
+- SPIFFS/UI images remain version-matched per release and are shared across sensor variants
+
 ### Supported sensors
 
 | Define | Sensor |

@@ -43,6 +43,7 @@
       <li>Kalibreer de trigger opnieuw na een firmware-update of als de triggermechaniek is veranderd.</li>
       <li><code>Power ON</code>: normale opstart, daarna RUNNING-modus.</li>
       <li>Bij <code>TLE493D</code>-builds wordt sensorvariant/adres automatisch gedetecteerd tijdens het opstarten, zonder handmatige adreswijziging.</li>
+      <li>De trigger-sensorfamilie wordt tijdens het compileren gekozen. De standaard release/build gebruikt <code>TLE493D</code>; controllers met <code>AS5600</code>, <code>AS5600L</code>, <code>MT6701</code> of <code>ANALOG</code> moeten firmware gebruiken die voor die familie is gebouwd.</li>
       <li>Houd de <code>encoderknop</code> ingedrukt tijdens het inschakelen om triggerkalibratie te starten.</li>
       <li>Houd de <code>remknop</code> ingedrukt tijdens het inschakelen om de zelftest met 9 stappen te starten.</li>
     </ul>
@@ -399,6 +400,9 @@
       <li>Open <code>SETTINGS -&gt; USB INFO</code>.</li>
       <li>Gebruik Chrome/Edge, WebSerial.</li>
       <li>Back-up/herstel werkt via USB. OTA vereist WiFi-modus.</li>
+      <li>Automatische gekoppelde OTA installeert de officiele standaard-releasecombinatie met de standaard <code>TLE493D</code>-firmware.</li>
+      <li>Als je controller een andere trigger-sensorfamilie gebruikt, upload dan handmatig de juiste sensor-specifieke firmware samen met het SPIFFS-bestand van dezelfde release.</li>
+      <li>Op Windows betekent <code>flash_all.sh</code> meestal Git Bash of WSL. Arduino IDE kan de sketch nog steeds uploaden, maar de sensorfamilie blijft een compile-time keuze.</li>
     </ol>
     <p class="warn">Verwijder nooit de voeding tijdens een OTA-upload.</p>
   </section>

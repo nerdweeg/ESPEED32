@@ -206,6 +206,7 @@ details.doc-fold>:not(summary){margin-top:8px}
       <li>Recalibrate trigger after firmware update, or if trigger mechanics have changed.</li>
       <li><code>Power ON</code>: normal startup, then RUNNING mode.</li>
       <li>For <code>TLE493D</code> builds, sensor variant/address is auto-detected on boot (no manual address edit needed).</li>
+      <li>Trigger sensor family is selected when firmware is compiled. Default releases/builds use <code>TLE493D</code>; controllers built with <code>AS5600</code>, <code>AS5600L</code>, <code>MT6701</code>, or <code>ANALOG</code> must use a firmware build for that sensor family.</li>
       <li>Hold <code>encoder button</code> during power on: trigger calibration.</li>
       <li>Hold <code>brake button</code> during power on: Self-Test (9 steps).</li>
     </ul>
@@ -562,6 +563,9 @@ details.doc-fold>:not(summary){margin-top:8px}
       <li>Open <code>SETTINGS -> USB INFO</code>.</li>
       <li>Use Chrome/Edge (WebSerial).</li>
       <li>Backup/restore works over USB; OTA requires WiFi mode.</li>
+      <li>Automatic paired OTA installs the standard official release pair, which uses the default <code>TLE493D</code> firmware build.</li>
+      <li>If your controller uses another trigger sensor family, upload the matching sensor-specific firmware file manually together with the SPIFFS file from the same release.</li>
+      <li>On Windows, <code>flash_all.sh</code> usually means Git Bash or WSL. Arduino IDE can still upload the sketch, but trigger sensor family remains a compile-time selection.</li>
     </ol>
     <p class="warn">Never remove power during OTA upload.</p>
   </section>

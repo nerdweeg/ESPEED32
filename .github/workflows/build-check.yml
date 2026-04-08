@@ -20,7 +20,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.arduino15
-          key: arduino-esp32-3.3.7-obd-3.0.0-enc-1.7.0
+          key: arduino-esp32-3.3.7-obd-3.0.0-enc-1.7.0-as5600
           restore-keys: arduino-esp32-
 
       - name: Setup arduino-cli
@@ -33,7 +33,7 @@ jobs:
           arduino-cli core update-index
           arduino-cli core install esp32:esp32@3.3.7
           arduino-cli lib update-index
-          arduino-cli lib install "OneBitDisplay@3.0.0" "Ai Esp32 Rotary Encoder@1.7.0"
+          arduino-cli lib install "OneBitDisplay@3.0.0" "Ai Esp32 Rotary Encoder@1.7.0" "AS5600"
 
       - name: Lint with arduino-lint
         uses: arduino/arduino-lint-action@v1
@@ -42,11 +42,21 @@ jobs:
           compliance: permissive
           project-type: sketch
 
-      - name: Compile firmware
+      - name: Compile default firmware
         shell: bash
         run: |
           arduino-cli compile \
             --fqbn esp32:esp32:esp32 \
             --board-options "JTAGAdapter=default,PSRAM=disabled,PartitionScheme=default,CPUFreq=240,FlashMode=qio,FlashFreq=80,FlashSize=4M,UploadSpeed=115200,LoopCore=1,EventsCore=1,DebugLevel=none,EraseFlash=none,ZigbeeMode=default" \
             --build-path /tmp/build-check \
+            source/ESPEED32
+
+      - name: Compile AS5600 firmware
+        shell: bash
+        run: |
+          arduino-cli compile \
+            --fqbn esp32:esp32:esp32 \
+            --board-options "JTAGAdapter=default,PSRAM=disabled,PartitionScheme=default,CPUFreq=240,FlashMode=qio,FlashFreq=80,FlashSize=4M,UploadSpeed=115200,LoopCore=1,EventsCore=1,DebugLevel=none,EraseFlash=none,ZigbeeMode=default" \
+            --build-path /tmp/build-check-as5600 \
+            --build-property build.extra_flags="-DTRIGGER_SENSOR_FAMILY=TRIGGER_SENSOR_FAMILY_AS5600" \
             source/ESPEED32

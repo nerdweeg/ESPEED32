@@ -1252,11 +1252,12 @@ form{margin:0}
 <option value="">Loading latest...</option>
 </select>
 </div>
-<p id="fw-release-note" class="tiny">Choose which release automatic update should install. Both firmware and filesystem will be updated together.</p>
+<p id="fw-release-note" class="tiny">Choose which standard official release automatic update should install. Both firmware and filesystem will be updated together.</p>
 <p id="fw-release-source" class="tiny" style="display:none"></p>
 <button type="button" class="btn dl" id="btn-fw-auto" onclick="autoUpdateFirmware()">Install Selected Release</button>
 <p id="fw-auto-desc" class="tiny">Downloads the selected release pair, uploads firmware first and filesystem second, then reboots once at the end.</p>
 <p class="tiny">Recommended when you want a matched official release without downloading files manually.</p>
+<p class="tiny warn">Automatic update follows the standard official firmware path, which uses the default TLE493D build. If this controller reports another HAL Sensor, use Manual Update with the matching sensor-specific firmware file and the SPIFFS file from the same release.</p>
 </div>
 <p id="ota-note" style="display:none" class="warn"></p>
 <div id="auto-fw-progress" class="progress-wrap" aria-live="polite">
@@ -1283,7 +1284,7 @@ form{margin:0}
 </div>
 <button type="button" class="btn ota" id="btn-ota-upload" onclick="uploadSelectedUpdatePair()">Install Selected Files</button>
 <p id="spiffs-auto-desc" class="tiny">Select both files from the same release. The controller uploads firmware first and filesystem second, then reboots once at the end.</p>
-<p class="tiny">Use this if you already downloaded a matched firmware + SPIFFS pair.</p>
+<p class="tiny">Use this if you already downloaded a matched firmware + SPIFFS pair, including sensor-specific firmware builds such as AS5600.</p>
 </div>
 <p id="spiffs-note" style="display:none" class="warn"></p>
 <div id="manual-fw-progress" class="progress-wrap" aria-live="polite">
@@ -1387,7 +1388,7 @@ var RELEASE_CACHE_TTL_MS=6*60*60*1000;
 var BACKUP_SESSION_KEY='espeed32_backup_downloaded_v1';
 var TELEMETRY_POLL_INTERVAL_KEY='espeed32_telemetry_poll_interval_v2';
 var UI_THEME_KEY='espeed32-ui-theme';
-var TELEMETRY_FIELDS={SEQ:0,TIME_MS:1,TRIGGER:2,OUTPUT:3,VIN_MV:4,CURRENT_MA:5,BRAKE:6,SENSI_HALF:7,CAR:8,RELEASE_MODE:9,FLAGS:10};
+var TELEMETRY_FIELDS={SEQ:0,TIME_MS:1,TRIGGER:2,OUTPUT:3,VIN_MV:4,CURRENT_MA:5,BRAKE:6,SENSI:7,CAR:8,RELEASE_MODE:9,FLAGS:10};
 var TELEMETRY_FLAG_BRAKE_BUTTON=0x01;
 var TELEMETRY_FLAG_TRIGGER_RELEASING=0x02;
 var TELEMETRY_FLAG_IN_RELEASE_ZONE=0x04;
@@ -2474,7 +2475,7 @@ function telemetryBuildCsvExport(samples,snapshot){
       Number(sample[TELEMETRY_FIELDS.TRIGGER]||0),
       Number(sample[TELEMETRY_FIELDS.OUTPUT]||0),
       Number(sample[TELEMETRY_FIELDS.BRAKE]||0).toFixed(1),
-      telemetryCsvEscape((Number(sample[TELEMETRY_FIELDS.SENSI_HALF]||0)/10).toFixed(1)),
+      telemetryCsvEscape((Number(sample[TELEMETRY_FIELDS.SENSI]||0)/10).toFixed(1)),
       Number(sample[TELEMETRY_FIELDS.VIN_MV]||0),
       Number(sample[TELEMETRY_FIELDS.CURRENT_MA]||0),
       telemetryCsvEscape(telemetryGetReleaseModeLabel(sample[TELEMETRY_FIELDS.RELEASE_MODE]||0)),
@@ -2514,7 +2515,8 @@ function telemetryBuildJsonExport(samples,status,snapshot,events){
         vinMv:Number(sample[TELEMETRY_FIELDS.VIN_MV]||0),
         currentMa:Number(sample[TELEMETRY_FIELDS.CURRENT_MA]||0),
         brakePct:Number(sample[TELEMETRY_FIELDS.BRAKE]||0),
-        sensiHalfPct:Number(sample[TELEMETRY_FIELDS.SENSI_HALF]||0),
+        sensiPct:Number(sample[TELEMETRY_FIELDS.SENSI]||0),
+        sensiHalfPct:Number(sample[TELEMETRY_FIELDS.SENSI]||0),
         carIndex:Number(sample[TELEMETRY_FIELDS.CAR]||0),
         releaseMode:Number(sample[TELEMETRY_FIELDS.RELEASE_MODE]||0),
         flags:Number(sample[TELEMETRY_FIELDS.FLAGS]||0)
@@ -3148,7 +3150,8 @@ function lapOverlayNormalizeSample(raw){
       vinMv:Number(raw[TELEMETRY_FIELDS.VIN_MV]||0),
       currentMa:Number(raw[TELEMETRY_FIELDS.CURRENT_MA]||0),
       brakePct:Number(raw[TELEMETRY_FIELDS.BRAKE]||0),
-      sensiHalfPct:Number(raw[TELEMETRY_FIELDS.SENSI_HALF]||0),
+      sensiPct:Number(raw[TELEMETRY_FIELDS.SENSI]||0),
+      sensiHalfPct:Number(raw[TELEMETRY_FIELDS.SENSI]||0),
       carIndex:Number(raw[TELEMETRY_FIELDS.CAR]||0),
       releaseMode:Number(raw[TELEMETRY_FIELDS.RELEASE_MODE]||0),
       flags:Number(raw[TELEMETRY_FIELDS.FLAGS]||0)
@@ -3163,7 +3166,8 @@ function lapOverlayNormalizeSample(raw){
     vinMv:lapOverlayPickNumber(raw,['vinMv','vin_mV','vinMv'],0),
     currentMa:lapOverlayPickNumber(raw,['currentMa','current_mA'],0),
     brakePct:lapOverlayPickNumber(raw,['brakePct','brake_pct'],0),
-    sensiHalfPct:lapOverlayPickNumber(raw,['sensiHalfPct','sensi_halfPct'],0),
+    sensiPct:lapOverlayPickNumber(raw,['sensiPct','sensi_pct','sensiHalfPct','sensi_halfPct'],0),
+    sensiHalfPct:lapOverlayPickNumber(raw,['sensiHalfPct','sensi_halfPct','sensiPct','sensi_pct'],0),
     carIndex:lapOverlayPickNumber(raw,['carIndex','car_index'],0),
     releaseMode:lapOverlayPickNumber(raw,['releaseMode','release_mode'],0),
     flags:lapOverlayPickNumber(raw,['flags'],0)

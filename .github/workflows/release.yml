@@ -59,9 +59,9 @@ jobs:
           arduino-cli core update-index
           arduino-cli core install esp32:esp32@3.3.7
           arduino-cli lib update-index
-          arduino-cli lib install "OneBitDisplay@3.0.0" "Ai Esp32 Rotary Encoder@1.7.0"
+          arduino-cli lib install "OneBitDisplay@3.0.0" "Ai Esp32 Rotary Encoder@1.7.0" "AS5600"
 
-      - name: Build firmware
+      - name: Build default firmware (TLE493D)
         shell: bash
         run: |
           BOARD="esp32:esp32:esp32"
@@ -71,6 +71,19 @@ jobs:
             --fqbn "$BOARD" \
             --board-options "$BOARD_OPTIONS" \
             --build-path build \
+            source/ESPEED32
+
+      - name: Build AS5600 firmware asset
+        shell: bash
+        run: |
+          BOARD="esp32:esp32:esp32"
+          BOARD_OPTIONS="JTAGAdapter=default,PSRAM=disabled,PartitionScheme=default,CPUFreq=240,FlashMode=qio,FlashFreq=80,FlashSize=4M,UploadSpeed=115200,LoopCore=1,EventsCore=1,DebugLevel=none,EraseFlash=none,ZigbeeMode=default"
+
+          arduino-cli compile \
+            --fqbn "$BOARD" \
+            --board-options "$BOARD_OPTIONS" \
+            --build-path build-as5600 \
+            --build-property build.extra_flags="-DTRIGGER_SENSOR_FAMILY=TRIGGER_SENSOR_FAMILY_AS5600" \
             source/ESPEED32
 
       - name: Verify version matches tag
@@ -138,18 +151,21 @@ jobs:
           VER="${{ steps.meta.outputs.ver }}"
           TAG="${{ steps.meta.outputs.tag }}"
 
-          # Firmware filename encodes version and mag sensor family (tle493d = default trigger sensor).
-          # SPIFFS is hardware-independent so carries only the version.
-          FW_NAME="espeed32-fw-${VER}-tle493d.bin"
+          # Keep the default TLE493D firmware as the canonical release firmware.
+          # Extra trigger-sensor builds are published as manual assets only.
+          FW_NAME_DEFAULT="espeed32-fw-${VER}-tle493d.bin"
+          FW_NAME_AS5600="espeed32-fw-${VER}-as5600.bin"
           SPIFFS_NAME="espeed32-spiffs-${VER}.bin"
 
-          cp build/ESPEED32.ino.bin "$OUT_DIR/${FW_NAME}"
+          cp build/ESPEED32.ino.bin "$OUT_DIR/${FW_NAME_DEFAULT}"
+          cp build-as5600/ESPEED32.ino.bin "$OUT_DIR/${FW_NAME_AS5600}"
           cp build/espeed32_spiffs.bin "$OUT_DIR/${SPIFFS_NAME}"
 
           # Compute SHA256 checksums so the download service and web UI
           # can verify download integrity before flashing.
-          sha256sum "$OUT_DIR/${FW_NAME}"     | awk '{print $1}' > "$OUT_DIR/${FW_NAME}.sha256"
-          sha256sum "$OUT_DIR/${SPIFFS_NAME}" | awk '{print $1}' > "$OUT_DIR/${SPIFFS_NAME}.sha256"
+          sha256sum "$OUT_DIR/${FW_NAME_DEFAULT}" | awk '{print $1}' > "$OUT_DIR/${FW_NAME_DEFAULT}.sha256"
+          sha256sum "$OUT_DIR/${FW_NAME_AS5600}"  | awk '{print $1}' > "$OUT_DIR/${FW_NAME_AS5600}.sha256"
+          sha256sum "$OUT_DIR/${SPIFFS_NAME}"     | awk '{print $1}' > "$OUT_DIR/${SPIFFS_NAME}.sha256"
 
           echo "out_dir=$OUT_DIR" >> "$GITHUB_OUTPUT"
 
@@ -168,4 +184,3 @@ jobs:
           files: |
             ${{ steps.files.outputs.out_dir }}/*
           fail_on_unmatched_files: true
-

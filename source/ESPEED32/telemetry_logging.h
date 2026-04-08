@@ -45,7 +45,7 @@ typedef struct {
   uint32_t t_ms;
   uint16_t vin_mV;
   uint16_t current_mA;
-  uint16_t sensi_halfPct;
+  uint16_t sensi_halfPct; /* [0.1%] Historical field name kept for storage/API compatibility */
   uint8_t trigger_pct;
   uint8_t output_pct;
   uint16_t brake_pct;      /* [0.1%] Applied brake value */
