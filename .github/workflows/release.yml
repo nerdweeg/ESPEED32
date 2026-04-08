@@ -59,7 +59,7 @@ jobs:
           arduino-cli core update-index
           arduino-cli core install esp32:esp32@3.3.7
           arduino-cli lib update-index
-          arduino-cli lib install "OneBitDisplay@3.0.0" "Ai Esp32 Rotary Encoder@1.7.0" "AS5600"
+          arduino-cli lib install "OneBitDisplay@3.0.0" "Ai Esp32 Rotary Encoder@1.7.0" "AS5600@0.6.7"
 
       - name: Build default firmware (TLE493D)
         shell: bash

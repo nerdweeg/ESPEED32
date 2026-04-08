@@ -20,7 +20,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.arduino15
-          key: arduino-esp32-3.3.7-obd-3.0.0-enc-1.7.0-as5600
+          key: arduino-esp32-3.3.7-obd-3.0.0-enc-1.7.0-as5600-0.6.7
           restore-keys: arduino-esp32-
 
       - name: Setup arduino-cli
@@ -33,7 +33,7 @@ jobs:
           arduino-cli core update-index
           arduino-cli core install esp32:esp32@3.3.7
           arduino-cli lib update-index
-          arduino-cli lib install "OneBitDisplay@3.0.0" "Ai Esp32 Rotary Encoder@1.7.0" "AS5600"
+          arduino-cli lib install "OneBitDisplay@3.0.0" "Ai Esp32 Rotary Encoder@1.7.0" "AS5600@0.6.7"
 
       - name: Lint with arduino-lint
         uses: arduino/arduino-lint-action@v1
