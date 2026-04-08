@@ -281,9 +281,9 @@ void showDisplaySettings() {
         } else if (itemIdx == 3) {  /* FSIZE */
           uint16_t dispFS = (isEditingFontSize && isValueSel) ? tempFontSize : value;
           sprintf(msgStr, "%5s", FONT_SIZE_LABELS[g_storedVar.language][dispFS]);
-        } else if (itemIdx == DISPLAY_ITEMS_COUNT - 3) {  /* BRAKE STEP */
+        } else if (itemIdx == DISPLAY_ITEMS_COUNT - 4) {  /* BRAKE STEP */
           formatDisplayStepPercentValue(msgStr, sizeof(msgStr), value, BRAKE_SCALE);
-        } else if (itemIdx == DISPLAY_ITEMS_COUNT - 2) {  /* SENSI STEP */
+        } else if (itemIdx == DISPLAY_ITEMS_COUNT - 3) {  /* SENSI STEP */
           formatDisplayStepPercentValue(msgStr, sizeof(msgStr), value, SENSI_SCALE);
         } else if (g_settingsMenu.item[itemIdx].unit[0] != '\0') {
           snprintf(msgStr, sizeof(msgStr), "%2d %s", value, g_settingsMenu.item[itemIdx].unit);
