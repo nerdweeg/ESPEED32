@@ -25,7 +25,6 @@ extern void displayStatusLine();
 extern void saveEEPROM(StoredVar_type toSave);
 extern void initStepsMenuItems();
 extern uint16_t g_carSel;
-extern void snapCarParamToCurrentSteps(uint16_t carIdx);
 
 static void formatConfiguredMenuLabel(const char* source, char* buffer, size_t bufferSize) {
   if (buffer == nullptr || bufferSize == 0) return;
@@ -944,12 +943,11 @@ void showStepsSettings() {
           resetUiEncoder(*valuePtr);
         }
       } else {
-        /* Confirm edit: snap active car to new step grid and save */
+        /* Confirm edit: save step settings without mutating stored car values */
         menuState = ITEM_SELECTION;
         g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
         setUiEncoderBoundaries(1, STEPS_ITEMS_COUNT, false);
         resetUiEncoder(sel);
-        snapCarParamToCurrentSteps(g_carSel);
         saveEEPROM(g_storedVar);
       }
       delay(200);

@@ -26,7 +26,6 @@ extern uint8_t getMainMenuItemsCount();
 extern void showScreensaver();
 extern void initMenuItems();
 extern void saveEEPROM(StoredVar_type toSave);
-extern void snapCarParamToCurrentSteps(uint16_t carIdx);
 
 void showCarSelection() {
   /* "Frame" indicates which items are currently displayed.
@@ -640,10 +639,7 @@ void showSelectRenameCar() {
   else if (selectedOption == CAR_OPTION_SELECT)
   {
     showCarSelection();
-    if (!isEscapeToMainRequested()) {
-      snapCarParamToCurrentSteps(g_storedVar.selectedCarNumber);
-      saveEEPROM(g_storedVar);
-    }
+    if (!isEscapeToMainRequested()) saveEEPROM(g_storedVar);
   }
   /* If RACESWP option was selected, value was already saved in the edit loop above */
   else if (selectedOption == CAR_OPTION_GRID_SEL)

@@ -52,6 +52,34 @@ static void formatSensiValue(char* out, size_t outSize, uint16_t sensiRaw) {
   formatTunedPctX10Value(out, outSize, sensiRaw, constrain(g_sensiStep, SENSI_STEP_MIN, SENSI_STEP_MAX));
 }
 
+static uint8_t getFontCharWidth(uint8_t font) {
+  return (font == FONT_12x16) ? WIDTH12x16 : WIDTH8x8;
+}
+
+static uint8_t getFullRowClearChars(uint8_t font) {
+  return (font == FONT_12x16) ? 11U : 16U;
+}
+
+static void writeBlankField(int x, int y, uint8_t font, uint8_t clearChars) {
+  if (clearChars == 0U) return;
+
+  char blank[17];
+  uint8_t count = min(clearChars, (uint8_t)(sizeof(blank) - 1U));
+  for (uint8_t i = 0; i < count; i++) blank[i] = ' ';
+  blank[count] = '\0';
+
+  obdWriteString(&g_obd, 0, x, y, blank, font, OBD_BLACK, 1);
+}
+
+static void clearCenteredField(int centerX, int y, uint8_t font, uint8_t clearChars) {
+  uint8_t fieldWidth = clearChars * getFontCharWidth(font);
+  writeBlankField(centerX - (fieldWidth / 2), y, font, clearChars);
+}
+
+static void clearMenuRowField(int y, uint8_t font) {
+  writeBlankField(0, y, font, getFullRowClearChars(font));
+}
+
 static void formatActiveBrakeStatus(char* out, size_t outSize, uint8_t activeBrakeKind, uint8_t activeBrakePct) {
   if (!out || outSize == 0) return;
 
@@ -221,6 +249,8 @@ void displayStatusLine() {
 void displayRaceModeSimple(uint8_t selectedItem, bool isEditing) {
   static uint16_t lastBrake = 0xFFFF;
   static uint16_t lastSensi = 999;
+  static uint16_t lastBrakeStep = 0xFFFF;
+  static uint16_t lastSensiStep = 0xFFFF;
   static bool lastBrakeUsesPot = false;
   static bool lastSensiUsesPot = false;
   static uint8_t lastSelectedItem = 255;
@@ -235,6 +265,8 @@ void displayRaceModeSimple(uint8_t selectedItem, bool isEditing) {
   if (g_forceRaceRedraw || selectedItem != lastSelectedItem || isEditing != lastIsEditing || g_carSel != lastCarSel) {
     lastBrake = 0xFFFF;
     lastSensi = 999;
+    lastBrakeStep = 0xFFFF;
+    lastSensiStep = 0xFFFF;
     lastBrakeUsesPot = false;
     lastSensiUsesPot = false;
     lastSelectedItem = selectedItem;
@@ -249,11 +281,14 @@ void displayRaceModeSimple(uint8_t selectedItem, bool isEditing) {
   /* BRAKE - left column, using FONT_12x16 for both label and value */
   bool brakeUsesPot = isExtPotBrakeTarget() && !(isEditing && selectedItem == 0);
   uint16_t brakeValue = getEffectiveBrakeRaw();
-  if (brakeUsesPot != lastBrakeUsesPot || (!brakeUsesPot && brakeValue != lastBrake)) {
+  uint16_t brakeStep = constrain(g_brakeStep, BRAKE_STEP_MIN, BRAKE_STEP_MAX);
+  if (brakeUsesPot != lastBrakeUsesPot || brakeStep != lastBrakeStep || (!brakeUsesPot && brakeValue != lastBrake)) {
     /* Label - using language-specific text with FONT_12x16: 5 chars × 12px = 60px wide */
     const char* brakeLabel = getRaceLabel(g_storedVar.language, 0);
     uint8_t labelWidth = strlen(brakeLabel) * 12;
     obdWriteString(&g_obd, 0, col1_center - (labelWidth / 2), 0, (char *)brakeLabel, FONT_12x16, colorBrake, 1);
+    clearCenteredField(col1_center, 16, FONT_12x16, 6);
+    clearCenteredField(col1_center, 20, FONT_8x8, 6);
     if (brakeUsesPot) {
       formatExtPotLabel(msgStr, sizeof(msgStr), getExtPotIndexForTarget(EXT_POT_TARGET_BRAKE));
       obdWriteString(&g_obd, 0, col1_center - ((strlen(msgStr) * WIDTH12x16) / 2), 16, msgStr, FONT_12x16, colorBrake, 1);
@@ -263,17 +298,20 @@ void displayRaceModeSimple(uint8_t selectedItem, bool isEditing) {
       obdWriteString(&g_obd, 0, col1_center - (valueWidth / 2), 20, msgStr, FONT_8x8, colorBrake, 1);
     }
     lastBrake = brakeValue;
+    lastBrakeStep = brakeStep;
     lastBrakeUsesPot = brakeUsesPot;
   }
 
   /* SENSI - right column, using FONT_12x16 for both label and value */
   bool sensiUsesPot = isExtPotSensiTarget() && !(isEditing && selectedItem == 1);
   uint16_t sensiRaw = getEffectiveSensiRaw();
-  if (sensiUsesPot != lastSensiUsesPot || (!sensiUsesPot && sensiRaw != lastSensi)) {
+  uint16_t sensiStep = constrain(g_sensiStep, SENSI_STEP_MIN, SENSI_STEP_MAX);
+  if (sensiUsesPot != lastSensiUsesPot || sensiStep != lastSensiStep || (!sensiUsesPot && sensiRaw != lastSensi)) {
     /* Label - using language-specific text with FONT_12x16: 5 chars × 12px = 60px wide */
     const char* sensiLabel = getRaceLabel(g_storedVar.language, 1);
     uint8_t labelWidth = strlen(sensiLabel) * 12;
     obdWriteString(&g_obd, 0, col2_center - (labelWidth / 2), 0, (char *)sensiLabel, FONT_12x16, colorSensi, 1);
+    clearCenteredField(col2_center, 16, FONT_12x16, 6);
     if (sensiUsesPot) {
       formatExtPotLabel(msgStr, sizeof(msgStr), getExtPotIndexForTarget(EXT_POT_TARGET_SENSI));
       obdWriteString(&g_obd, 0, col2_center - ((strlen(msgStr) * WIDTH12x16) / 2), 16, msgStr, FONT_12x16, colorSensi, 1);
@@ -283,6 +321,7 @@ void displayRaceModeSimple(uint8_t selectedItem, bool isEditing) {
       obdWriteString(&g_obd, 0, col2_center - (valueWidth / 2), 16, msgStr, FONT_12x16, colorSensi, 1);
     }
     lastSensi = sensiRaw;
+    lastSensiStep = sensiStep;
     lastSensiUsesPot = sensiUsesPot;
   }
 
@@ -299,6 +338,8 @@ void displayRaceModeSimple(uint8_t selectedItem, bool isEditing) {
 void displayRaceMode(uint8_t selectedItem, bool isEditing) {
   static uint16_t lastBrake = 0xFFFF;
   static uint16_t lastSensi = 999;
+  static uint16_t lastBrakeStep = 0xFFFF;
+  static uint16_t lastSensiStep = 0xFFFF;
   static bool lastBrakeUsesPot = false;
   static bool lastSensiUsesPot = false;
   static uint16_t lastAntis = 999;
@@ -318,6 +359,8 @@ void displayRaceMode(uint8_t selectedItem, bool isEditing) {
     /* Force redraw of all items when selection changes */
     lastBrake = 0xFFFF;
     lastSensi = 999;
+    lastBrakeStep = 0xFFFF;
+    lastSensiStep = 0xFFFF;
     lastBrakeUsesPot = false;
     lastSensiUsesPot = false;
     lastAntis = 999;
@@ -339,11 +382,13 @@ void displayRaceMode(uint8_t selectedItem, bool isEditing) {
   /* BRAKE - left column */
   bool brakeUsesPot = isExtPotBrakeTarget() && !(isEditing && selectedItem == 0);
   uint16_t brakeValue = getEffectiveBrakeRaw();
-  if (brakeUsesPot != lastBrakeUsesPot || (!brakeUsesPot && brakeValue != lastBrake)) {
+  uint16_t brakeStep = constrain(g_brakeStep, BRAKE_STEP_MIN, BRAKE_STEP_MAX);
+  if (brakeUsesPot != lastBrakeUsesPot || brakeStep != lastBrakeStep || (!brakeUsesPot && brakeValue != lastBrake)) {
     /* Label - using language-specific text, dynamically centered */
     const char* brakeLabel = getRaceLabel(g_storedVar.language, 0);
     uint8_t labelWidth = strlen(brakeLabel) * 6;
     obdWriteString(&g_obd, 0, col1_center - (labelWidth / 2), 2, (char *)brakeLabel, FONT_6x8, colorBrake, 1);
+    clearCenteredField(col1_center, 12, FONT_8x8, 6);
     if (brakeUsesPot) {
       formatExtPotLabel(msgStr, sizeof(msgStr), getExtPotIndexForTarget(EXT_POT_TARGET_BRAKE));
       obdWriteString(&g_obd, 0, col1_center - ((strlen(msgStr) * WIDTH8x8) / 2), 12, msgStr, FONT_8x8, colorBrake, 1);
@@ -353,17 +398,20 @@ void displayRaceMode(uint8_t selectedItem, bool isEditing) {
       obdWriteString(&g_obd, 0, col1_center - (valueWidth / 2), 12, msgStr, FONT_8x8, colorBrake, 1);
     }
     lastBrake = brakeValue;
+    lastBrakeStep = brakeStep;
     lastBrakeUsesPot = brakeUsesPot;
   }
 
   /* SENSI - right column */
   bool sensiUsesPot = isExtPotSensiTarget() && !(isEditing && selectedItem == 1);
   uint16_t sensiRaw = getEffectiveSensiRaw();
-  if (sensiUsesPot != lastSensiUsesPot || (!sensiUsesPot && sensiRaw != lastSensi)) {
+  uint16_t sensiStep = constrain(g_sensiStep, SENSI_STEP_MIN, SENSI_STEP_MAX);
+  if (sensiUsesPot != lastSensiUsesPot || sensiStep != lastSensiStep || (!sensiUsesPot && sensiRaw != lastSensi)) {
     /* Label - using language-specific text, shifted 1px right */
     const char* sensiLabel = getRaceLabel(g_storedVar.language, 1);
     uint8_t labelWidth = strlen(sensiLabel) * 6;
     obdWriteString(&g_obd, 0, col2_center - (labelWidth / 2) + 1, 2, (char *)sensiLabel, FONT_6x8, colorSensi, 1);
+    clearCenteredField(col2_center, 12, FONT_8x8, 6);
     if (sensiUsesPot) {
       formatExtPotLabel(msgStr, sizeof(msgStr), getExtPotIndexForTarget(EXT_POT_TARGET_SENSI));
       obdWriteString(&g_obd, 0, col2_center - ((strlen(msgStr) * WIDTH8x8) / 2), 12, msgStr, FONT_8x8, colorSensi, 1);
@@ -373,6 +421,7 @@ void displayRaceMode(uint8_t selectedItem, bool isEditing) {
       obdWriteString(&g_obd, 0, col2_center - (valueWidth / 2), 12, msgStr, FONT_8x8, colorSensi, 1);
     }
     lastSensi = sensiRaw;
+    lastSensiStep = sensiStep;
     lastSensiUsesPot = sensiUsesPot;
   }
 
@@ -600,6 +649,11 @@ void printMainMenu(MenuState_enum currMenuState)
     {
       uint16_t menuIndex = frameUpper - 1 + i;
       if (menuIndex >= mainMenuItems) break;
+      bool isBrakeRow = (strcmp(g_mainMenu.item[menuIndex].name, getMenuName(g_storedVar.language, 0)) == 0);
+      bool isSensiRow = (strcmp(g_mainMenu.item[menuIndex].name, getMenuName(g_storedVar.language, 1)) == 0);
+      if (isBrakeRow || isSensiRow) {
+        clearMenuRowField(i * lineHeight, menuFont);
+      }
       /* Print item name */
       /* Item color: WHITE if item is selected, black otherwise */
       obdWriteString(&g_obd, 0, 0, i * lineHeight, g_mainMenu.item[menuIndex].name, menuFont, (g_encoderMainSelector - frameUpper == i) ? OBD_WHITE : OBD_BLACK, 1);
@@ -612,7 +666,7 @@ void printMainMenu(MenuState_enum currMenuState)
         /* if the value is a number, cast to *(unit16_t *), then print number and unit */
         if (g_mainMenu.item[menuIndex].type == VALUE_TYPE_INTEGER)
         {
-          if (strcmp(g_mainMenu.item[menuIndex].name, getMenuName(g_storedVar.language, 0)) == 0) {
+          if (isBrakeRow) {
             if (isExtPotBrakeTarget() && !isSelectedValueEditing) {
               formatExtPotLabel(msgStr, sizeof(msgStr), getExtPotIndexForTarget(EXT_POT_TARGET_BRAKE));
             } else {
@@ -620,7 +674,7 @@ void printMainMenu(MenuState_enum currMenuState)
             }
           }
           /* SENSI is stored in 0.1% steps and shown with one decimal */
-          else if (strcmp(g_mainMenu.item[menuIndex].name, getMenuName(g_storedVar.language, 1)) == 0) {
+          else if (isSensiRow) {
             if (isExtPotSensiTarget() && !isSelectedValueEditing) {
               formatExtPotLabel(msgStr, sizeof(msgStr), getExtPotIndexForTarget(EXT_POT_TARGET_SENSI));
             } else {
