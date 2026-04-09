@@ -6,6 +6,7 @@
 /*********************************************************************************************************************/
 #include <Wire.h>
 #include <Arduino.h>
+#include "board_profile.h"
 
 /*********************************************************************************************************************/
 /*                                             Hardware Definitions                                                 */
@@ -149,40 +150,40 @@
 /*********************************************************************************************************************/
 
 /* I2C Pins */
-#define SDA0_PIN    21    /* I2C #1 SDA: Magnetic sensor */
-#define SCL0_PIN    22    /* I2C #1 SCL: Magnetic sensor */
-#define SDA1_PIN    33    /* I2C #2 SDA: OLED display */
-#define SCL1_PIN    32    /* I2C #2 SCL: OLED display */
+#define SDA0_PIN    BOARD_SDA0_PIN    /* I2C #1 SDA: Magnetic sensor */
+#define SCL0_PIN    BOARD_SCL0_PIN    /* I2C #1 SCL: Magnetic sensor */
+#define SDA1_PIN    BOARD_SDA1_PIN    /* I2C #2 SDA: OLED display */
+#define SCL1_PIN    BOARD_SCL1_PIN    /* I2C #2 SCL: OLED display */
 
 /* OLED Display Configuration */
-#define RESET_PIN   -1    /* Set to -1 to disable external reset */
-#define OLED_ADDR   -1    /* Let OneBitDisplay auto-detect address */
-#define FLIP180     0     /* Don't rotate display 180° */
-#define INVERT_DISP 0     /* Don't invert display colors */
-#define USE_HW_I2C  1     /* Use hardware I2C (not bit-bang) */
+#define RESET_PIN   BOARD_RESET_PIN   /* Set to -1 to disable external reset */
+#define OLED_ADDR   BOARD_OLED_ADDR   /* Let OneBitDisplay auto-detect address */
+#define FLIP180     BOARD_FLIP180     /* Don't rotate display 180° */
+#define INVERT_DISP BOARD_INVERT_DISP /* Don't invert display colors */
+#define USE_HW_I2C  BOARD_USE_HW_I2C  /* Use hardware I2C (not bit-bang) */
 
 /* Analog Input Pins */
-#define AN_VIN_DIV  36    /* Voltage divider input */
-#define EXT_POT1_PIN 35   /* Optional external pot #1 input (ADC1) */
-#define EXT_POT2_PIN 15   /* Optional external pot #2 input (ADC2; may be unreliable while WiFi is active) */
+#define AN_VIN_DIV   BOARD_AN_VIN_DIV   /* Voltage divider input */
+#define EXT_POT1_PIN BOARD_EXT_POT1_PIN /* Optional external pot #1 input (ADC1) */
+#define EXT_POT2_PIN BOARD_EXT_POT2_PIN /* Optional external pot #2 input (ADC2; may be unreliable while WiFi is active) */
 
 /* Rotary Encoder Pins */
-#define ENCODER_A_PIN      16  /* Encoder signal A (S1) */
-#define ENCODER_B_PIN      17  /* Encoder signal B (S2) */
-#define ENCODER_BUTTON_PIN 4   /* Encoder button (KEY) */
-#define ENCODER_VCC_PIN    -1  /* Set to -1 if encoder VCC connected directly to 3.3V */
-#define ENCODER_STEPS      4
+#define ENCODER_A_PIN      BOARD_ENCODER_A_PIN      /* Encoder signal A (S1) */
+#define ENCODER_B_PIN      BOARD_ENCODER_B_PIN      /* Encoder signal B (S2) */
+#define ENCODER_BUTTON_PIN BOARD_ENCODER_BUTTON_PIN /* Encoder button (KEY) */
+#define ENCODER_VCC_PIN    BOARD_ENCODER_VCC_PIN    /* Set to -1 if encoder VCC connected directly to 3.3V */
+#define ENCODER_STEPS      BOARD_ENCODER_STEPS
 
 /* Motor Control Pins */
-#define AN_MOT_BEMF  14   /* Motor back-EMF sensing */
-#define HB_AN_PIN    25   /* Half-bridge analog feedback */
-#define HB_IN_PIN    26   /* Half-bridge IN pin */
-#define HB_INH_PIN   27   /* Half-bridge INH pin */
-#define LED_BUILTIN  2    /* Built-in LED */
+#define AN_MOT_BEMF  BOARD_AN_MOT_BEMF /* Motor back-EMF sensing */
+#define HB_AN_PIN    BOARD_HB_AN_PIN   /* Half-bridge analog feedback */
+#define HB_IN_PIN    BOARD_HB_IN_PIN   /* Half-bridge IN pin */
+#define HB_INH_PIN   BOARD_HB_INH_PIN  /* Half-bridge INH pin */
+#define LED_BUILTIN  BOARD_LED_BUILTIN /* Built-in LED */
 
 /* Other Pins */
-#define BUTT_PIN   13   /* Button */
-#define BUZZ_PIN   18   /* Buzzer */
+#define BUTT_PIN   BOARD_BUTT_PIN /* Button */
+#define BUZZ_PIN   BOARD_BUZZ_PIN /* Buzzer */
 
 /*********************************************************************************************************************/
 /*                                              Function Prototypes                                                 */

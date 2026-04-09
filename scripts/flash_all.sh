@@ -10,13 +10,14 @@ PORT=""
 BAUD=""
 SENSOR=""
 CURRENT_SENSE=""
+BOARD_PROFILE_NAME=""
 FIRMWARE_ONLY=0
 SPIFFS_ONLY=0
 COMPILE_ONLY=0
 
 usage() {
   cat <<USAGE
-Usage: $(basename "$0") [--firmware-only] [--spiffs-only] [--compile-only] [--sensor NAME] [--current-sense NAME] [-p PORT] [-u BAUD]
+Usage: $(basename "$0") [--firmware-only] [--spiffs-only] [--compile-only] [--sensor NAME] [--current-sense NAME] [--board NAME] [-p PORT] [-u BAUD]
 
 Default flow:
   1) Compile firmware
@@ -30,6 +31,7 @@ Options:
   --sensor NAME      Trigger sensor family override: tle493d, as5600, as5600l, mt6701, analog
   --current-sense NAME
                      Motor current-sense profile override: btn99x0, none, bts7960
+  --board NAME       Board profile override: standard, custom-template
   -p, --port PORT    Serial port override (default: read from .vscode/arduino.json)
   -u, --baud BAUD    SPIFFS upload baud override (default: UploadSpeed from .vscode/arduino.json)
   -h, --help         Show this help
@@ -58,6 +60,11 @@ while [[ $# -gt 0 ]]; do
     --current-sense)
       [[ $# -ge 2 ]] || { echo "Missing value for $1" >&2; exit 1; }
       CURRENT_SENSE="$2"
+      shift 2
+      ;;
+    --board)
+      [[ $# -ge 2 ]] || { echo "Missing value for $1" >&2; exit 1; }
+      BOARD_PROFILE_NAME="$2"
       shift 2
       ;;
     -p|--port)
@@ -183,6 +190,24 @@ current_sense_build_flag() {
   esac
 }
 
+board_profile_build_flag() {
+  local board_name
+  board_name="$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')"
+  case "$board_name" in
+    standard|default)
+      printf '%s' '-DESPEED_BOARD_PROFILE=ESPEED_BOARD_PROFILE_STANDARD'
+      ;;
+    custom|custom-template|template)
+      printf '%s' '-DESPEED_BOARD_PROFILE=ESPEED_BOARD_PROFILE_CUSTOM_TEMPLATE'
+      ;;
+    *)
+      echo "Unsupported --board value: $1" >&2
+      echo "Supported values: standard, custom-template" >&2
+      exit 1
+      ;;
+  esac
+}
+
 run_filtered_cmd() {
   local rc
   local -a cmd
@@ -284,6 +309,11 @@ if [[ "$SPIFFS_ONLY" -eq 0 ]]; then
     compile_cmd+=(--board-options "$BOARD_OPTIONS")
   fi
   EXTRA_FLAGS=()
+  if [[ -n "$BOARD_PROFILE_NAME" ]]; then
+    BOARD_PROFILE_FLAG="$(board_profile_build_flag "$BOARD_PROFILE_NAME")"
+    echo "[FLASH] Board profile override: $BOARD_PROFILE_NAME"
+    EXTRA_FLAGS+=("$BOARD_PROFILE_FLAG")
+  fi
   if [[ -n "$SENSOR" ]]; then
     SENSOR_FLAG="$(sensor_build_flag "$SENSOR")"
     echo "[FLASH] Trigger sensor family override: $SENSOR"

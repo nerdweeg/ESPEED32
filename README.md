@@ -33,6 +33,13 @@ Combine both in one build:
 ./scripts/flash_all.sh --compile-only --sensor as5600 --current-sense bts7960
 ```
 
+Build against the committed custom board template:
+
+```bash
+./scripts/flash_all.sh --compile-only --board custom-template
+./scripts/flash_all.sh --compile-only --board custom-template --sensor as5600
+```
+
 ## Magnetic Trigger Sensor
 
 The trigger position is read from a magnetic angle sensor over I2C. Several sensors are supported.
@@ -84,6 +91,32 @@ Important:
 - for Arduino IDE users, the practical workaround is usually the legacy manual selection in `source/ESPEED32/HAL.h`
 - if you compile the default build unchanged, it targets `TLE493D`
 
+## Board Profiles
+
+Board routing is now also a compile-time choice.
+
+Supported `--board` values:
+
+- `standard`
+- `custom-template`
+
+Examples:
+
+```bash
+./scripts/flash_all.sh --compile-only --board standard
+./scripts/flash_all.sh --compile-only --board custom-template --sensor as5600
+```
+
+The standard official controller hardware remains the default build.
+
+`custom-template` is a committed starting point for custom builders. Edit:
+
+- `source/ESPEED32/board_profiles/custom_template.h`
+
+before compiling with `--board custom-template`.
+
+This is meant for local/manual custom builds. It does not change the official OTA path.
+
 ### Official releases, manual sensor builds, and OTA
 
 Automatic paired OTA installs the standard official release pair. That standard firmware build remains the default `TLE493D` variant.
@@ -93,7 +126,9 @@ If your controller uses another trigger sensor family such as `AS5600`, `AS5600L
 In other words:
 
 - automatic paired OTA = standard `TLE493D` release path
+- automatic paired OTA also assumes the standard official board profile
 - sensor-specific firmware builds = manual firmware selection/upload unless explicitly stated otherwise
+- custom board profiles = manual firmware selection/upload
 - SPIFFS/UI images remain version-matched per release and are shared across sensor variants
 
 ### Supported sensors
