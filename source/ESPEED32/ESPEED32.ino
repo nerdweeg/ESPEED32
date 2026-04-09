@@ -261,6 +261,16 @@ static uint16_t getSelectedSensiMaxRaw() {
              (uint16_t)(g_storedVar.carParam[g_carSel].maxSpeed * SENSI_SCALE));
 }
 
+void snapCarParamToCurrentSteps(uint16_t carIdx) {
+  if (carIdx >= CAR_MAX_COUNT) return;
+  uint16_t stepBrake = constrain(g_brakeStep, BRAKE_STEP_MIN, BRAKE_STEP_MAX);
+  uint16_t stepSensi = constrain(g_sensiStep, SENSI_STEP_MIN, SENSI_STEP_MAX);
+  CarParam_type& car = g_storedVar.carParam[carIdx];
+  car.brake = (car.brake / stepBrake) * stepBrake;
+  uint16_t maxSensi = min((uint16_t)MIN_SPEED_MAX_VALUE, (uint16_t)(car.maxSpeed * SENSI_SCALE));
+  car.minSpeed = constrain((car.minSpeed / stepSensi) * stepSensi, (uint16_t)0, maxSensi);
+}
+
 static uint16_t getSteppedEditStartEncoder(uint16_t rawValue, uint16_t stepRaw) {
   return ceilDivU16(rawValue, stepRaw);
 }

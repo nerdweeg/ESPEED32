@@ -20,18 +20,17 @@ extern void requestEscapeToMain();
 extern bool isEscapeToMainRequested();
 
 extern void showScreensaver();
+extern uint16_t g_carSel;
 extern void saveEEPROM(StoredVar_type toSave);
 extern void initMenuItems();
 extern void initSettingsMenuItems();
 extern void initDisplayMenuItems();
+extern void snapCarParamToCurrentSteps(uint16_t carIdx);
 
 static void formatDisplayStepPercentValue(char* out, size_t outSize, uint16_t stepRaw, uint16_t scale) {
   if (out == NULL || outSize == 0 || scale == 0) return;
-  if ((stepRaw % scale) == 0) {
-    snprintf(out, outSize, "%u%%", (unsigned int)(stepRaw / scale));
-  } else {
-    snprintf(out, outSize, "%u.%u%%", (unsigned int)(stepRaw / scale), (unsigned int)(stepRaw % scale));
-  }
+  /* Always show one decimal so string width stays constant while scrolling */
+  snprintf(out, outSize, "%u.%u%%", (unsigned int)(stepRaw / scale), (unsigned int)(stepRaw % scale));
 }
 
 /**
@@ -173,6 +172,11 @@ void showDisplaySettings() {
         if (isEditingLanguage) { g_storedVar.language = tempLanguage; lang = tempLanguage; isEditingLanguage = false; }
         if (isEditingTextCase) { g_storedVar.textCase = tempTextCase; isEditingTextCase = false; }
         if (isEditingFontSize) { g_storedVar.listFontSize = tempFontSize; isEditingFontSize = false; }
+        /* When a step size changes, snap the active car's params to the new step grid */
+        uint16_t confirmedIdx = sel - 1;
+        if (confirmedIdx == DISPLAY_ITEMS_COUNT - 4 || confirmedIdx == DISPLAY_ITEMS_COUNT - 3) {
+          snapCarParamToCurrentSteps(g_carSel);
+        }
         saveEEPROM(g_storedVar);
         if (g_storedVar.language != prevLanguage || g_storedVar.textCase != prevTextCase || g_storedVar.listFontSize != prevFontSize) {
           initMenuItems();
