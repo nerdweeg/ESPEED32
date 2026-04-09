@@ -56,10 +56,6 @@ static uint8_t getFontCharWidth(uint8_t font) {
   return (font == FONT_12x16) ? WIDTH12x16 : WIDTH8x8;
 }
 
-static uint8_t getFullRowClearChars(uint8_t font) {
-  return (font == FONT_12x16) ? 11U : 16U;
-}
-
 static void writeBlankField(int x, int y, uint8_t font, uint8_t clearChars) {
   if (clearChars == 0U) return;
 
@@ -76,8 +72,9 @@ static void clearCenteredField(int centerX, int y, uint8_t font, uint8_t clearCh
   writeBlankField(centerX - (fieldWidth / 2), y, font, clearChars);
 }
 
-static void clearMenuRowField(int y, uint8_t font) {
-  writeBlankField(0, y, font, getFullRowClearChars(font));
+static void clearRightAlignedField(int rightX, int y, uint8_t font, uint8_t clearChars) {
+  uint8_t fieldWidth = clearChars * getFontCharWidth(font);
+  writeBlankField(rightX - fieldWidth, y, font, clearChars);
 }
 
 static void formatActiveBrakeStatus(char* out, size_t outSize, uint8_t activeBrakeKind, uint8_t activeBrakePct) {
@@ -644,6 +641,10 @@ void printMainMenu(MenuState_enum currMenuState)
     uint8_t menuFont = (g_storedVar.listFontSize == FONT_SIZE_SMALL) ? FONT_8x8 : FONT_12x16;
     uint8_t charWidth = (g_storedVar.listFontSize == FONT_SIZE_SMALL) ? WIDTH8x8 : WIDTH12x16;
     uint8_t lineHeight = (g_storedVar.listFontSize == FONT_SIZE_SMALL) ? 8 : HEIGHT12x16;
+    static char lastBrakeListValue[10] = "";
+    static char lastSensiListValue[10] = "";
+    static uint8_t lastBrakeListFont = 0xFF;
+    static uint8_t lastSensiListFont = 0xFF;
 
     for (uint8_t i = 0; i < visibleLines; i++)
     {
@@ -651,9 +652,6 @@ void printMainMenu(MenuState_enum currMenuState)
       if (menuIndex >= mainMenuItems) break;
       bool isBrakeRow = (strcmp(g_mainMenu.item[menuIndex].name, getMenuName(g_storedVar.language, 0)) == 0);
       bool isSensiRow = (strcmp(g_mainMenu.item[menuIndex].name, getMenuName(g_storedVar.language, 1)) == 0);
-      if (isBrakeRow || isSensiRow) {
-        clearMenuRowField(i * lineHeight, menuFont);
-      }
       /* Print item name */
       /* Item color: WHITE if item is selected, black otherwise */
       obdWriteString(&g_obd, 0, 0, i * lineHeight, g_mainMenu.item[menuIndex].name, menuFont, (g_encoderMainSelector - frameUpper == i) ? OBD_WHITE : OBD_BLACK, 1);
@@ -690,6 +688,23 @@ void printMainMenu(MenuState_enum currMenuState)
             sprintf(msgStr, "%3d%s", *(uint16_t *)(g_mainMenu.item[menuIndex].value), g_mainMenu.item[menuIndex].unit);
           }
           /* Right-align: calculate text width and position from right edge */
+          if (isBrakeRow) {
+            uint8_t clearChars = max((uint8_t)strlen(msgStr), (uint8_t)strlen(lastBrakeListValue));
+            if (clearChars > 0U && (strcmp(msgStr, lastBrakeListValue) != 0 || menuFont != lastBrakeListFont)) {
+              clearRightAlignedField(OLED_WIDTH, i * lineHeight, menuFont, clearChars);
+            }
+            strncpy(lastBrakeListValue, msgStr, sizeof(lastBrakeListValue) - 1U);
+            lastBrakeListValue[sizeof(lastBrakeListValue) - 1U] = '\0';
+            lastBrakeListFont = menuFont;
+          } else if (isSensiRow) {
+            uint8_t clearChars = max((uint8_t)strlen(msgStr), (uint8_t)strlen(lastSensiListValue));
+            if (clearChars > 0U && (strcmp(msgStr, lastSensiListValue) != 0 || menuFont != lastSensiListFont)) {
+              clearRightAlignedField(OLED_WIDTH, i * lineHeight, menuFont, clearChars);
+            }
+            strncpy(lastSensiListValue, msgStr, sizeof(lastSensiListValue) - 1U);
+            lastSensiListValue[sizeof(lastSensiListValue) - 1U] = '\0';
+            lastSensiListFont = menuFont;
+          }
           int textWidth = strlen(msgStr) * charWidth;
           obdWriteString(&g_obd, 0, OLED_WIDTH - textWidth, i * lineHeight, msgStr, menuFont, (isSelectedValueEditing ? OBD_WHITE : OBD_BLACK), 1);
         }
