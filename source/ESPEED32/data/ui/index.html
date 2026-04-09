@@ -1376,6 +1376,7 @@ var availableReleases=[];
 var selectedReleaseVersion='';
 var releaseFetchTried=false;
 var otaBusy=false;
+var otaPausedTelemetryPolling=false;
 var backupDownloadedThisSession=false;
 var firmwareBackupPromptResolver=null;
 var otaBackupPromptStatusId='auto-ota-status';
@@ -2625,6 +2626,7 @@ function formatTelemetryPollingIntervalLabel(ms){
 
 function startTelemetryPollingIfAvailable(refreshNow){
   stopTelemetryPolling();
+  if(otaBusy && !telemetryUsesUsb()) return;
   if(!telemetryAvailable()) return;
   if(refreshNow) syncTelemetryHistory(true,true);
   telemetryPollTimer=setInterval(function(){ syncTelemetryHistory(false,true); },telemetryPollIntervalMs);
@@ -3609,6 +3611,10 @@ function initLapOverlayUi(){
 }
 
 async function syncTelemetryHistory(reset,silent){
+  if(otaBusy && !telemetryUsesUsb()){
+    stopTelemetryPolling();
+    return;
+  }
   if(!telemetryAvailable()){
     stopTelemetryPolling();
     telemetryStatus=null;
@@ -4494,6 +4500,26 @@ function setOtaBusy(busy){
   updateFirmwareUiState();
 }
 
+async function pauseBackgroundActivityForOta(statusId){
+  otaPausedTelemetryPolling=!!telemetryPollTimer;
+  stopTelemetryPolling();
+  if(!telemetryFetchBusy) return;
+
+  ss(statusId,'','Waiting for background requests to settle...');
+  var deadline=Date.now()+3000;
+  while(telemetryFetchBusy && Date.now()<deadline){
+    await sleepMs(50);
+  }
+}
+
+function resumeBackgroundActivityAfterOta(){
+  var shouldResume=otaPausedTelemetryPolling;
+  otaPausedTelemetryPolling=false;
+  if(shouldResume && !otaBusy && telemetryAvailable()){
+    startTelemetryPollingIfAvailable(false);
+  }
+}
+
 function extractFileNameFromUrl(url,fallback){
   var out=String(fallback||'update.bin');
   try{
@@ -4549,6 +4575,7 @@ function attemptUploadOnce(endpoint,blob,fileName,progressPrefix){
     var lastPercent=0;
     xhr.open('POST',endpoint,true);
     xhr.timeout=900000;
+    xhr.setRequestHeader('X-Ota-Token',String(Date.now())+'-'+Math.random().toString(16).slice(2));
 
     xhr.upload.onprogress=function(ev){
       if(ev.lengthComputable && ev.total>0){
@@ -4583,7 +4610,7 @@ function attemptUploadOnce(endpoint,blob,fileName,progressPrefix){
 }
 
 async function uploadBinaryWithProgress(endpoint,blob,fileName,progressPrefix,maxRetries){
-  if(maxRetries===undefined) maxRetries=3;
+  if(maxRetries===undefined) maxRetries=1;
   var lastErr=null;
   for(var attempt=1;attempt<=maxRetries;attempt++){
     if(attempt>1){
@@ -4669,7 +4696,7 @@ async function uploadPreparedBinary(opts){
   if(!opts.blob) throw new Error('Missing update file');
   setProgress(opts.progressPrefix,'Starting upload...',0);
   ss(opts.statusId,'',opts.uploadStatus||'Uploading update...');
-  var res=await uploadBinaryWithProgress(opts.endpoint,opts.blob,opts.fileName,opts.progressPrefix);
+  var res=await uploadBinaryWithProgress(opts.endpoint,opts.blob,opts.fileName,opts.progressPrefix,opts.maxRetries);
   var ok=(res.status>=200 && res.status<300 && res.text.indexOf('OK')===0);
   if(!ok){
     setProgress(opts.progressPrefix,'Upload failed',null);
@@ -4709,7 +4736,10 @@ async function runCombinedOtaUpdate(config){
   setOtaBusy(true);
   var activeStage='starting';
   var firmwareStaged=false;
+  var otaCompleted=false;
   try{
+    await pauseBackgroundActivityForOta(config.statusId);
+
     if(hasFirmware){
       activeStage='firmware-download';
       var firmwarePayload=await resolveOtaBinary(config.firmware);
@@ -4721,7 +4751,8 @@ async function runCombinedOtaUpdate(config){
         fileName:firmwarePayload.fileName||'ESPEED32.ino.bin',
         progressPrefix:config.firmware.progressPrefix,
         statusId:config.statusId,
-        uploadStatus:'Uploading firmware...'
+        uploadStatus:'Uploading firmware...',
+        maxRetries:1
       });
       firmwareStaged=hasSpiffs;
     }
@@ -4738,13 +4769,15 @@ async function runCombinedOtaUpdate(config){
         fileName:spiffsPayload.fileName||'espeed32_spiffs.bin',
         progressPrefix:config.spiffs.progressPrefix,
         statusId:config.statusId,
-        uploadStatus:'Uploading filesystem image...'
+        uploadStatus:'Uploading filesystem image...',
+        maxRetries:1
       });
     }
 
     activeStage='final-restart';
     await waitForControllerReturn(hasFirmware && hasSpiffs ? 'Update pair' : (hasSpiffs ? 'Filesystem update' : 'Firmware update'),
                                   config.statusId);
+    otaCompleted=true;
     var _otaLabel=(hasFirmware && hasSpiffs ? 'Update pair' : (hasSpiffs ? 'Filesystem update' : 'Firmware update'));
     var _otaSec=8;
     ss(config.statusId,'ok',_otaLabel+' complete. Reloading in '+_otaSec+'s — giving the controller time to stabilize.');
@@ -4766,6 +4799,9 @@ async function runCombinedOtaUpdate(config){
     ss(config.statusId,'err',errMsg);
   }finally{
     setOtaBusy(false);
+    if(!otaCompleted){
+      resumeBackgroundActivityAfterOta();
+    }
   }
 }
 

@@ -1966,6 +1966,8 @@ static bool g_otaInProgress = false;
 static bool g_otaTargetSpiffs = false;
 static bool g_otaSessionOk = false;
 static bool g_otaRestartRequested = true;
+static String g_otaActiveToken = "";
+static String g_otaRejectedToken = "";
 static int8_t g_otaPrevTxPower = 0;
 static bool g_otaRestartDeferredPending = false;
 static uint32_t g_otaRestartDeferredUntilMs = 0;
@@ -3266,8 +3268,19 @@ static void handleRestore() {
 static void handleOtaUpload() {
   HTTPUpload& upload = g_wifiServer->upload();
   char msgStr[32];
+  String requestToken = g_wifiServer->header("X-Ota-Token");
 
   if (upload.status == UPLOAD_FILE_START) {
+    if (!requestToken.isEmpty() && isOtaInProgress()) {
+      g_otaRejectedToken = requestToken;
+      return;
+    }
+
+    if (!requestToken.isEmpty()) {
+      g_otaActiveToken = requestToken;
+      g_otaRejectedToken = "";
+    }
+
     String uri = g_wifiServer->uri();
     g_otaTargetSpiffs = (uri == "/ota-spiffs");
     g_otaTotal = upload.totalSize;  /* May be 0 if browser doesn't send content-length */
@@ -3322,6 +3335,9 @@ static void handleOtaUpload() {
     }
 
   } else if (upload.status == UPLOAD_FILE_WRITE) {
+    if (!requestToken.isEmpty() && requestToken != g_otaActiveToken) {
+      return;
+    }
     if (!g_otaSessionOk) {
       return;
     }
@@ -3343,6 +3359,9 @@ static void handleOtaUpload() {
     }
 
   } else if (upload.status == UPLOAD_FILE_END) {
+    if (!requestToken.isEmpty() && requestToken != g_otaActiveToken) {
+      return;
+    }
     esp_wifi_set_max_tx_power(g_otaPrevTxPower);
     bool otaOk = g_otaSessionOk && Update.end(true);
     if (otaOk) {
@@ -3362,6 +3381,9 @@ static void handleOtaUpload() {
     }
     g_otaInProgress = false;
   } else if (upload.status == UPLOAD_FILE_ABORTED) {
+    if (!requestToken.isEmpty() && requestToken != g_otaActiveToken) {
+      return;
+    }
     esp_wifi_set_max_tx_power(g_otaPrevTxPower);
     Update.abort();
     g_otaSessionOk = false;
@@ -3381,6 +3403,13 @@ static void handleOtaUpload() {
  * @brief Handle OTA completion response - called after upload finishes
  */
 static void handleOta() {
+  String requestToken = g_wifiServer->header("X-Ota-Token");
+  if (!requestToken.isEmpty() && requestToken == g_otaRejectedToken) {
+    g_otaRejectedToken = "";
+    g_wifiServer->send(409, "text/plain", "Another update is already running. Wait for completion.");
+    return;
+  }
+
   bool otaOk = g_otaSessionOk && !Update.hasError();
   if (!otaOk) {
     clearOtaDeferredRestartState();
@@ -3415,6 +3444,9 @@ static void handleOta() {
       delay(1000);
       ESP.restart();
     }
+  }
+  if (!requestToken.isEmpty() && requestToken == g_otaActiveToken) {
+    g_otaActiveToken = "";
   }
   g_otaRestartRequested = true;
 }
@@ -4042,8 +4074,8 @@ static void registerWebRoutes() {
 
   /* Collect the binary size header sent by the UI so Update.begin() can
    * allocate the exact partition space needed instead of UPDATE_SIZE_UNKNOWN. */
-  static const char* kOtaCollectHeaders[] = {"X-Binary-Size"};
-  g_wifiServer->collectHeaders(kOtaCollectHeaders, 1);
+  static const char* kOtaCollectHeaders[] = {"X-Binary-Size", "X-Ota-Token"};
+  g_wifiServer->collectHeaders(kOtaCollectHeaders, 2);
 }
 
 bool isWiFiPortalActive() {
