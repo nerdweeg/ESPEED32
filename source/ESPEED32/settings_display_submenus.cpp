@@ -8,6 +8,7 @@ extern ESC_type g_escVar;
 extern OBDISP g_obd;
 extern char msgStr[50];
 extern AiEsp32RotaryEncoder g_rotaryEncoder;
+extern Menu_type g_settingsMenu;
 extern uint16_t g_antiSpinStepMs;
 extern uint16_t g_antiSpinStepPct;
 extern uint16_t g_antiSpinDisplayMode;
