@@ -3271,7 +3271,7 @@ static void handleOtaUpload() {
   String requestToken = g_wifiServer->header("X-Ota-Token");
 
   if (upload.status == UPLOAD_FILE_START) {
-    if (!requestToken.isEmpty() && isOtaInProgress()) {
+    if (!requestToken.isEmpty() && g_otaInProgress) {
       g_otaRejectedToken = requestToken;
       return;
     }
