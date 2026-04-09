@@ -1252,12 +1252,12 @@ form{margin:0}
 <option value="">Loading latest...</option>
 </select>
 </div>
-<p id="fw-release-note" class="tiny">Choose which standard official release automatic update should install. Both firmware and filesystem will be updated together.</p>
+<p id="fw-release-note" class="tiny">Choose which official release automatic update should install. Firmware variant is matched to this controller's HAL Sensor when release metadata provides one.</p>
 <p id="fw-release-source" class="tiny" style="display:none"></p>
 <button type="button" class="btn dl" id="btn-fw-auto" onclick="autoUpdateFirmware()">Install Selected Release</button>
 <p id="fw-auto-desc" class="tiny">Downloads the selected release pair, uploads firmware first and filesystem second, then reboots once at the end.</p>
 <p class="tiny">Recommended when you want a matched official release without downloading files manually.</p>
-<p class="tiny warn">Automatic update follows the standard official firmware path, which uses the default TLE493D build. If this controller reports another HAL Sensor, use Manual Update with the matching sensor-specific firmware file and the SPIFFS file from the same release.</p>
+<p class="tiny warn">Automatic update now tries to match firmware to this controller's HAL Sensor. If no matching firmware variant exists for the selected release, automatic firmware update is blocked and you must use Manual Update with the matching sensor-specific firmware file and the SPIFFS file from the same release.</p>
 </div>
 <p id="ota-note" style="display:none" class="warn"></p>
 <div id="auto-fw-progress" class="progress-wrap" aria-live="polite">
@@ -1624,6 +1624,17 @@ function renderControllerAbout(){
   }
 }
 
+function getControllerHalSensorFamily(){
+  var raw=String(info.halSensor||'').trim().toUpperCase();
+  if(!raw) return '';
+  if(raw.indexOf('TLE493D')===0) return 'TLE493D';
+  if(raw.indexOf('AS5600L')===0) return 'AS5600L';
+  if(raw.indexOf('AS5600')===0) return 'AS5600';
+  if(raw.indexOf('MT6701')===0) return 'MT6701';
+  if(raw.indexOf('ANALOG')===0) return 'ANALOG';
+  return raw.split(/\s+/)[0];
+}
+
 function ss(id,c,m){var e=document.getElementById(id);if(!e) return;e.className='st '+c;e.textContent=m;e.style.display='block';}
 function clearStatus(id){var e=document.getElementById(id);if(!e) return;e.className='st';e.textContent='';e.style.display='none';}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(ch){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[ch];});}
@@ -1784,6 +1795,32 @@ function formatSelectedReleaseLabel(entry){
   return formatReleaseVersionLabel(entry);
 }
 
+function normalizeFirmwareVariants(rawVariants,legacyFirmwareUrl,legacyFirmwareSha256Url){
+  var out={};
+  if(rawVariants && typeof rawVariants==='object'){
+    for(var key in rawVariants){
+      if(!Object.prototype.hasOwnProperty.call(rawVariants,key)) continue;
+      var family=String(key||'').trim().toUpperCase();
+      if(!family) continue;
+      var variant=rawVariants[key]||{};
+      var url=String(variant.url||'').trim();
+      if(!url) continue;
+      out[family]={
+        url:url,
+        sha256Url:String(variant.sha256Url||'').trim()
+      };
+    }
+  }
+  var legacyUrl=String(legacyFirmwareUrl||'').trim();
+  if(legacyUrl && !out.TLE493D){
+    out.TLE493D={
+      url:legacyUrl,
+      sha256Url:String(legacyFirmwareSha256Url||'').trim()
+    };
+  }
+  return out;
+}
+
 function normalizeReleaseEntry(item){
   if(!item) return null;
 
@@ -1802,13 +1839,6 @@ function normalizeReleaseEntry(item){
       :'https://github.com/nerdweeg/ESPEED32/releases/latest';
   }
 
-  var firmwareUrl=String(item.firmwareUrl||'').trim();
-  if(!firmwareUrl){
-    firmwareUrl=(version!=='latest')
-      ?('https://downloads.espeed32.com/releases/'+encodeURIComponent(version)+'/firmware.bin')
-      :AUTO_UPDATE_FIRMWARE_URL;
-  }
-
   var spiffsUrl=String(item.spiffsUrl||'').trim();
   if(!spiffsUrl){
     spiffsUrl=(version!=='latest')
@@ -1816,14 +1846,18 @@ function normalizeReleaseEntry(item){
       :AUTO_UPDATE_SPIFFS_URL;
   }
 
+  var spiffsSha256Url=String(item.spiffsSha256Url||'').trim();
+  var firmwareVariants=normalizeFirmwareVariants(item.firmwareVariants,item.firmwareUrl,item.firmwareSha256Url);
+
   return {
     version:version,
     tag:tag,
     name:String(item.name||'').trim(),
     publishedAt:String(item.publishedAt||'').trim(),
     source:source,
-    firmwareUrl:firmwareUrl,
     spiffsUrl:spiffsUrl,
+    spiffsSha256Url:spiffsSha256Url,
+    firmwareVariants:firmwareVariants,
     isLatest:false
   };
 }
@@ -1844,7 +1878,7 @@ function applyReleaseSelection(releases,latestVersion,preferredVersion){
 
   latestReleaseTag=latestEntry?String(latestEntry.tag||'').trim():'';
   latestReleaseUrl=latestEntry?String(latestEntry.source||'').trim():'';
-  latestFirmwareBinUrl=latestEntry?String(latestEntry.firmwareUrl||'').trim():'';
+  latestFirmwareBinUrl=latestEntry?String((((latestEntry.firmwareVariants||{}).TLE493D||{}).url)||'').trim():'';
   latestSpiffsBinUrl=latestEntry?String(latestEntry.spiffsUrl||'').trim():'';
 
   var wanted=normalizeReleaseVersionId(preferredVersion || selectedReleaseVersion);
@@ -1871,10 +1905,32 @@ function getSelectedReleaseMeta(){
   return availableReleases.length?availableReleases[0]:null;
 }
 
+function getMatchedFirmwareVariant(entry){
+  if(!entry || !entry.firmwareVariants || typeof entry.firmwareVariants!=='object') return null;
+  var family=getControllerHalSensorFamily();
+  if(family && entry.firmwareVariants[family] && entry.firmwareVariants[family].url){
+    return {
+      family:family,
+      url:String(entry.firmwareVariants[family].url||'').trim(),
+      sha256Url:String(entry.firmwareVariants[family].sha256Url||'').trim()
+    };
+  }
+  if(!family && entry.firmwareVariants.TLE493D && entry.firmwareVariants.TLE493D.url){
+    return {
+      family:'TLE493D',
+      url:String(entry.firmwareVariants.TLE493D.url||'').trim(),
+      sha256Url:String(entry.firmwareVariants.TLE493D.sha256Url||'').trim()
+    };
+  }
+  return null;
+}
+
 function getSelectedReleaseDownloadUrl(kind){
   var selected=getSelectedReleaseMeta();
   if(!selected) return '';
-  return kind==='spiffs'?String(selected.spiffsUrl||'').trim():String(selected.firmwareUrl||'').trim();
+  if(kind==='spiffs') return String(selected.spiffsUrl||'').trim();
+  var variant=getMatchedFirmwareVariant(selected);
+  return variant?variant.url:'';
 }
 
 function normalizeInstalledReleaseVersion(value){
@@ -2058,12 +2114,17 @@ function updateReleaseInfoUi(){
     list.className='release-list';
 
     var itemFw=document.createElement('li');
-    var dl=document.createElement('a');
-    dl.href=selected.firmwareUrl || AUTO_UPDATE_FIRMWARE_URL;
-    dl.target='_blank';
-    dl.rel='noopener';
-    dl.textContent='Download firmware '+formatSelectedReleaseLabel(selected)+' (.bin)';
-    itemFw.appendChild(dl);
+    var matchedFirmware=getMatchedFirmwareVariant(selected);
+    if(matchedFirmware && matchedFirmware.url){
+      var dl=document.createElement('a');
+      dl.href=matchedFirmware.url;
+      dl.target='_blank';
+      dl.rel='noopener';
+      dl.textContent='Download firmware '+formatSelectedReleaseLabel(selected)+' ('+matchedFirmware.family+') (.bin)';
+      itemFw.appendChild(dl);
+    }else{
+      itemFw.textContent='No matching firmware variant published for HAL Sensor '+(info.halSensor||'unknown')+'.';
+    }
     list.appendChild(itemFw);
 
     var itemFs=document.createElement('li');
@@ -2147,7 +2208,8 @@ async function loadLatestReleaseInfo(){
       name:latestJson.name || '',
       publishedAt:latestJson.publishedAt || '',
       source:latestJson.source || '',
-      firmwareUrl:latestJson.firmwareUrl || AUTO_UPDATE_FIRMWARE_URL,
+      firmwareVariants:latestJson.firmwareVariants || null,
+      firmwareUrl:latestJson.firmwareUrl || '',
       spiffsUrl:latestJson.spiffsUrl || AUTO_UPDATE_SPIFFS_URL
     });
     if(!latestEntry) throw new Error('invalid latest payload');
@@ -3823,6 +3885,35 @@ function autoUpdateUnavailableReason(label,kind){
   return '';
 }
 
+function getAutoUpdateBlockedReason(label,selected,plan){
+  var needFirmware=!plan || !plan.canCompare || plan.needsFirmware;
+  var needSpiffs=!plan || !plan.canCompare || plan.needsSpiffs;
+  var blocked='';
+  if(needFirmware){
+    var halSensor=String(info.halSensor||'').trim();
+    var halFamily=getControllerHalSensorFamily();
+    var matchedFirmware=getMatchedFirmwareVariant(selected);
+    if(!halFamily){
+      return label+' could not determine this controller HAL Sensor. Reload the page and try again, or use Manual Update with a matched firmware + SPIFFS pair.';
+    }
+    if(!matchedFirmware){
+      return label+' is blocked because release '+formatSelectedReleaseLabel(selected)+' has no firmware variant for HAL Sensor '+(halSensor||halFamily)+'. Use Manual Update with the matching sensor-specific firmware file and the SPIFFS file from the same release.';
+    }
+  }
+  if(needFirmware){
+    blocked=autoUpdateUnavailableReason(label,'firmware');
+    if(blocked) return blocked;
+  }
+  if(needSpiffs){
+    blocked=autoUpdateUnavailableReason(label,'spiffs');
+    if(blocked) return blocked;
+  }
+  if(plan && plan.canCompare && !plan.needsFirmware && !plan.needsSpiffs){
+    return 'Selected release '+formatSelectedReleaseLabel(selected)+' is already installed on this controller.';
+  }
+  return '';
+}
+
 function loadBackupSessionState(){
   try{
     backupDownloadedThisSession=(sessionStorage.getItem(BACKUP_SESSION_KEY)==='1');
@@ -3879,16 +3970,12 @@ function updateFirmwareUiState(){
 
   var busyReason=otaBusy?'Another update is already running. Wait for completion.':'';
   var manualBaseReason=busyReason || otaUploadUnavailableReason('Manual update');
-  var autoReason=busyReason || autoUpdateUnavailableReason('Automatic update','firmware') || autoUpdateUnavailableReason('Automatic update','spiffs');
   var selected=getSelectedReleaseMeta();
   var plan=getSelectedReleaseInstallPlan(selected);
+  var autoReason=busyReason || getAutoUpdateBlockedReason('Automatic update',selected,plan);
   var selectedLabel=formatSelectedReleaseLabel(selected);
   var hasReleaseChoice=(availableReleases.length>1);
   var bothFilesSelected=!!(input.files && input.files[0] && fsInput.files && fsInput.files[0]);
-
-  if(!autoReason && plan.canCompare && !plan.needsFirmware && !plan.needsSpiffs){
-    autoReason='Selected release '+selectedLabel+' is already installed on this controller.';
-  }
 
   var disabled=(manualBaseReason!=='');
   var autoDisabled=(autoReason!=='');
@@ -4808,13 +4895,8 @@ async function runCombinedOtaUpdate(config){
 async function autoUpdateFirmware(){
   var selected=getSelectedReleaseMeta();
   var plan=getSelectedReleaseInstallPlan(selected);
-  var blocked=otaBusy?'Another update is already running. Wait for completion.':autoUpdateUnavailableReason('Automatic update','firmware');
-  if(!blocked){
-    blocked=autoUpdateUnavailableReason('Automatic update','spiffs');
-  }
-  if(!blocked && plan.canCompare && !plan.needsFirmware && !plan.needsSpiffs){
-    blocked='Selected release '+formatSelectedReleaseLabel(selected)+' is already installed on this controller.';
-  }
+  var blocked=otaBusy?'Another update is already running. Wait for completion.':getAutoUpdateBlockedReason('Automatic update',selected,plan);
+  var matchedFirmware=getMatchedFirmwareVariant(selected);
   if(blocked){
     ss('auto-ota-status','err',blocked);
     return;
@@ -4827,8 +4909,8 @@ async function autoUpdateFirmware(){
   if(!plan.canCompare || plan.needsFirmware){
     config.firmware={
       downloadUrl:getSelectedReleaseDownloadUrl('firmware'),
-      sha256Url:selected&&selected.firmwareSha256Url||null,
-      fileName:selected&&selected.firmwareAssetName||'ESPEED32.ino.bin',
+      sha256Url:matchedFirmware&&matchedFirmware.sha256Url||null,
+      fileName:matchedFirmware&&matchedFirmware.url?extractFileNameFromUrl(matchedFirmware.url,'ESPEED32.ino.bin'):'ESPEED32.ino.bin',
       progressPrefix:'auto-fw',
       downloadStatus:'Downloading selected firmware...'
     };
@@ -4837,7 +4919,7 @@ async function autoUpdateFirmware(){
     config.spiffs={
       downloadUrl:getSelectedReleaseDownloadUrl('spiffs'),
       sha256Url:selected&&selected.spiffsSha256Url||null,
-      fileName:selected&&selected.spiffsAssetName||'espeed32_spiffs.bin',
+      fileName:selected&&selected.spiffsUrl?extractFileNameFromUrl(selected.spiffsUrl,'espeed32_spiffs.bin'):'espeed32_spiffs.bin',
       progressPrefix:'auto-spiffs',
       downloadStatus:'Downloading selected filesystem image...'
     };
