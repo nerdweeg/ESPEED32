@@ -3890,6 +3890,14 @@ function getAutoUpdateBlockedReason(label,selected,plan){
   var needSpiffs=!plan || !plan.canCompare || plan.needsSpiffs;
   var blocked='';
   if(needFirmware){
+    blocked=autoUpdateUnavailableReason(label,'firmware');
+    if(blocked) return blocked;
+  }
+  if(needSpiffs){
+    blocked=autoUpdateUnavailableReason(label,'spiffs');
+    if(blocked) return blocked;
+  }
+  if(needFirmware){
     var halSensor=String(info.halSensor||'').trim();
     var halFamily=getControllerHalSensorFamily();
     var matchedFirmware=getMatchedFirmwareVariant(selected);
@@ -3899,14 +3907,6 @@ function getAutoUpdateBlockedReason(label,selected,plan){
     if(!matchedFirmware){
       return label+' is blocked because release '+formatSelectedReleaseLabel(selected)+' has no firmware variant for HAL Sensor '+(halSensor||halFamily)+'. Use Manual Update with the matching sensor-specific firmware file and the SPIFFS file from the same release.';
     }
-  }
-  if(needFirmware){
-    blocked=autoUpdateUnavailableReason(label,'firmware');
-    if(blocked) return blocked;
-  }
-  if(needSpiffs){
-    blocked=autoUpdateUnavailableReason(label,'spiffs');
-    if(blocked) return blocked;
   }
   if(plan && plan.canCompare && !plan.needsFirmware && !plan.needsSpiffs){
     return 'Selected release '+formatSelectedReleaseLabel(selected)+' is already installed on this controller.';
