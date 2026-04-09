@@ -40,16 +40,29 @@ const char* POWER_MENU_NAMES[][6] = {
 };
 
 /* Display submenu item names: [language][item] */
-const char* DISPLAY_MENU_NAMES[][9] = {
-  /* NOR */ {"RACEMODUS", "SPRAK", "STYL", "SKRIFTSTRL", "ANTISPINN", "BREMSSTEG", "SENSISTEG", "STATUSLINJE", "TILBAKE"},
-  /* ENG */ {"RACE MODE", "LANGUAGE", "CASE", "FONT SIZE", "ANTISPIN", "BRAKE STEP", "SENSI STEP", "STATUS BAR", "BACK"},
-  /* CS  */ {"RACE MODE", "LANGUAGE", "CASE", "FONT SIZE", "ANTISPIN", "BRAKE STEP", "SENSI STEP", "STATUS BAR", "BACK"},
-  /* ACD */ {"RACE MODE", "LANGUAGE", "CASE", "FONT SIZE", "ANTISPIN", "BRAKE STEP", "SENSI STEP", "STATUS BAR", "BACK"},
-  /* ESP */ {"MODO RACE", "IDIOMA", "ESTILO", "TAM TEXTO", "ANTISPIN", "PASO FRENO", "PASO SENSI", "BARRA EST", "ATRAS"},
-  /* DEU */ {"RACE MODUS", "SPRACHE", "STIL", "SCHRIFT", "ANTISPIN", "BRK SCHRITT", "SEN SCHRITT", "STATUSLEISTE", "ZURUCK"},
-  /* ITA */ {"MODO GARA", "LINGUA", "STILE", "DIM TESTO", "ANTISPIN", "PASSO FRENO", "PASSO SENSI", "BARRA STATO", "INDIETRO"},
-  /* NLD */ {"RACE MODUS", "TAAL", "STIJL", "TEKSTGRT", "ANTISPIN", "STAP REM", "STAP SENSI", "STATUSBALK", "TERUG"},
-  /* POR */ {"MODO RACE", "IDIOMA", "ESTILO", "TAM TEXTO", "ANTISPIN", "PASSO FREIO", "PASSO SENSI", "BARRA EST", "VOLTAR"}
+const char* DISPLAY_MENU_NAMES[][7] = {
+  /* NOR */ {"RACEMODUS", "SPRAK", "STYL", "SKRIFTSTRL", "STEG", "STATUSLINJE", "TILBAKE"},
+  /* ENG */ {"RACE MODE", "LANGUAGE", "CASE", "FONT SIZE", "STEPS", "STATUS BAR", "BACK"},
+  /* CS  */ {"RACE MODE", "LANGUAGE", "CASE", "FONT SIZE", "STEPS", "STATUS BAR", "BACK"},
+  /* ACD */ {"RACE MODE", "LANGUAGE", "CASE", "FONT SIZE", "STEPS", "STATUS BAR", "BACK"},
+  /* ESP */ {"MODO RACE", "IDIOMA", "ESTILO", "TAM TEXTO", "PASOS", "BARRA EST", "ATRAS"},
+  /* DEU */ {"RACE MODUS", "SPRACHE", "STIL", "SCHRIFT", "SCHRITTE", "STATUSLEISTE", "ZURUCK"},
+  /* ITA */ {"MODO GARA", "LINGUA", "STILE", "DIM TESTO", "PASSI", "BARRA STATO", "INDIETRO"},
+  /* NLD */ {"RACE MODUS", "TAAL", "STIJL", "TEKSTGRT", "STAPPEN", "STATUSBALK", "TERUG"},
+  /* POR */ {"MODO RACE", "IDIOMA", "ESTILO", "TAM TEXTO", "PASSOS", "BARRA EST", "VOLTAR"}
+};
+
+/* Steps submenu item names: [language][item] */
+const char* STEPS_MENU_NAMES[][4] = {
+  /* NOR */ {"ANTISPINN", "BREMSSTEG", "SENSISTEG", "TILBAKE"},
+  /* ENG */ {"ANTISPIN", "BRAKE STEP", "SENSI STEP", "BACK"},
+  /* CS  */ {"ANTISPIN", "BRAKE STEP", "SENSI STEP", "BACK"},
+  /* ACD */ {"ANTISPIN", "BRAKE STEP", "SENSI STEP", "BACK"},
+  /* ESP */ {"ANTISPIN", "PASO FRENO", "PASO SENSI", "ATRAS"},
+  /* DEU */ {"ANTISPIN", "BRK SCHRITT", "SEN SCHRITT", "ZURUCK"},
+  /* ITA */ {"ANTISPIN", "PASSO FRENO", "PASSO SENSI", "INDIETRO"},
+  /* NLD */ {"ANTISPIN", "STAP REM", "STAP SENSI", "TERUG"},
+  /* POR */ {"ANTISPIN", "PASSO FREIO", "PASSO SENSI", "VOLTAR"}
 };
 
 /* Race mode parameter labels: [language][param] */
@@ -238,16 +251,29 @@ const char* POWER_MENU_NAMES_PASCAL[][6] = {
 };
 
 /* Display submenu item names - Pascal Case: [language][item] */
-const char* DISPLAY_MENU_NAMES_PASCAL[][9] = {
-  /* NOR */ {"Racemodus", "Sprak", "Styl", "Skriftstrl", "Antispinn", "Bremssteg", "Sensisteg", "Statuslinje", "Tilbake"},
-  /* ENG */ {"Race Mode", "Language", "Case", "Font Size", "Antispin", "Brake step", "Sensi step", "Status bar", "Back"},
-  /* CS  */ {"Race Mode", "Language", "Case", "Font Size", "Antispin", "Brake step", "Sensi step", "Status bar", "Back"},
-  /* ACD */ {"Race Mode", "Language", "Case", "Font Size", "Antispin", "Brake step", "Sensi step", "Status bar", "Back"},
-  /* ESP */ {"Modo Race", "Idioma", "Estilo", "Tam texto", "Antispin", "Paso freno", "Paso sensi", "Barra est", "Atras"},
-  /* DEU */ {"Race Modus", "Sprache", "Stil", "Schrift", "Antispin", "Brk schritt", "Sen schritt", "Statusleiste", "Zuruck"},
-  /* ITA */ {"Modo Gara", "Lingua", "Stile", "Dim testo", "Antispin", "Passo freno", "Passo sensi", "Barra stato", "Indietro"},
-  /* NLD */ {"Race Modus", "Taal", "Stijl", "Tekstgrt", "Antispin", "Stap rem", "Stap sensi", "Statusbalk", "Terug"},
-  /* POR */ {"Modo Race", "Idioma", "Estilo", "Tam texto", "Antispin", "Passo freio", "Passo sensi", "Barra est", "Voltar"}
+const char* DISPLAY_MENU_NAMES_PASCAL[][7] = {
+  /* NOR */ {"Racemodus", "Sprak", "Styl", "Skriftstrl", "Steg", "Statuslinje", "Tilbake"},
+  /* ENG */ {"Race Mode", "Language", "Case", "Font Size", "Steps", "Status bar", "Back"},
+  /* CS  */ {"Race Mode", "Language", "Case", "Font Size", "Steps", "Status bar", "Back"},
+  /* ACD */ {"Race Mode", "Language", "Case", "Font Size", "Steps", "Status bar", "Back"},
+  /* ESP */ {"Modo Race", "Idioma", "Estilo", "Tam texto", "Pasos", "Barra est", "Atras"},
+  /* DEU */ {"Race Modus", "Sprache", "Stil", "Schrift", "Schritte", "Statusleiste", "Zuruck"},
+  /* ITA */ {"Modo Gara", "Lingua", "Stile", "Dim testo", "Passi", "Barra stato", "Indietro"},
+  /* NLD */ {"Race Modus", "Taal", "Stijl", "Tekstgrt", "Stappen", "Statusbalk", "Terug"},
+  /* POR */ {"Modo Race", "Idioma", "Estilo", "Tam texto", "Passos", "Barra est", "Voltar"}
+};
+
+/* Steps submenu item names - Pascal Case: [language][item] */
+const char* STEPS_MENU_NAMES_PASCAL[][4] = {
+  /* NOR */ {"Antispinn", "Bremssteg", "Sensisteg", "Tilbake"},
+  /* ENG */ {"Antispin", "Brake step", "Sensi step", "Back"},
+  /* CS  */ {"Antispin", "Brake step", "Sensi step", "Back"},
+  /* ACD */ {"Antispin", "Brake step", "Sensi step", "Back"},
+  /* ESP */ {"Antispin", "Paso freno", "Paso sensi", "Atras"},
+  /* DEU */ {"Antispin", "Brk schritt", "Sen schritt", "Zuruck"},
+  /* ITA */ {"Antispin", "Passo freno", "Passo sensi", "Indietro"},
+  /* NLD */ {"Antispin", "Stap rem", "Stap sensi", "Terug"},
+  /* POR */ {"Antispin", "Passo freio", "Passo sensi", "Voltar"}
 };
 
 /* Race mode parameter labels - Pascal Case: [language][param] */

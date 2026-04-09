@@ -17,10 +17,14 @@ extern bool refreshIdleInteractionFromControls(uint32_t* lastInteraction, bool* 
 extern bool serviceIdlePowerTransitions(uint32_t* lastInteraction, bool* screensaverActive);
 extern bool checkRaceModeEscape();
 extern void requestEscapeToMain();
+extern bool isEscapeToMainRequested();
 
 extern void showScreensaver();
 extern void displayStatusLine();
 extern void saveEEPROM(StoredVar_type toSave);
+extern void initStepsMenuItems();
+extern uint16_t g_carSel;
+extern void snapCarParamToCurrentSteps(uint16_t carIdx);
 
 static void formatConfiguredMenuLabel(const char* source, char* buffer, size_t bufferSize) {
   if (buffer == nullptr || bufferSize == 0) return;
@@ -850,4 +854,180 @@ void showStatusSettings() {
 
   saveEEPROM(g_storedVar);
   obdFill(&g_obd, OBD_WHITE, 1);
+}
+
+/**
+ * Steps submenu: ANTISPIN (submenu), BRAKE STEP, SENSI STEP, BACK.
+ * Handles inline editing for BRAKE STEP and SENSI STEP, and snaps the
+ * active car's params to the new step grid on each confirmation.
+ */
+void showStepsSettings() {
+  initStepsMenuItems();
+  obdFill(&g_obd, OBD_WHITE, 1);
+
+  uint8_t lang = g_storedVar.language;
+  g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
+  setUiEncoderBoundaries(1, STEPS_ITEMS_COUNT, false);
+  resetUiEncoder(1);
+
+  uint16_t sel = 1;
+  uint16_t prevSel = 0;
+  MenuState_enum menuState = ITEM_SELECTION;
+  uint16_t *valuePtr = NULL;
+  uint16_t originalValue = 0;
+
+  const uint8_t visibleLines = STEPS_ITEMS_COUNT;  /* 4 items fit on one screen */
+  uint16_t frameUpper = 1;
+  uint16_t frameLower = visibleLines;
+
+  uint32_t lastInteraction = millis();
+  bool ssActive = false;
+  uint16_t ssEncoderPos = (uint16_t)readUiEncoder();
+
+  while (true) {
+    bool wakeUp = refreshIdleInteractionFromControls(&lastInteraction, &ssActive, &ssEncoderPos);
+    if (wakeUp) {
+      obdFill(&g_obd, OBD_WHITE, 1);
+    }
+
+    if (consumeScreensaverWakeInput(wakeUp)) { continue; }
+
+    if (!wakeUp && !ssActive && g_storedVar.screensaverTimeout > 0 &&
+        millis() - lastInteraction > (g_storedVar.screensaverTimeout * 1000UL)) {
+      if (g_escVar.trigger_norm == 0) {
+        if (!ssActive) {
+          ssActive = true;
+          ssEncoderPos = readUiEncoder();
+          showScreensaver();
+        }
+        if (serviceIdlePowerTransitions(&lastInteraction, &ssActive)) {
+          obdFill(&g_obd, OBD_WHITE, 1);
+        }
+        delay(10);
+        continue;
+      }
+    }
+
+    if (!wakeUp && ssActive) {
+      if (serviceIdlePowerTransitions(&lastInteraction, &ssActive)) {
+        obdFill(&g_obd, OBD_WHITE, 1);
+      }
+      delay(10);
+      continue;
+    }
+
+    /* Encoder button click */
+    if (g_rotaryEncoder.isEncoderButtonClicked()) {
+      lastInteraction = millis();
+      if (menuState == ITEM_SELECTION) {
+        if (sel == STEPS_ITEMS_COUNT) { /* BACK */ break; }
+        if (sel == 1) {  /* ANTISPIN submenu */
+          showAntiSpinSettings();
+          if (isEscapeToMainRequested()) break;
+          initStepsMenuItems();
+          lang = g_storedVar.language;
+          g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
+          setUiEncoderBoundaries(1, STEPS_ITEMS_COUNT, false);
+          resetUiEncoder(sel);
+          obdFill(&g_obd, OBD_WHITE, 1);
+          prevSel = 0;
+          continue;
+        }
+        if (g_settingsMenu.item[sel - 1].value != ITEM_NO_VALUE) {
+          valuePtr = (uint16_t *)g_settingsMenu.item[sel - 1].value;
+          originalValue = *valuePtr;
+          menuState = VALUE_SELECTION;
+          g_rotaryEncoder.setAcceleration(SEL_ACCELERATION);
+          setUiEncoderBoundaries(g_settingsMenu.item[sel - 1].minValue,
+                                 g_settingsMenu.item[sel - 1].maxValue, false);
+          resetUiEncoder(*valuePtr);
+        }
+      } else {
+        /* Confirm edit: snap active car to new step grid and save */
+        menuState = ITEM_SELECTION;
+        g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
+        setUiEncoderBoundaries(1, STEPS_ITEMS_COUNT, false);
+        resetUiEncoder(sel);
+        snapCarParamToCurrentSteps(g_carSel);
+        saveEEPROM(g_storedVar);
+      }
+      delay(200);
+    }
+
+    /* Encoder movement */
+    if (g_rotaryEncoder.encoderChanged()) {
+      lastInteraction = millis();
+      if (menuState == ITEM_SELECTION) {
+        sel = readUiEncoder();
+      } else {
+        *valuePtr = readUiEncoder();
+      }
+    }
+
+    /* Brake button: cancel edit or back */
+    static bool brakeBtnInSteps = false;
+    static uint32_t lastBrakeBtnStepsTime = 0;
+    if (digitalRead(BUTT_PIN) == BUTTON_PRESSED) {
+      if (!brakeBtnInSteps && millis() - lastBrakeBtnStepsTime > BUTTON_SHORT_PRESS_DEBOUNCE_MS) {
+        brakeBtnInSteps = true;
+        lastBrakeBtnStepsTime = millis();
+        lastInteraction = millis();
+        if (menuState == VALUE_SELECTION) {
+          if (valuePtr != NULL) { *valuePtr = originalValue; }
+          menuState = ITEM_SELECTION;
+          g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
+          setUiEncoderBoundaries(1, STEPS_ITEMS_COUNT, false);
+          resetUiEncoder(sel);
+          obdFill(&g_obd, OBD_WHITE, 1);
+        } else {
+          while (digitalRead(BUTT_PIN) == BUTTON_PRESSED) { vTaskDelay(5); }
+          break;
+        }
+      }
+    } else {
+      brakeBtnInSteps = false;
+    }
+
+    /* Frame scrolling (future-proof if STEPS_ITEMS_COUNT grows) */
+    if (menuState == ITEM_SELECTION) {
+      if (sel > frameLower) {
+        frameLower = sel;
+        frameUpper = frameLower - visibleLines + 1;
+        obdFill(&g_obd, OBD_WHITE, 1);
+      } else if (sel < frameUpper) {
+        frameUpper = sel;
+        frameLower = frameUpper + visibleLines - 1;
+        obdFill(&g_obd, OBD_WHITE, 1);
+      }
+    }
+
+    /* Display — always FONT_8x8 */
+    const uint8_t menuFont  = FONT_8x8;
+    const uint8_t charWidth = WIDTH8x8;
+    const uint8_t lineHeight = HEIGHT8x8;
+
+    for (uint8_t i = 0; i < visibleLines; i++) {
+      uint16_t itemIdx = frameUpper - 1 + i;
+      if (itemIdx >= STEPS_ITEMS_COUNT) break;
+
+      bool isSelected = (sel - frameUpper == i && menuState == ITEM_SELECTION);
+      obdWriteString(&g_obd, 0, 0, i * lineHeight, (char*)getStepsMenuName(lang, itemIdx),
+                     menuFont, isSelected ? OBD_WHITE : OBD_BLACK, 1);
+
+      if (g_settingsMenu.item[itemIdx].value != ITEM_NO_VALUE) {
+        bool isValueSel = (sel - frameUpper == i && menuState == VALUE_SELECTION);
+        uint16_t value = *(uint16_t *)(g_settingsMenu.item[itemIdx].value);
+        uint16_t scale = (itemIdx == 1) ? BRAKE_SCALE : SENSI_SCALE;
+        snprintf(msgStr, sizeof(msgStr), "%u.%u%%", (unsigned int)(value / scale), (unsigned int)(value % scale));
+        int textWidth = strlen(msgStr) * charWidth;
+        obdWriteString(&g_obd, 0, OLED_WIDTH - textWidth, i * lineHeight, msgStr,
+                       menuFont, isValueSel ? OBD_WHITE : OBD_BLACK, 1);
+      }
+    }
+
+    /* Long press = escape to main for race mode toggle */
+    if (checkRaceModeEscape()) { requestEscapeToMain(); break; }
+
+    vTaskDelay(10);
+  }
 }

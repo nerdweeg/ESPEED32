@@ -6,5 +6,6 @@ void initStoredVariables();
 void initMenuItems();
 void initSettingsMenuItems();
 void initDisplayMenuItems();
+void initStepsMenuItems();
 
 #endif  /* APP_INIT_H_ */

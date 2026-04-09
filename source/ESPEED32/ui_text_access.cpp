@@ -20,6 +20,10 @@ const char* getDisplayMenuName(uint8_t lang, uint8_t item) {
   return (g_storedVar.textCase == TEXT_CASE_PASCAL) ? DISPLAY_MENU_NAMES_PASCAL[lang][item] : DISPLAY_MENU_NAMES[lang][item];
 }
 
+const char* getStepsMenuName(uint8_t lang, uint8_t item) {
+  return (g_storedVar.textCase == TEXT_CASE_PASCAL) ? STEPS_MENU_NAMES_PASCAL[lang][item] : STEPS_MENU_NAMES[lang][item];
+}
+
 const char* getRaceLabel(uint8_t lang, uint8_t param) {
   return (g_storedVar.textCase == TEXT_CASE_PASCAL) ? RACE_LABELS_PASCAL[lang][param] : RACE_LABELS[lang][param];
 }

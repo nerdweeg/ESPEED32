@@ -3,6 +3,7 @@
 
 void showScreensaverSettings();
 void showAntiSpinSettings();
+void showStepsSettings();
 void showStatusSettings();
 
 #endif  /* SETTINGS_DISPLAY_SUBMENUS_H_ */

@@ -20,22 +20,15 @@ extern void requestEscapeToMain();
 extern bool isEscapeToMainRequested();
 
 extern void showScreensaver();
-extern uint16_t g_carSel;
 extern void saveEEPROM(StoredVar_type toSave);
 extern void initMenuItems();
 extern void initSettingsMenuItems();
 extern void initDisplayMenuItems();
-extern void snapCarParamToCurrentSteps(uint16_t carIdx);
-
-static void formatDisplayStepPercentValue(char* out, size_t outSize, uint16_t stepRaw, uint16_t scale) {
-  if (out == NULL || outSize == 0 || scale == 0) return;
-  /* Always show one decimal so string width stays constant while scrolling */
-  snprintf(out, outSize, "%u.%u%%", (unsigned int)(stepRaw / scale), (unsigned int)(stepRaw % scale));
-}
 
 /**
- * Display settings submenu: VIEW, LANG, CASE, FSIZE, ANTISPIN, BRAKE STEP, SENSI STEP, STATUS, BACK.
+ * Display settings submenu: VIEW, LANG, CASE, FSIZE, STEPS, STATUS, BACK.
  * Handles value editing for display-related parameters.
+ * STEPS opens a dedicated submenu for ANTISPIN, BRAKE STEP and SENSI STEP.
  */
 void showDisplaySettings() {
   initDisplayMenuItems();
@@ -110,8 +103,9 @@ void showDisplaySettings() {
         if (sel == DISPLAY_ITEMS_COUNT) {  /* BACK */
           break;
         }
-        if (sel == DISPLAY_ITEMS_COUNT - 4) {  /* ANTISPIN submenu */
-          showAntiSpinSettings();
+        /* STEPS submenu (ANTISPIN, BRAKE STEP, SENSI STEP) */
+        if (sel == DISPLAY_ITEMS_COUNT - 2) {
+          showStepsSettings();
           if (isEscapeToMainRequested()) break;
           initDisplayMenuItems();
           g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
@@ -172,11 +166,6 @@ void showDisplaySettings() {
         if (isEditingLanguage) { g_storedVar.language = tempLanguage; lang = tempLanguage; isEditingLanguage = false; }
         if (isEditingTextCase) { g_storedVar.textCase = tempTextCase; isEditingTextCase = false; }
         if (isEditingFontSize) { g_storedVar.listFontSize = tempFontSize; isEditingFontSize = false; }
-        /* When a step size changes, snap the active car's params to the new step grid */
-        uint16_t confirmedIdx = sel - 1;
-        if (confirmedIdx == DISPLAY_ITEMS_COUNT - 4 || confirmedIdx == DISPLAY_ITEMS_COUNT - 3) {
-          snapCarParamToCurrentSteps(g_carSel);
-        }
         saveEEPROM(g_storedVar);
         if (g_storedVar.language != prevLanguage || g_storedVar.textCase != prevTextCase || g_storedVar.listFontSize != prevFontSize) {
           initMenuItems();
@@ -285,10 +274,6 @@ void showDisplaySettings() {
         } else if (itemIdx == 3) {  /* FSIZE */
           uint16_t dispFS = (isEditingFontSize && isValueSel) ? tempFontSize : value;
           sprintf(msgStr, "%5s", FONT_SIZE_LABELS[g_storedVar.language][dispFS]);
-        } else if (itemIdx == DISPLAY_ITEMS_COUNT - 4) {  /* BRAKE STEP */
-          formatDisplayStepPercentValue(msgStr, sizeof(msgStr), value, BRAKE_SCALE);
-        } else if (itemIdx == DISPLAY_ITEMS_COUNT - 3) {  /* SENSI STEP */
-          formatDisplayStepPercentValue(msgStr, sizeof(msgStr), value, SENSI_SCALE);
         } else if (g_settingsMenu.item[itemIdx].unit[0] != '\0') {
           snprintf(msgStr, sizeof(msgStr), "%2d %s", value, g_settingsMenu.item[itemIdx].unit);
         } else {
