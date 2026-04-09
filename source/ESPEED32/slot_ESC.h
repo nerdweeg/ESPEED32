@@ -18,7 +18,7 @@
 /* Firmware Version */
 #define SW_MAJOR_VERSION 6
 #define SW_MINOR_VERSION 9
-#define SW_PATCH_VERSION 1
+#define SW_PATCH_VERSION 2
 
 /* Stored Variable Version */
 #define STORED_VAR_VERSION 24 /* Increment when stored value scale/format changes */
