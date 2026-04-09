@@ -78,9 +78,10 @@
       <li><code>ACD</code>: ACD-style terms where directly applicable (<code>SENSI</code> and <code>CHOKE</code> for limit). <code>ANTIS</code> remains anti-spin because the ACD manual does not define a separate Choke2 term.</li>
       <li><code>DISPLAY -&gt; CASE</code> chooses whether labels are shown in <code>UPPER</code> or <code>Pascal</code>.</li>
       <li><code>DISPLAY -&gt; FONT SIZE</code> changes list/menu text density between <code>LARGE</code> and <code>small</code>.</li>
-      <li><code>DISPLAY -&gt; ANTISPIN</code> opens the antispin display settings submenu where you select the display unit (<code>MS</code> / <code>%</code> / <code>TEXT</code>) and the encoder step size for each unit.</li>
-      <li><code>DISPLAY -&gt; BRAKE STEP</code> sets how many percent the encoder moves BRAKE per tick (0.1–50.0%, default 1.0%). Configure in <code>SETTINGS → DISPLAY → BRAKE STEP</code>.</li>
-      <li><code>DISPLAY -&gt; SENSI STEP</code> sets the encoder step size for SENSI in 0.1% increments (0.1–5.0%, default 1.0%). Configure in <code>SETTINGS → DISPLAY → SENSI STEP</code>.</li>
+      <li><code>DISPLAY -&gt; STEPS</code> opens the step settings submenu containing ANTISPIN, BRAKE STEP and SENSI STEP.</li>
+      <li><code>DISPLAY -&gt; STEPS -&gt; ANTISPIN</code> opens the antispin display settings submenu where you select the display unit (<code>MS</code> / <code>%</code> / <code>TEXT</code>) and the encoder step size for each unit.</li>
+      <li><code>DISPLAY -&gt; STEPS -&gt; BRAKE STEP</code> sets how many percent the encoder moves BRAKE per tick (0.1–50.0%, default 1.0%). Configure in <code>SETTINGS → DISPLAY → STEPS → BRAKE STEP</code>.</li>
+      <li><code>DISPLAY -&gt; STEPS -&gt; SENSI STEP</code> sets the encoder step size for SENSI in 0.1% increments (0.1–5.0%, default 1.0%). Configure in <code>SETTINGS → DISPLAY → STEPS → SENSI STEP</code>.</li>
       <li>The motor PWM output uses 10-bit duty resolution, so 0.1% BRAKE/SENSI steps are preserved through the controller math and hardware PWM conversion.</li>
     </ul>
     <h3>Race view behavior (LIST vs GRID)</h3>
@@ -161,7 +162,7 @@
       <tbody>
         <tr><td><code>BRAKE</code></td><td>0.0-100.0 %</td><td>95.0</td><td>Brake force when trigger is released.</td></tr>
         <tr><td><code>SENSI</code></td><td>0.0-90.0 % (and &lt;= LIMIT)</td><td>20.0</td><td>Minimum motor output at first measurable trigger movement.</td></tr>
-        <tr><td><code>ANTIS</code></td><td>0-999 ms</td><td>30</td><td>Anti-spin ramp time above the low-output bypass. Higher value = longer/slower power buildup. It is not a pure trigger delay. Display unit and encoder step are configured in <code>DISPLAY -&gt; ANTISPIN</code> (MS / % / TEXT).</td></tr>
+        <tr><td><code>ANTIS</code></td><td>0-999 ms</td><td>30</td><td>Anti-spin ramp time above the low-output bypass. Higher value = longer/slower power buildup. It is not a pure trigger delay. Display unit and encoder step are configured in <code>DISPLAY -&gt; STEPS -&gt; ANTISPIN</code> (MS / % / TEXT).</td></tr>
         <tr><td><code>CURVE</code></td><td>10-90 %</td><td>50</td><td>Throttle mapping. 50 = linear. &lt;50 softer start, &gt;50 sharper start.</td></tr>
         <tr><td><code>FADE</code></td><td>0-30 %</td><td>0</td><td>Soft-start zone. 0 = disabled / old behavior. Above 0, the first part of trigger travel ramps from 0 up to SENSI before normal CURVE takes over.</td></tr>
         <tr><td><code>PWM_F</code></td><td>1.0-5.0 kHz</td><td>4.0</td><td>Motor PWM frequency. Higher value often softens low-end response.</td></tr>
@@ -448,13 +449,15 @@
 |  |  |- LANGUAGE (NOR/ENG/CS/ACD/ESP/DEU/ITA/NLD/POR)
 |  |  |- CASE (UPPER/Pascal)
 |  |  |- FONT SIZE (LARGE/small)
-|  |  |- ANTISPIN
-|  |  |  |- REG.TYPE (MS / % / TEXT, default MS)
-|  |  |  |- STEP MS (1-50 ms, default 5)  [hidden in TEXT mode]
-|  |  |  |- STEP % (1-100 %, default 1)   [shown only in % mode]
+|  |  |- STEPS
+|  |  |  |- ANTISPIN
+|  |  |  |  |- REG.TYPE (MS / % / TEXT, default MS)
+|  |  |  |  |- STEP MS (1-50 ms, default 5)  [hidden in TEXT mode]
+|  |  |  |  |- STEP % (1-100 %, default 1)   [shown only in % mode]
+|  |  |  |  `- BACK
+|  |  |  |- BRAKE STEP (0.1-50.0 %, default 1.0%)
+|  |  |  |- SENSI STEP (0.1-5.0 % in 0.1% increments, default 1.0%)
 |  |  |  `- BACK
-|  |  |- BRAKE STEP (0.1-50.0 %, default 1.0%)
-|  |  |- SENSI STEP (0.1-5.0 % in 0.1% increments, default 1.0%)
 |  |  |- STATUS BAR
 |  |  |  |- SLOT 1
 |  |  |  |- SLOT 2

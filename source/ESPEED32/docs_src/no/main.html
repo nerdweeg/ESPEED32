@@ -78,9 +78,10 @@
       <li><code>ACD</code>: ACD-stil der det finnes direkte treff (<code>SENSI</code> og <code>CHOKE</code> for limit). <code>ANTIS</code> beholdes som antispinn siden ACD-manualen ikke bruker en egen Choke2-term.</li>
       <li><code>DISPLAY -&gt; CASE</code> velger om etiketter vises i <code>UPPER</code> eller <code>Pascal</code>.</li>
       <li><code>DISPLAY -&gt; FONT SIZE</code> velger mellom <code>LARGE</code> og <code>small</code> for liste- og menyvisning.</li>
-      <li><code>SKJERM -&gt; ANTISPINN</code> åpner antispinn-innstillingsmenyen der du velger visningsenhet (<code>MS</code> / <code>%</code> / <code>TEXT</code>) og encoder-steg for hver enhet.</li>
-      <li><code>SKJERM -&gt; BREMSSTEG</code> setter hvor mange prosent encoder flytter BREMS per klikk (0,1–50,0%, standard 1,0%). Konfigureres i <code>INNSTILLING → SKJERM → BREMSSTEG</code>.</li>
-      <li><code>SKJERM -&gt; SENSISTEG</code> setter encoder-steg for SENSI i 0,1%-trinn (0,1–5,0%, standard 1,0%). Konfigureres i <code>INNSTILLING → SKJERM → SENSISTEG</code>.</li>
+      <li><code>SKJERM -&gt; STEG</code> åpner steg-undermenyen som inneholder ANTISPINN, BREMSSTEG og SENSISTEG.</li>
+      <li><code>SKJERM -&gt; STEG -&gt; ANTISPINN</code> åpner antispinn-innstillingsmenyen der du velger visningsenhet (<code>MS</code> / <code>%</code> / <code>TEXT</code>) og encoder-steg for hver enhet.</li>
+      <li><code>SKJERM -&gt; STEG -&gt; BREMSSTEG</code> setter hvor mange prosent encoder flytter BREMS per klikk (0,1–50,0%, standard 1,0%). Konfigureres i <code>INNSTILLING → SKJERM → STEG → BREMSSTEG</code>.</li>
+      <li><code>SKJERM -&gt; STEG -&gt; SENSISTEG</code> setter encoder-steg for SENSI i 0,1%-trinn (0,1–5,0%, standard 1,0%). Konfigureres i <code>INNSTILLING → SKJERM → STEG → SENSISTEG</code>.</li>
       <li>Motor-PWM bruker 10-bit duty-oppløsning, så 0,1%-steg for BREMS/SENSI bevares gjennom kontrollregningen og PWM-konverteringen.</li>
     </ul>
     <h3>Race view (LIST vs GRID)</h3>
@@ -161,7 +162,7 @@
       <tbody>
         <tr><td><code>BRAKE</code></td><td>0,0-100,0 %</td><td>95,0</td><td>Bremsekraft ved sluppet trigger.</td></tr>
         <tr><td><code>SENSI</code></td><td>0,0-90,0 % (og &lt;= LIMIT)</td><td>20,0</td><td>Min. motoreffekt ved første triggerbevegelse.</td></tr>
-        <tr><td><code>ANTIS</code></td><td>0-999 ms</td><td>30</td><td>Antispinn-rampetid over lavfarts-bypass. Høyere verdi = lengre/tregere effektoppbygging. Det er ikke ren trigger-delay. Visningsenhet og encoder-steg konfigureres i <code>SKJERM -&gt; ANTISPINN</code> (MS / % / TEXT).</td></tr>
+        <tr><td><code>ANTIS</code></td><td>0-999 ms</td><td>30</td><td>Antispinn-rampetid over lavfarts-bypass. Høyere verdi = lengre/tregere effektoppbygging. Det er ikke ren trigger-delay. Visningsenhet og encoder-steg konfigureres i <code>SKJERM -&gt; STEG -&gt; ANTISPINN</code> (MS / % / TEXT).</td></tr>
         <tr><td><code>CURVE</code></td><td>10-90 %</td><td>50</td><td>Gasskurve. 50 = lineær. &lt;50 mykere start, &gt;50 skarpere start.</td></tr>
         <tr><td><code>FADE</code></td><td>0-30 %</td><td>0</td><td>Myk startsone. 0 = av / gammel oppføring. Over 0 rampes første del av triggeren fra 0 opp til SENSI før vanlig CURVE tar over.</td></tr>
         <tr><td><code>PWM_F</code></td><td>1.0-5.0 kHz</td><td>4.0</td><td>PWM-frekvens til motor. Høyere frekvens gir ofte mykere lavgass.</td></tr>
@@ -448,13 +449,15 @@
 |  |  |- LANGUAGE (NOR/ENG/CS/ACD/ESP/DEU/ITA/NLD/POR)
 |  |  |- CASE (UPPER/Pascal)
 |  |  |- FONT SIZE (LARGE/small)
-|  |  |- ANTISPINN
-|  |  |  |- REG.TYPE (MS / % / TEXT, standard MS)
-|  |  |  |- STEG MS (1-50 ms, standard 5)  [skjult i TEXT-modus]
-|  |  |  |- STEG % (1-100 %, standard 1)   [vises kun i %-modus]
+|  |  |- STEG
+|  |  |  |- ANTISPINN
+|  |  |  |  |- REG.TYPE (MS / % / TEXT, standard MS)
+|  |  |  |  |- STEG MS (1-50 ms, standard 5)  [skjult i TEXT-modus]
+|  |  |  |  |- STEG % (1-100 %, standard 1)   [vises kun i %-modus]
+|  |  |  |  `- TILBAKE
+|  |  |  |- BREMSSTEG (0,1-50,0 %, standard 1,0%)
+|  |  |  |- SENSISTEG (0,1-5,0 % i 0,1%-trinn, standard 1,0%)
 |  |  |  `- TILBAKE
-|  |  |- BREMSSTEG (0,1-50,0 %, standard 1,0%)
-|  |  |- SENSISTEG (0,1-5,0 % i 0,1%-trinn, standard 1,0%)
 |  |  |- STATUS BAR
 |  |  |  |- SLOT 1
 |  |  |  |- SLOT 2

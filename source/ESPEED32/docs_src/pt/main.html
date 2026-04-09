@@ -78,9 +78,10 @@
       <li><code>ACD</code>: termos ACD quando aplicavel diretamente, com <code>SENSI</code> e <code>CHOKE</code> para limit. <code>ANTIS</code> continua como anti-spin porque o manual ACD nao define um termo separado para Choke2.</li>
       <li><code>DISPLAY -&gt; CASE</code> define se as etiquetas aparecem em <code>UPPER</code> ou <code>Pascal</code>.</li>
       <li><code>DISPLAY -&gt; FONT SIZE</code> altera a densidade do texto entre <code>LARGE</code> e <code>small</code>.</li>
-      <li><code>ECRA -&gt; ANTISPIN</code> abre o submenu de configuracao do antispin onde seleciona a unidade de visualizacao (<code>MS</code> / <code>%</code> / <code>TEXT</code>) e o passo do encoder para cada unidade.</li>
-      <li><code>ECRA -&gt; PASSO FREIO</code> define quantos por cento o encoder move o TRAVAO por clique (0,1–50,0%, padrao 1,0%). Configuravel em <code>DEFINICOES → ECRA → PASSO FREIO</code>.</li>
-      <li><code>ECRA -&gt; PASSO SENSI</code> define o passo do encoder para SENSI em incrementos de 0,1% (0,1–5,0%, padrao 1,0%). Configuravel em <code>DEFINICOES → ECRA → PASSO SENSI</code>.</li>
+      <li><code>ECRA -&gt; PASSOS</code> abre o submenu de passos que contém ANTISPIN, PASSO FREIO e PASSO SENSI.</li>
+      <li><code>ECRA -&gt; PASSOS -&gt; ANTISPIN</code> abre o submenu de configuracao do antispin onde seleciona a unidade de visualizacao (<code>MS</code> / <code>%</code> / <code>TEXT</code>) e o passo do encoder para cada unidade.</li>
+      <li><code>ECRA -&gt; PASSOS -&gt; PASSO FREIO</code> define quantos por cento o encoder move o TRAVAO por clique (0,1–50,0%, padrao 1,0%). Configuravel em <code>DEFINICOES → ECRA → PASSOS → PASSO FREIO</code>.</li>
+      <li><code>ECRA -&gt; PASSOS -&gt; PASSO SENSI</code> define o passo do encoder para SENSI em incrementos de 0,1% (0,1–5,0%, padrao 1,0%). Configuravel em <code>DEFINICOES → ECRA → PASSOS → PASSO SENSI</code>.</li>
       <li>A saída PWM do motor usa resolução de duty de 10 bits, por isso os passos de 0,1% de FREIO/SENSI são preservados nos cálculos e na conversão PWM.</li>
     </ul>
     <h3>Comportamento da race view (LIST vs GRID)</h3>
@@ -161,7 +162,7 @@
       <tbody>
         <tr><td><code>BRAKE</code></td><td>0,0-100,0 %</td><td>95,0</td><td>Forca de travagem quando o gatilho e largado.</td></tr>
         <tr><td><code>SENSI</code></td><td>0,0-90,0 % (e &lt;= LIMIT)</td><td>20,0</td><td>Output minimo do motor no primeiro movimento detetavel do gatilho.</td></tr>
-        <tr><td><code>ANTIS</code></td><td>0-999 ms</td><td>30</td><td>Tempo da rampa anti-spin acima do bypass de baixa saida. Valor mais alto = subida de potencia mais longa/lenta. Nao e um delay puro do gatilho. Unidade de visualizacao e passo do encoder configuram-se em <code>ECRA -&gt; ANTISPIN</code> (MS / % / TEXT).</td></tr>
+        <tr><td><code>ANTIS</code></td><td>0-999 ms</td><td>30</td><td>Tempo da rampa anti-spin acima do bypass de baixa saida. Valor mais alto = subida de potencia mais longa/lenta. Nao e um delay puro do gatilho. Unidade de visualizacao e passo do encoder configuram-se em <code>ECRA -&gt; PASSOS -&gt; ANTISPIN</code> (MS / % / TEXT).</td></tr>
         <tr><td><code>CURVE</code></td><td>10-90 %</td><td>50</td><td>Mapeamento da throttle. 50 = linear. &lt;50 arranque mais suave, &gt;50 arranque mais agressivo.</td></tr>
         <tr><td><code>FADE</code></td><td>0-30 %</td><td>0</td><td>Zona de soft-start. 0 = desligado / comportamento antigo. Acima de 0, a primeira parte do curso sobe de 0 ate SENSI antes de CURVE assumir o controlo.</td></tr>
         <tr><td><code>PWM_F</code></td><td>1.0-5.0 kHz</td><td>4.0</td><td>Frequencia PWM do motor. Um valor mais alto costuma suavizar a resposta em baixa.</td></tr>
@@ -448,13 +449,15 @@
 |  |  |- LANGUAGE (NOR/ENG/CS/ACD/ESP/DEU/ITA/NLD/POR)
 |  |  |- CASE (UPPER/Pascal)
 |  |  |- FONT SIZE (LARGE/small)
-|  |  |- ANTISPIN
-|  |  |  |- REG.TYPE (MS / % / TEXT, padrao MS)
-|  |  |  |- PASSO MS (1-50 ms, padrao 5)  [oculto no modo TEXT]
-|  |  |  |- PASSO % (1-100 %, padrao 1)   [visivel apenas no modo %]
+|  |  |- PASSOS
+|  |  |  |- ANTISPIN
+|  |  |  |  |- REG.TYPE (MS / % / TEXT, padrao MS)
+|  |  |  |  |- PASSO MS (1-50 ms, padrao 5)  [oculto no modo TEXT]
+|  |  |  |  |- PASSO % (1-100 %, padrao 1)   [visivel apenas no modo %]
+|  |  |  |  `- VOLTAR
+|  |  |  |- PASSO FREIO (0,1-50,0 %, padrao 1,0%)
+|  |  |  |- PASSO SENSI (0,1-5,0 % em passos de 0,1%, padrao 1,0%)
 |  |  |  `- VOLTAR
-|  |  |- PASSO FREIO (0,1-50,0 %, padrao 1,0%)
-|  |  |- PASSO SENSI (0,1-5,0 % em passos de 0,1%, padrao 1,0%)
 |  |  |- STATUS BAR
 |  |  |  |- SLOT 1
 |  |  |  |- SLOT 2
