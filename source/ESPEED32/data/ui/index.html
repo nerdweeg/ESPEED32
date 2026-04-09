@@ -1821,6 +1821,16 @@ function normalizeFirmwareVariants(rawVariants,legacyFirmwareUrl,legacyFirmwareS
   return out;
 }
 
+function normalizeReleaseEntries(items){
+  var out=[];
+  if(!Array.isArray(items)) return out;
+  for(var i=0;i<items.length;i++){
+    var normalized=normalizeReleaseEntry(items[i]);
+    if(normalized) out.push(normalized);
+  }
+  return out;
+}
+
 function normalizeReleaseEntry(item){
   if(!item) return null;
 
@@ -1925,12 +1935,98 @@ function getMatchedFirmwareVariant(entry){
   return null;
 }
 
+function getReleaseDownloadInfo(entry,kind){
+  var selectedLabel=formatSelectedReleaseLabel(entry);
+  if(kind==='spiffs'){
+    if(!entry){
+      return {
+        ok:false,
+        code:releaseFetchTried?'release-unavailable':'release-loading',
+        message:releaseFetchTried?'release metadata is unavailable right now.':'release metadata is still loading.'
+      };
+    }
+    var spiffsUrl=String(entry.spiffsUrl||'').trim();
+    if(!spiffsUrl){
+      return {
+        ok:false,
+        code:'spiffs-missing',
+        message:'release '+selectedLabel+' does not publish a filesystem/UI image.'
+      };
+    }
+    return {
+      ok:true,
+      code:'ok',
+      kind:'spiffs',
+      url:spiffsUrl,
+      sha256Url:String(entry.spiffsSha256Url||'').trim()
+    };
+  }
+
+  if(!entry){
+    return {
+      ok:false,
+      code:releaseFetchTried?'release-unavailable':'release-loading',
+      message:releaseFetchTried?'release metadata is unavailable right now.':'release metadata is still loading.'
+    };
+  }
+
+  var halSensor=String(info.halSensor||'').trim();
+  var halFamily=getControllerHalSensorFamily();
+  var variants=(entry.firmwareVariants && typeof entry.firmwareVariants==='object')?entry.firmwareVariants:{};
+  var availableFamilies=[];
+  for(var key in variants){
+    if(!Object.prototype.hasOwnProperty.call(variants,key)) continue;
+    var familyKey=String(key||'').trim().toUpperCase();
+    if(!familyKey) continue;
+    var variant=variants[key]||{};
+    var variantUrl=String(variant.url||'').trim();
+    if(!variantUrl) continue;
+    availableFamilies.push(familyKey);
+  }
+
+  if(!halFamily){
+    return {
+      ok:false,
+      code:'hal-unknown',
+      message:'could not determine this controller HAL Sensor. Reload the page and try again, or use Manual Update with a matched firmware + SPIFFS pair.'
+    };
+  }
+
+  if(!availableFamilies.length){
+    return {
+      ok:false,
+      code:'variants-missing',
+      message:'release '+selectedLabel+' does not publish any firmware variants.'
+    };
+  }
+
+  var matched=getMatchedFirmwareVariant(entry);
+  if(!matched){
+    return {
+      ok:false,
+      code:'variant-missing',
+      message:'release '+selectedLabel+' has no firmware variant for HAL Sensor '+(halSensor||halFamily)+'. Published variants: '+availableFamilies.join(', ')+'. Use Manual Update with the matching sensor-specific firmware file and the SPIFFS file from the same release.',
+      halSensor:halSensor,
+      halFamily:halFamily,
+      availableFamilies:availableFamilies
+    };
+  }
+
+  return {
+    ok:true,
+    code:'ok',
+    kind:'firmware',
+    family:matched.family,
+    halSensor:halSensor,
+    halFamily:halFamily,
+    url:String(matched.url||'').trim(),
+    sha256Url:String(matched.sha256Url||'').trim()
+  };
+}
+
 function getSelectedReleaseDownloadUrl(kind){
-  var selected=getSelectedReleaseMeta();
-  if(!selected) return '';
-  if(kind==='spiffs') return String(selected.spiffsUrl||'').trim();
-  var variant=getMatchedFirmwareVariant(selected);
-  return variant?variant.url:'';
+  var info=getReleaseDownloadInfo(getSelectedReleaseMeta(),kind);
+  return info.ok?String(info.url||'').trim():'';
 }
 
 function normalizeInstalledReleaseVersion(value){
@@ -2114,26 +2210,31 @@ function updateReleaseInfoUi(){
     list.className='release-list';
 
     var itemFw=document.createElement('li');
-    var matchedFirmware=getMatchedFirmwareVariant(selected);
-    if(matchedFirmware && matchedFirmware.url){
+    var firmwareInfo=getReleaseDownloadInfo(selected,'firmware');
+    if(firmwareInfo.ok){
       var dl=document.createElement('a');
-      dl.href=matchedFirmware.url;
+      dl.href=firmwareInfo.url;
       dl.target='_blank';
       dl.rel='noopener';
-      dl.textContent='Download firmware '+formatSelectedReleaseLabel(selected)+' ('+matchedFirmware.family+') (.bin)';
+      dl.textContent='Download firmware '+formatSelectedReleaseLabel(selected)+' ('+firmwareInfo.family+') (.bin)';
       itemFw.appendChild(dl);
     }else{
-      itemFw.textContent='No matching firmware variant published for HAL Sensor '+(info.halSensor||'unknown')+'.';
+      itemFw.textContent=firmwareInfo.message.charAt(0).toUpperCase()+firmwareInfo.message.slice(1);
     }
     list.appendChild(itemFw);
 
     var itemFs=document.createElement('li');
-    var dlFs=document.createElement('a');
-    dlFs.href=selected.spiffsUrl || AUTO_UPDATE_SPIFFS_URL;
-    dlFs.target='_blank';
-    dlFs.rel='noopener';
-    dlFs.textContent='Download SPIFFS '+formatSelectedReleaseLabel(selected)+' (.bin)';
-    itemFs.appendChild(dlFs);
+    var spiffsInfo=getReleaseDownloadInfo(selected,'spiffs');
+    if(spiffsInfo.ok){
+      var dlFs=document.createElement('a');
+      dlFs.href=spiffsInfo.url;
+      dlFs.target='_blank';
+      dlFs.rel='noopener';
+      dlFs.textContent='Download SPIFFS '+formatSelectedReleaseLabel(selected)+' (.bin)';
+      itemFs.appendChild(dlFs);
+    }else{
+      itemFs.textContent=spiffsInfo.message.charAt(0).toUpperCase()+spiffsInfo.message.slice(1);
+    }
     list.appendChild(itemFs);
 
     el.appendChild(list);
@@ -2147,9 +2248,11 @@ function updateReleaseInfoUi(){
 async function loadLatestReleaseInfo(){
   var cached=readReleaseCache();
   if(cached){
-    if(Array.isArray(cached.releases) && cached.releases.length){
-      applyReleaseSelection(cached.releases, cached.latestTag || cached.latestReleaseVersion || '', cached.selectedReleaseVersion || '');
+    var cachedReleases=normalizeReleaseEntries(cached.releases);
+    if(cachedReleases.length){
+      applyReleaseSelection(cachedReleases, cached.latestTag || cached.latestReleaseVersion || '', cached.selectedReleaseVersion || '');
       releaseFetchTried=true;
+      writeReleaseCache();
       updateReleaseInfoUi();
     }else if(cached.tag || cached.url || cached.fwUrl || cached.spiffsUrl){
       var legacyEntry=normalizeReleaseEntry({
@@ -3879,37 +3982,27 @@ function autoUpdateUnavailableReason(label,kind){
   if(Number(info.portalMode||0)!==2){
     return label+' requires Client mode with internet access on this device.';
   }
-  if(!getSelectedReleaseDownloadUrl(kind||'firmware')){
-    return label+' release metadata is still loading.';
-  }
   return '';
 }
 
 function getAutoUpdateBlockedReason(label,selected,plan){
   var needFirmware=!plan || !plan.canCompare || plan.needsFirmware;
   var needSpiffs=!plan || !plan.canCompare || plan.needsSpiffs;
-  var blocked='';
-  if(needFirmware){
-    blocked=autoUpdateUnavailableReason(label,'firmware');
-    if(blocked) return blocked;
-  }
-  if(needSpiffs){
-    blocked=autoUpdateUnavailableReason(label,'spiffs');
-    if(blocked) return blocked;
-  }
-  if(needFirmware){
-    var halSensor=String(info.halSensor||'').trim();
-    var halFamily=getControllerHalSensorFamily();
-    var matchedFirmware=getMatchedFirmwareVariant(selected);
-    if(!halFamily){
-      return label+' could not determine this controller HAL Sensor. Reload the page and try again, or use Manual Update with a matched firmware + SPIFFS pair.';
-    }
-    if(!matchedFirmware){
-      return label+' is blocked because release '+formatSelectedReleaseLabel(selected)+' has no firmware variant for HAL Sensor '+(halSensor||halFamily)+'. Use Manual Update with the matching sensor-specific firmware file and the SPIFFS file from the same release.';
-    }
+  var blocked=autoUpdateUnavailableReason(label,'firmware');
+  if(blocked) return blocked;
+  if(!selected){
+    return label+' '+(releaseFetchTried?'release metadata is unavailable right now.':'release metadata is still loading.');
   }
   if(plan && plan.canCompare && !plan.needsFirmware && !plan.needsSpiffs){
     return 'Selected release '+formatSelectedReleaseLabel(selected)+' is already installed on this controller.';
+  }
+  if(needFirmware){
+    var firmwareInfo=getReleaseDownloadInfo(selected,'firmware');
+    if(!firmwareInfo.ok) return label+' '+firmwareInfo.message;
+  }
+  if(needSpiffs){
+    var spiffsInfo=getReleaseDownloadInfo(selected,'spiffs');
+    if(!spiffsInfo.ok) return label+' '+spiffsInfo.message;
   }
   return '';
 }
@@ -4896,7 +4989,8 @@ async function autoUpdateFirmware(){
   var selected=getSelectedReleaseMeta();
   var plan=getSelectedReleaseInstallPlan(selected);
   var blocked=otaBusy?'Another update is already running. Wait for completion.':getAutoUpdateBlockedReason('Automatic update',selected,plan);
-  var matchedFirmware=getMatchedFirmwareVariant(selected);
+  var firmwareInfo=getReleaseDownloadInfo(selected,'firmware');
+  var spiffsInfo=getReleaseDownloadInfo(selected,'spiffs');
   if(blocked){
     ss('auto-ota-status','err',blocked);
     return;
@@ -4908,18 +5002,18 @@ async function autoUpdateFirmware(){
   };
   if(!plan.canCompare || plan.needsFirmware){
     config.firmware={
-      downloadUrl:getSelectedReleaseDownloadUrl('firmware'),
-      sha256Url:matchedFirmware&&matchedFirmware.sha256Url||null,
-      fileName:matchedFirmware&&matchedFirmware.url?extractFileNameFromUrl(matchedFirmware.url,'ESPEED32.ino.bin'):'ESPEED32.ino.bin',
+      downloadUrl:firmwareInfo.ok?firmwareInfo.url:'',
+      sha256Url:firmwareInfo.ok?firmwareInfo.sha256Url:null,
+      fileName:firmwareInfo.ok?extractFileNameFromUrl(firmwareInfo.url,'ESPEED32.ino.bin'):'ESPEED32.ino.bin',
       progressPrefix:'auto-fw',
       downloadStatus:'Downloading selected firmware...'
     };
   }
   if(!plan.canCompare || plan.needsSpiffs){
     config.spiffs={
-      downloadUrl:getSelectedReleaseDownloadUrl('spiffs'),
-      sha256Url:selected&&selected.spiffsSha256Url||null,
-      fileName:selected&&selected.spiffsUrl?extractFileNameFromUrl(selected.spiffsUrl,'espeed32_spiffs.bin'):'espeed32_spiffs.bin',
+      downloadUrl:spiffsInfo.ok?spiffsInfo.url:'',
+      sha256Url:spiffsInfo.ok?spiffsInfo.sha256Url:null,
+      fileName:spiffsInfo.ok?extractFileNameFromUrl(spiffsInfo.url,'espeed32_spiffs.bin'):'espeed32_spiffs.bin',
       progressPrefix:'auto-spiffs',
       downloadStatus:'Downloading selected filesystem image...'
     };
