@@ -3271,6 +3271,9 @@ static void handleOtaUpload() {
   String requestToken = g_wifiServer->header("X-Ota-Token");
 
   if (upload.status == UPLOAD_FILE_START) {
+    /* Only reject while an upload is actively streaming. Paired OTA uses
+     * deferred restart after firmware stage 1, and the follow-up SPIFFS
+     * upload must still be allowed during that grace window. */
     if (!requestToken.isEmpty() && g_otaInProgress) {
       g_otaRejectedToken = requestToken;
       return;
