@@ -240,9 +240,10 @@ details.doc-fold>:not(summary){margin-top:8px}
       <li><code>ACD</code>: ACD-Stil, wo es direkte Entsprechungen gibt (<code>SENSI</code> und <code>CHOKE</code> fuer LIMIT).</li>
       <li><code>DISPLAY -&gt; CASE</code> waehlt, ob Labels in <code>UPPER</code> oder <code>Pascal</code> angezeigt werden.</li>
       <li><code>DISPLAY -&gt; FONT SIZE</code> stellt die Listen- und Menueansicht auf <code>LARGE</code> oder <code>small</code>.</li>
-      <li><code>ANZEIGE -&gt; ANTISPIN</code> oeffnet das Antispin-Einstellungsmenu, in dem du die Anzeigeeinheit (<code>MS</code> / <code>%</code> / <code>TEXT</code>) und die Encoder-Schrittweite je Einheit festlegst.</li>
-      <li><code>ANZEIGE -&gt; BRK SCHRITT</code> legt fest, um wie viel Prozent der Encoder BREMSE pro Klick aendert (0,1–50,0%, Standard 1,0%). Einstellbar unter <code>EINSTELLUNGEN → ANZEIGE → BRK SCHRITT</code>.</li>
-      <li><code>ANZEIGE -&gt; SEN SCHRITT</code> legt die Encoder-Schrittweite fuer SENSI in 0,1%-Schritten fest (0,1–5,0%, Standard 1,0%). Einstellbar unter <code>EINSTELLUNGEN → ANZEIGE → SEN SCHRITT</code>.</li>
+      <li><code>ANZEIGE -&gt; SCHRITTE</code> oeffnet das Schrittweiten-Untermenu mit ANTISPIN, BRK SCHRITT und SEN SCHRITT.</li>
+      <li><code>ANZEIGE -&gt; SCHRITTE -&gt; ANTISPIN</code> oeffnet das Antispin-Einstellungsmenu, in dem du die Anzeigeeinheit (<code>MS</code> / <code>%</code> / <code>TEXT</code>) und die Encoder-Schrittweite je Einheit festlegst.</li>
+      <li><code>ANZEIGE -&gt; SCHRITTE -&gt; BRK SCHRITT</code> legt fest, um wie viel Prozent der Encoder BREMSE pro Klick aendert (0,1–50,0%, Standard 1,0%). Einstellbar unter <code>EINSTELLUNGEN → ANZEIGE → SCHRITTE → BRK SCHRITT</code>.</li>
+      <li><code>ANZEIGE -&gt; SCHRITTE -&gt; SEN SCHRITT</code> legt die Encoder-Schrittweite fuer SENSI in 0,1%-Schritten fest (0,1–5,0%, Standard 1,0%). Einstellbar unter <code>EINSTELLUNGEN → ANZEIGE → SCHRITTE → SEN SCHRITT</code>.</li>
       <li>Der Motor-PWM-Ausgang nutzt 10-Bit-Duty-Aufloesung, sodass 0,1%-Schritte fuer BREMSE/SENSI in der Regelung und PWM-Umrechnung erhalten bleiben.</li>
     </ul>
     <h3>Race View (LIST vs GRID)</h3>
@@ -323,7 +324,7 @@ details.doc-fold>:not(summary){margin-top:8px}
       <tbody>
         <tr><td><code>BRAKE</code></td><td>0,0-100,0 %</td><td>95,0</td><td>Bremskraft bei losgelassenem Trigger.</td></tr>
         <tr><td><code>SENSI</code></td><td>0,0-90,0 % (und &lt;= LIMIT)</td><td>20,0</td><td>Minimale Motorleistung bei erster Triggerbewegung.</td></tr>
-        <tr><td><code>ANTIS</code></td><td>0-999 ms</td><td>30</td><td>Anti-Spin-Rampenzeit oberhalb des Low-Speed-Bypass. Hoeherer Wert = laengerer/langsamerer Leistungsaufbau. Kein reiner Trigger-Delay. Anzeigeeinheit und Encoder-Schritt werden in <code>ANZEIGE -&gt; ANTISPIN</code> eingestellt (MS / % / TEXT).</td></tr>
+        <tr><td><code>ANTIS</code></td><td>0-999 ms</td><td>30</td><td>Anti-Spin-Rampenzeit oberhalb des Low-Speed-Bypass. Hoeherer Wert = laengerer/langsamerer Leistungsaufbau. Kein reiner Trigger-Delay. Anzeigeeinheit und Encoder-Schritt werden in <code>ANZEIGE -&gt; SCHRITTE -&gt; ANTISPIN</code> eingestellt (MS / % / TEXT).</td></tr>
         <tr><td><code>CURVE</code></td><td>10-90 %</td><td>50</td><td>Trigger-Kennlinie. 50 = linear.</td></tr>
         <tr><td><code>FADE</code></td><td>0-30 %</td><td>0</td><td>Sanfte Startzone. 0 = aus / altes Verhalten. Oberhalb von 0 laeuft der erste Triggerweg von 0 bis SENSI hoch, bevor die normale CURVE uebernimmt.</td></tr>
         <tr><td><code>PWM_F</code></td><td>1.0-5.0 kHz</td><td>4.0</td><td>PWM-Frequenz des Motors.</td></tr>
@@ -608,13 +609,15 @@ details.doc-fold>:not(summary){margin-top:8px}
 |  |  |- LANGUAGE (NOR/ENG/CS/ACD/ESP/DEU/ITA/NLD/POR)
 |  |  |- CASE (UPPER/Pascal)
 |  |  |- FONT SIZE (LARGE/small)
-|  |  |- ANTISPIN
-|  |  |  |- REG.TYP (MS / % / TEXT, Standard MS)
-|  |  |  |- SCHR MS (1-50 ms, Standard 5)  [ausgeblendet im TEXT-Modus]
-|  |  |  |- SCHR % (1-100 %, Standard 1)   [nur im %-Modus sichtbar]
+|  |  |- SCHRITTE
+|  |  |  |- ANTISPIN
+|  |  |  |  |- REG.TYP (MS / % / TEXT, Standard MS)
+|  |  |  |  |- SCHR MS (1-50 ms, Standard 5)  [ausgeblendet im TEXT-Modus]
+|  |  |  |  |- SCHR % (1-100 %, Standard 1)   [nur im %-Modus sichtbar]
+|  |  |  |  `- ZURUCK
+|  |  |  |- BRK SCHRITT (0,1-50,0 %, Standard 1,0%)
+|  |  |  |- SEN SCHRITT (0,1-5,0 % in 0,1%-Schritten, Standard 1,0%)
 |  |  |  `- ZURUCK
-|  |  |- BRK SCHRITT (0,1-50,0 %, Standard 1,0%)
-|  |  |- SEN SCHRITT (0,1-5,0 % in 0,1%-Schritten, Standard 1,0%)
 |  |  |- STATUS BAR
 |  |  |  |- SLOT 1
 |  |  |  |- SLOT 2
