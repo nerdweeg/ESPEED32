@@ -72,6 +72,7 @@ static const size_t WIFI_BACKUP_TAG_LEN = 16;
 static const size_t WIFI_BACKUP_NONCE_B64_LEN = 16;
 static const size_t WIFI_BACKUP_TAG_B64_LEN = 24;
 static const size_t WIFI_BACKUP_PASS_B64_MAX_LEN = (((WIFI_STA_PASS_MAX_LEN + 2) / 3) * 4);
+static const size_t TELEMETRY_LIVE_RESPONSE_LIMIT = 120U;
 
 static bool readMacAddress(esp_mac_type_t type, uint8_t out[6]) {
   if (out == nullptr) return false;
@@ -2337,7 +2338,7 @@ static void handleSerialCommand(const String& cmd) {
 
   } else if (cmd.startsWith("TLIVE")) {
     uint32_t afterSeq = 0U;
-    size_t limit = 256U;
+    size_t limit = TELEMETRY_LIVE_RESPONSE_LIMIT;
     int32_t firstSpace = cmd.indexOf(' ');
     if (firstSpace > 0 && firstSpace < (int32_t)cmd.length() - 1) {
       int32_t secondSpace = cmd.indexOf(' ', firstSpace + 1);
@@ -2362,7 +2363,7 @@ static void handleSerialCommand(const String& cmd) {
       }
     }
     if (limit < 1U) limit = 1U;
-    if (limit > 256U) limit = 256U;
+    if (limit > TELEMETRY_LIVE_RESPONSE_LIMIT) limit = TELEMETRY_LIVE_RESPONSE_LIMIT;
     sendSerialLengthPrefixedPayload(buildTelemetryLivePayload(afterSeq, limit));
 
   } else if (cmd == "TSTART") {
@@ -2699,12 +2700,12 @@ static uint32_t getTelemetryArgU32(const char* name, uint32_t defaultValue) {
 }
 
 static size_t getTelemetryLiveLimit() {
-  uint32_t limit = getTelemetryArgU32("limit", 120U);
+  uint32_t limit = getTelemetryArgU32("limit", TELEMETRY_LIVE_RESPONSE_LIMIT);
   if (limit == 0U) {
-    limit = 120U;
+    limit = TELEMETRY_LIVE_RESPONSE_LIMIT;
   }
-  if (limit > 256U) {
-    limit = 256U;
+  if (limit > TELEMETRY_LIVE_RESPONSE_LIMIT) {
+    limit = TELEMETRY_LIVE_RESPONSE_LIMIT;
   }
   return (size_t)limit;
 }
@@ -3009,7 +3010,7 @@ static void handleTelemetryStart() {
     const char* err = telemetryGetLastStartError();
     if (err == nullptr || err[0] == '\0') err = "Telemetry start failed";
     String payload = "{\"ok\":false,\"error\":\"";
-    payload += err;
+    appendJsonEscaped(payload, err);
     payload += "\"}";
     g_wifiServer->send(500, "application/json", payload);
     return;
