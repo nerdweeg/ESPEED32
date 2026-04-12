@@ -2,6 +2,7 @@
 #include <Arduino.h>
 #include "HAL.h"
 #include "slot_ESC.h"
+#include "connectivity_portal.h"
 #include "ext_pot.h"
 #include "telemetry_logging.h"
 
@@ -49,6 +50,7 @@ void Task2code(void *pvParameters) {
         static uint32_t lapRegisteredMs = 0;
         static uint32_t driveCurrentEma_mA = 0;
 
+        uint32_t nowMs = millis();
         uint32_t vinMv = HAL_ReadVoltageDivider(AN_VIN_DIV, RVIFBL, RVIFBH);
         bool hasCurrentSense = HAL_HasMotorCurrentSense();
         uint16_t motorCurrent_mA = hasCurrentSense ? HAL_ReadMotorCurrent() : 0;
@@ -62,6 +64,29 @@ void Task2code(void *pvParameters) {
         uint32_t vinSum = 0;
         for (uint8_t f = 0; f < 8; f++) vinSum += vinFilter[f];
         g_escVar.Vin_mV = (uint16_t)(vinSum / 8);
+
+        /* Battery monitoring is non-drive-critical and uses ADC2 on the standard profile.
+           Keep the last stable reading if WiFi is active or the sample looks invalid. */
+        static uint32_t batFilter[8] = {0};
+        static uint8_t batFilterIdx = 0;
+        static uint8_t batFilterCount = 0;
+        static uint32_t lastBatterySampleMs = 0;
+        if ((nowMs - lastBatterySampleMs) >= 50U) {
+          lastBatterySampleMs = nowMs;
+          if (!isWiFiPortalActive()) {
+            uint32_t batMv = HAL_ReadVoltageDivider(AN_BAT_DIV, BAT_RVIFBL, BAT_RVIFBH);
+            if (batMv >= 1000U && batMv <= 6000U) {
+              batFilter[batFilterIdx] = batMv;
+              if (batFilterCount < 8U) batFilterCount++;
+              batFilterIdx = (uint8_t)((batFilterIdx + 1U) % 8U);
+              uint32_t batSum = 0;
+              for (uint8_t f = 0; f < batFilterCount; f++) batSum += batFilter[f];
+              g_escVar.Bat_mV = (uint16_t)(batSum / batFilterCount);
+            } else if (batFilterCount == 0U) {
+              g_escVar.Bat_mV = 0;
+            }
+          }
+        }
 
         uint32_t throttlePct = ((uint32_t)g_escVar.trigger_norm * 100U) / THROTTLE_NORMALIZED;
         bool throttleActive = (throttlePct >= LAP_TRIGGER_ACTIVE_PCT);
@@ -88,8 +113,6 @@ void Task2code(void *pvParameters) {
           driveCurrentEma_mA = 0;
           lapState = 0;
         }
-
-        uint32_t nowMs = millis();
 
         switch (lapState) {
           case 0: /* TRACKING */

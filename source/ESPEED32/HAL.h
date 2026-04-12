@@ -21,6 +21,8 @@
 /* Voltage Divider and Shunt Resistors */
 #define RVIFBL 2200UL    /* [Ohm] VIN ADC resistor divider, lower resistor */
 #define RVIFBH 10000UL   /* [Ohm] VIN ADC resistor divider, upper resistor */
+#define BAT_RVIFBL BOARD_BAT_RVIFBL  /* [Ohm] Battery ADC resistor divider, lower resistor */
+#define BAT_RVIFBH BOARD_BAT_RVIFBH  /* [Ohm] Battery ADC resistor divider, upper resistor */
 
 /* ADC Configuration */
 #define THROTTLE_NORMALIZED         256

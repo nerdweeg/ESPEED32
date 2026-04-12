@@ -100,8 +100,9 @@
     </figure>
     <h3>Status bar and ABOUT</h3>
     <ul>
-      <li><code>STATUS BAR</code>: 4 fixed slots. Each slot can show <code>OUT%</code>, <code>THRO</code>, <code>CAR</code>, <code>CURR</code>, <code>VOLT</code>, <code>BRAKE</code>, or blank. <code>CURR</code> shows mA below 1000 and A above.</li>
+      <li><code>STATUS BAR</code>: 4 fixed slots. Each slot can show <code>OUT%</code>, <code>THRO</code>, <code>CAR</code>, <code>CURR</code>, <code>VOLT</code>, <code>VBAT</code>, <code>BRAKE</code>, or blank. <code>CURR</code> shows mA below 1000 and A above.</li>
       <li><code>BRAKE</code> in the status bar shows the active brake mode/value in real time: <code>Bxxx%</code> = normal <code>BRAKE</code>, <code>Axxx%</code> = <code>Alt.Brake</code>, <code>Qxxx%</code> = <code>Rel.Brake QUICK</code>, <code>Dxxx%</code> = <code>Rel.Brake DRAG</code>, <code>NONE</code> = no brake currently active. The code can change quickly while driving.</li>
+      <li><code>VBAT</code> shows the optional internal battery voltage. On the standard board profile it uses <code>GPIO15</code> / ADC2, so the reading may stop refreshing while WiFi is active.</li>
       <li>While WiFi is active, the status bar shows <code>WIFI</code>. It uses the first blank slot if available; otherwise slot 4 is temporarily overridden.</li>
       <li><code>ABOUT</code> shows firmware/data version, detected trigger sensor, chip details, flash/heap, MAC addresses, and build date/time.</li>
     </ul>

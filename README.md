@@ -115,6 +115,9 @@ The standard official controller hardware remains the default build.
 
 before compiling with `--board custom-template`.
 
+That board profile also carries the optional battery-monitor pin and divider
+scale used by the OLED `VBAT` status slot.
+
 This is meant for local/manual custom builds. It does not change the official OTA path.
 
 ### Official releases, manual sensor builds, and OTA
@@ -285,6 +288,7 @@ Important hardware note:
 - `GPIO39` and `GPIO35` are `ADC1` pins and are preferred for external pots because they stay available while WiFi is active
 - `GPIO36` is also an `ADC1` pin and remains the normal track `VIN` input
 - `GPIO15` is an `ADC2` pin on ESP32, so it is better suited to non-drive-critical battery monitoring than to live throttle/brake tuning inputs
+- if your battery divider ratio differs from the standard controller, adjust `BOARD_BAT_RVIFBL` / `BOARD_BAT_RVIFBH` in your board profile so the `VBAT` reading is scaled correctly
 
 Please verify the actual board routing against:
 

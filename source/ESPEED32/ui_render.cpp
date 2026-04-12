@@ -225,6 +225,16 @@ void displayStatusLine() {
         sprintf(buf, "%2d.%01dV", v / 1000, (v % 1000) / 100);
         break;
       }
+      case STATUS_BATTERY: {
+        uint16_t v = g_escVar.Bat_mV;
+        if (v < 1000U) {
+          strcpy(buf, " N/A ");
+        } else {
+          if (v > 9999U) v = 9999U;
+          snprintf(buf, sizeof(buf), "%1u.%1uVB", (unsigned)(v / 1000U), (unsigned)((v % 1000U) / 100U));
+        }
+        break;
+      }
       case STATUS_ACTIVE_BRAKE:
         formatActiveBrakeStatus(buf, sizeof(buf), g_escVar.activeBrakeKind, g_escVar.activeBrake_pct);
         break;

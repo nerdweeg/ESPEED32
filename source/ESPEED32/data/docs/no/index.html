@@ -263,7 +263,8 @@ details.doc-fold>:not(summary){margin-top:8px}
     </figure>
     <h3>Statuslinje og ABOUT</h3>
     <ul>
-      <li><code>STATUS BAR</code>: 4 faste felter. Hvert felt kan vise <code>OUT%</code>, <code>GASS</code>, <code>BIL</code>, <code>AMPE</code>, <code>VOLT</code>, <code>BREMS</code> eller blankt. <code>AMPE</code> viser mA under 1000 og A over.</li>
+      <li><code>STATUS BAR</code>: 4 faste felter. Hvert felt kan vise <code>OUT%</code>, <code>GASS</code>, <code>BIL</code>, <code>AMPE</code>, <code>VOLT</code>, <code>VBAT</code>, <code>BREMS</code> eller blankt. <code>AMPE</code> viser mA under 1000 og A over.</li>
+      <li><code>VBAT</code> viser spenningen paa det valgfrie interne batteriet. I standard board-profil bruker denne maalingen <code>GPIO15</code> / ADC2, saa verdien kan slutte aa oppdatere mens WiFi er aktiv.</li>
       <li><code>BREMS</code> i statuslinjen viser aktiv bremsetype og verdi i sanntid: <code>Bxxx%</code> = vanlig <code>BRAKE</code>, <code>Axxx%</code> = <code>Alt.Brake</code>, <code>Qxxx%</code> = <code>Rel.Brake QUICK</code>, <code>Dxxx%</code> = <code>Rel.Brake DRAG</code>, <code>NONE</code> = ingen brems er aktiv akkurat da. Koden kan veksle raskt mens du kjorer.</li>
       <li>Når WiFi er aktivt vises <code>WIFI</code> i statuslinjen. Først brukes ledig felt; hvis ingen er ledige overstyres felt 4 midlertidig.</li>
       <li><code>ABOUT</code> viser firmware/data-versjon, detektert trigger-sensor, chip-info, flash/heap, MAC-adresser og build-dato/tid.</li>

@@ -100,7 +100,8 @@
     </figure>
     <h3>Barra de estado e ABOUT</h3>
     <ul>
-      <li><code>STATUS BAR</code>: 4 posicoes fixas. Cada posicao pode mostrar <code>OUT%</code>, <code>THRO</code>, <code>CAR</code>, <code>CURR</code>, <code>VOLT</code>, <code>FREIO</code> ou vazio. <code>CURR</code> mostra mA abaixo de 1000 e A acima disso.</li>
+      <li><code>STATUS BAR</code>: 4 posicoes fixas. Cada posicao pode mostrar <code>OUT%</code>, <code>THRO</code>, <code>CAR</code>, <code>CURR</code>, <code>VOLT</code>, <code>VBAT</code>, <code>FREIO</code> ou vazio. <code>CURR</code> mostra mA abaixo de 1000 e A acima disso.</li>
+      <li><code>VBAT</code> mostra a tensao da bateria interna opcional. No perfil de board standard usa <code>GPIO15</code> / ADC2, por isso o valor pode deixar de atualizar enquanto o WiFi estiver ativo.</li>
       <li><code>FREIO</code> na barra de estado mostra o tipo/valor de travagem ativo em tempo real: <code>Bxxx%</code> = <code>BRAKE</code> normal, <code>Axxx%</code> = <code>Alt.Brake</code>, <code>Qxxx%</code> = <code>Rel.Brake QUICK</code>, <code>Dxxx%</code> = <code>Rel.Brake DRAG</code>, <code>NONE</code> = nenhuma travagem ativa nesse momento. O codigo pode mudar rapidamente enquanto conduz.</li>
       <li>Enquanto o WiFi esta ativo, a barra de estado mostra <code>WIFI</code>. Usa a primeira posicao vazia; se nao existir, substitui temporariamente a posicao 4.</li>
       <li><code>ABOUT</code> mostra a versao de firmware/dados, o sensor de gatilho detetado, detalhes do chip, flash/heap, enderecos MAC e data/hora da build.</li>

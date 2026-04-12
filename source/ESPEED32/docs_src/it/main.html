@@ -100,7 +100,8 @@
     </figure>
     <h3>Barra di stato e ABOUT</h3>
     <ul>
-      <li><code>STATUS BAR</code>: 4 slot fissi. Ogni slot puo mostrare <code>OUT%</code>, <code>THRO</code>, <code>CAR</code>, <code>CURR</code>, <code>VOLT</code>, <code>FRENO</code> oppure vuoto. <code>CURR</code> mostra mA sotto 1000 e A sopra.</li>
+      <li><code>STATUS BAR</code>: 4 slot fissi. Ogni slot puo mostrare <code>OUT%</code>, <code>THRO</code>, <code>CAR</code>, <code>CURR</code>, <code>VOLT</code>, <code>VBAT</code>, <code>FRENO</code> oppure vuoto. <code>CURR</code> mostra mA sotto 1000 e A sopra.</li>
+      <li><code>VBAT</code> mostra la tensione della batteria interna opzionale. Nel profilo board standard usa <code>GPIO15</code> / ADC2, quindi il valore puo smettere di aggiornarsi mentre il WiFi e attivo.</li>
       <li><code>FRENO</code> nella barra di stato mostra tipo e valore del freno attivo in tempo reale: <code>Bxxx%</code> = <code>BRAKE</code> normale, <code>Axxx%</code> = <code>Alt.Brake</code>, <code>Qxxx%</code> = <code>Rel.Brake QUICK</code>, <code>Dxxx%</code> = <code>Rel.Brake DRAG</code>, <code>NONE</code> = nessun freno attivo in quel momento. Il codice puo cambiare rapidamente mentre guidi.</li>
       <li>Quando il WiFi e attivo, la barra di stato mostra <code>WIFI</code>. Usa il primo slot vuoto se disponibile; altrimenti sostituisce temporaneamente lo slot 4.</li>
       <li><code>ABOUT</code> mostra versione firmware/dati, sensore trigger rilevato, dettagli chip, flash/heap, indirizzi MAC e data/ora build.</li>

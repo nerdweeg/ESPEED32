@@ -263,7 +263,8 @@ details.doc-fold>:not(summary){margin-top:8px}
     </figure>
     <h3>Statusbalk en ABOUT</h3>
     <ul>
-      <li><code>STATUS BAR</code>: 4 vaste slots. Elke slot kan <code>OUT%</code>, <code>THRO</code>, <code>CAR</code>, <code>CURR</code>, <code>VOLT</code>, <code>REM</code> of leeg tonen. <code>CURR</code> toont mA onder 1000 en A daarboven.</li>
+      <li><code>STATUS BAR</code>: 4 vaste slots. Elke slot kan <code>OUT%</code>, <code>THRO</code>, <code>CAR</code>, <code>CURR</code>, <code>VOLT</code>, <code>VBAT</code>, <code>REM</code> of leeg tonen. <code>CURR</code> toont mA onder 1000 en A daarboven.</li>
+      <li><code>VBAT</code> toont de spanning van de optionele interne batterij. In het standaard boardprofiel gebruikt deze meting <code>GPIO15</code> / ADC2, dus de waarde kan stoppen met verversen terwijl WiFi actief is.</li>
       <li><code>REM</code> in de statusbalk toont het actieve remtype en de waarde in real time: <code>Bxxx%</code> = normale <code>BRAKE</code>, <code>Axxx%</code> = <code>Alt.Brake</code>, <code>Qxxx%</code> = <code>Rel.Brake QUICK</code>, <code>Dxxx%</code> = <code>Rel.Brake DRAG</code>, <code>NONE</code> = op dat moment geen rem actief. De code kan tijdens het rijden snel wisselen.</li>
       <li>Wanneer WiFi actief is toont de statusbalk <code>WIFI</code>. Hiervoor wordt de eerste lege slot gebruikt; als er geen lege slot is, wordt slot 4 tijdelijk overschreven.</li>
       <li><code>ABOUT</code> toont firmware-/dataversie, gedetecteerde triggersensor, chipdetails, flash/heap, MAC-adressen en builddatum/-tijd.</li>

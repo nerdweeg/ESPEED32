@@ -32,6 +32,8 @@
 #define BOARD_AN_BAT_DIV   15
 #define BOARD_EXT_POT1_PIN 39
 #define BOARD_EXT_POT2_PIN 35
+#define BOARD_BAT_RVIFBL   2200UL
+#define BOARD_BAT_RVIFBH   10000UL
 
 /* Rotary Encoder Pins */
 #define BOARD_ENCODER_A_PIN      18

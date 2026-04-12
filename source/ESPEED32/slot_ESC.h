@@ -348,12 +348,13 @@ void applyAdcVoltageRangeMilliVolts(uint16_t range_mV);
 #define STATUS_VOLTAGE  5   /* Input voltage (5 chars, e.g. " 3.7V") */
 #define STATUS_CURRENT_MA  6   /* Legacy stored value; normalized to STATUS_CURRENT */
 #define STATUS_ACTIVE_BRAKE 7   /* Active brake type/value (5 chars, e.g. "Q060%") */
+#define STATUS_BATTERY  8   /* Battery voltage (5 chars, e.g. "4.1VB") */
 
 static inline uint16_t normalizeStatusSlotValue(uint16_t slotValue) {
   if (slotValue == STATUS_CURRENT_MA) return STATUS_CURRENT;
-  return (slotValue <= STATUS_ACTIVE_BRAKE) ? slotValue : STATUS_BLANK;
+  return (slotValue <= STATUS_BATTERY) ? slotValue : STATUS_BLANK;
 }
-/* Default slot assignments: OUTPUT | CAR | VOLTAGE | blank */
+/* Default slot assignments: OUTPUT | THROTTLE | CAR | VOLTAGE */
 #define STATUS_SLOT0_DEFAULT STATUS_OUTPUT
 #define STATUS_SLOT1_DEFAULT STATUS_THROTTLE
 #define STATUS_SLOT2_DEFAULT STATUS_CAR
@@ -492,6 +493,7 @@ typedef struct {
   uint16_t trigger_norm;      /* Normalized trigger value (0-THROTTLE_NORMALIZED) */
   uint16_t encoderPos;        /* Current rotary encoder position */
   uint16_t Vin_mV;            /* [mV] Input voltage */
+  uint16_t Bat_mV;            /* [mV] Internal battery voltage */
   uint16_t motorCurrent_mA;   /* [mA] Motor current */
   uint16_t effectiveBrake_raw; /* [0.1%] Active brake value after external overrides */
   uint16_t effectiveSensi_raw; /* [0.1%] Active SENSI value after external overrides */

@@ -99,6 +99,7 @@ ESC_type g_escVar {
   .trigger_norm = 0,
   .encoderPos = 1,
   .Vin_mV = 0,
+  .Bat_mV = 0,
   .motorCurrent_mA = 0,
   .effectiveBrake_raw = BRAKE_DEFAULT,
   .effectiveSensi_raw = MIN_SPEED_DEFAULT,

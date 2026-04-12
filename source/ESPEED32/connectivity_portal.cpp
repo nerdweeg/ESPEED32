@@ -1633,13 +1633,13 @@ static String buildSchemaJson() {
   appendSchemaEnumField(json, first, "uiAuthResetDefault", "Reset Controller Login To Default",
                         "[{\"value\":0,\"label\":\"KEEP\"},{\"value\":1,\"label\":\"RESET\"}]");
   appendSchemaEnumField(json, first, "statusSlot0", "Status Slot 1",
-                        "[{\"value\":0,\"label\":\"BLANK\"},{\"value\":1,\"label\":\"OUTPUT\"},{\"value\":2,\"label\":\"THROTTLE\"},{\"value\":3,\"label\":\"CAR\"},{\"value\":4,\"label\":\"CURR\"},{\"value\":5,\"label\":\"VOLTAGE\"},{\"value\":7,\"label\":\"ACTIVE BRAKE\"}]");
+                        "[{\"value\":0,\"label\":\"BLANK\"},{\"value\":1,\"label\":\"OUTPUT\"},{\"value\":2,\"label\":\"THROTTLE\"},{\"value\":3,\"label\":\"CAR\"},{\"value\":4,\"label\":\"CURR\"},{\"value\":5,\"label\":\"VOLTAGE\"},{\"value\":8,\"label\":\"BATTERY\"},{\"value\":7,\"label\":\"ACTIVE BRAKE\"}]");
   appendSchemaEnumField(json, first, "statusSlot1", "Status Slot 2",
-                        "[{\"value\":0,\"label\":\"BLANK\"},{\"value\":1,\"label\":\"OUTPUT\"},{\"value\":2,\"label\":\"THROTTLE\"},{\"value\":3,\"label\":\"CAR\"},{\"value\":4,\"label\":\"CURR\"},{\"value\":5,\"label\":\"VOLTAGE\"},{\"value\":7,\"label\":\"ACTIVE BRAKE\"}]");
+                        "[{\"value\":0,\"label\":\"BLANK\"},{\"value\":1,\"label\":\"OUTPUT\"},{\"value\":2,\"label\":\"THROTTLE\"},{\"value\":3,\"label\":\"CAR\"},{\"value\":4,\"label\":\"CURR\"},{\"value\":5,\"label\":\"VOLTAGE\"},{\"value\":8,\"label\":\"BATTERY\"},{\"value\":7,\"label\":\"ACTIVE BRAKE\"}]");
   appendSchemaEnumField(json, first, "statusSlot2", "Status Slot 3",
-                        "[{\"value\":0,\"label\":\"BLANK\"},{\"value\":1,\"label\":\"OUTPUT\"},{\"value\":2,\"label\":\"THROTTLE\"},{\"value\":3,\"label\":\"CAR\"},{\"value\":4,\"label\":\"CURR\"},{\"value\":5,\"label\":\"VOLTAGE\"},{\"value\":7,\"label\":\"ACTIVE BRAKE\"}]");
+                        "[{\"value\":0,\"label\":\"BLANK\"},{\"value\":1,\"label\":\"OUTPUT\"},{\"value\":2,\"label\":\"THROTTLE\"},{\"value\":3,\"label\":\"CAR\"},{\"value\":4,\"label\":\"CURR\"},{\"value\":5,\"label\":\"VOLTAGE\"},{\"value\":8,\"label\":\"BATTERY\"},{\"value\":7,\"label\":\"ACTIVE BRAKE\"}]");
   appendSchemaEnumField(json, first, "statusSlot3", "Status Slot 4",
-                        "[{\"value\":0,\"label\":\"BLANK\"},{\"value\":1,\"label\":\"OUTPUT\"},{\"value\":2,\"label\":\"THROTTLE\"},{\"value\":3,\"label\":\"CAR\"},{\"value\":4,\"label\":\"CURR\"},{\"value\":5,\"label\":\"VOLTAGE\"},{\"value\":7,\"label\":\"ACTIVE BRAKE\"}]");
+                        "[{\"value\":0,\"label\":\"BLANK\"},{\"value\":1,\"label\":\"OUTPUT\"},{\"value\":2,\"label\":\"THROTTLE\"},{\"value\":3,\"label\":\"CAR\"},{\"value\":4,\"label\":\"CURR\"},{\"value\":5,\"label\":\"VOLTAGE\"},{\"value\":8,\"label\":\"BATTERY\"},{\"value\":7,\"label\":\"ACTIVE BRAKE\"}]");
   appendSchemaStringField(json, first, "screensaverLine1", "Screensaver Line 1", SCREENSAVER_TEXT_MAX - 1);
   appendSchemaStringField(json, first, "screensaverLine2", "Screensaver Line 2", SCREENSAVER_TEXT_MAX - 1);
   json += "],";
@@ -1902,22 +1902,22 @@ static bool parseAndApplyWebPatch(const String& json, String* errorMsg, uint8_t*
   }
   if (parseJsonInt(json, "statusSlot0", v)) {
     if (v == STATUS_CURRENT_MA) v = STATUS_CURRENT;
-    if (!inRange(v, STATUS_BLANK, STATUS_ACTIVE_BRAKE)) { *errorMsg = "Error: invalid statusSlot0"; return false; }
+    if (!inRange(v, STATUS_BLANK, STATUS_BATTERY)) { *errorMsg = "Error: invalid statusSlot0"; return false; }
     updated.statusSlot[0] = (uint16_t)v;
   }
   if (parseJsonInt(json, "statusSlot1", v)) {
     if (v == STATUS_CURRENT_MA) v = STATUS_CURRENT;
-    if (!inRange(v, STATUS_BLANK, STATUS_ACTIVE_BRAKE)) { *errorMsg = "Error: invalid statusSlot1"; return false; }
+    if (!inRange(v, STATUS_BLANK, STATUS_BATTERY)) { *errorMsg = "Error: invalid statusSlot1"; return false; }
     updated.statusSlot[1] = (uint16_t)v;
   }
   if (parseJsonInt(json, "statusSlot2", v)) {
     if (v == STATUS_CURRENT_MA) v = STATUS_CURRENT;
-    if (!inRange(v, STATUS_BLANK, STATUS_ACTIVE_BRAKE)) { *errorMsg = "Error: invalid statusSlot2"; return false; }
+    if (!inRange(v, STATUS_BLANK, STATUS_BATTERY)) { *errorMsg = "Error: invalid statusSlot2"; return false; }
     updated.statusSlot[2] = (uint16_t)v;
   }
   if (parseJsonInt(json, "statusSlot3", v)) {
     if (v == STATUS_CURRENT_MA) v = STATUS_CURRENT;
-    if (!inRange(v, STATUS_BLANK, STATUS_ACTIVE_BRAKE)) { *errorMsg = "Error: invalid statusSlot3"; return false; }
+    if (!inRange(v, STATUS_BLANK, STATUS_BATTERY)) { *errorMsg = "Error: invalid statusSlot3"; return false; }
     updated.statusSlot[3] = (uint16_t)v;
   }
 

@@ -99,7 +99,8 @@
     </figure>
     <h3>Statuszeile und ABOUT</h3>
     <ul>
-      <li><code>STATUS BAR</code>: 4 feste Slots. Jeder Slot kann <code>OUT%</code>, <code>THRO</code>, <code>CAR</code>, <code>CURR</code>, <code>VOLT</code>, <code>BREMS</code> oder leer anzeigen. <code>CURR</code> zeigt mA unter 1000 und A darueber.</li>
+      <li><code>STATUS BAR</code>: 4 feste Slots. Jeder Slot kann <code>OUT%</code>, <code>THRO</code>, <code>CAR</code>, <code>CURR</code>, <code>VOLT</code>, <code>VBAT</code>, <code>BREMS</code> oder leer anzeigen. <code>CURR</code> zeigt mA unter 1000 und A darueber.</li>
+      <li><code>VBAT</code> zeigt die Spannung der optionalen internen Batterie. Im Standard-Boardprofil nutzt diese Messung <code>GPIO15</code> / ADC2, daher kann der Wert waehrend aktivem WiFi stehen bleiben.</li>
       <li><code>BREMS</code> in der Statuszeile zeigt Bremsart und Wert in Echtzeit: <code>Bxxx%</code> = normales <code>BRAKE</code>, <code>Axxx%</code> = <code>Alt.Brake</code>, <code>Qxxx%</code> = <code>Rel.Brake QUICK</code>, <code>Dxxx%</code> = <code>Rel.Brake DRAG</code>, <code>NONE</code> = aktuell keine Bremse aktiv. Der Code kann sich waehrend der Fahrt schnell aendern.</li>
       <li>Wenn WiFi aktiv ist, zeigt die Statuszeile <code>WIFI</code>. Zuerst wird ein freier Slot benutzt; wenn keiner frei ist, wird Slot 4 temporaer ueberschrieben.</li>
       <li><code>ABOUT</code> zeigt Firmware-/Datenversion, erkannten Trigger-Sensor, Chip-Infos, Flash/Heap, MAC-Adressen und Build-Datum/-Zeit.</li>
