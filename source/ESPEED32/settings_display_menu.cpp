@@ -65,8 +65,17 @@ void showDisplaySettings() {
     initMenuItems();
     initSettingsMenuItems();
     initDisplayMenuItems();  /* Must be last: overwrites shared g_settingsMenu */
-    frameUpper = 1;
-    frameLower = visibleLines;
+    if (sel < frameUpper) {
+      frameUpper = sel;
+      frameLower = frameUpper + visibleLines - 1;
+    } else if (sel > frameLower) {
+      frameLower = sel;
+      frameUpper = frameLower - visibleLines + 1;
+    }
+    if (frameLower > DISPLAY_ITEMS_COUNT) {
+      frameLower = DISPLAY_ITEMS_COUNT;
+      frameUpper = frameLower - visibleLines + 1;
+    }
     obdFill(&g_obd, OBD_WHITE, 1);
     prevSel = 0;
   };
