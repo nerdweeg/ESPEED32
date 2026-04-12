@@ -290,6 +290,20 @@ Important hardware note:
 - `GPIO15` is an `ADC2` pin on ESP32, so it is better suited to non-drive-critical battery monitoring than to live throttle/brake tuning inputs
 - the standard `VBAT` profile assumes a `100k / 100k` battery divider on `GPIO15`; if your hardware differs, adjust `BOARD_BAT_RVIFBL` / `BOARD_BAT_RVIFBH` in your board profile so the `VBAT` reading is scaled correctly
 
+Falstad snippet for the standard `VBAT` divider on `GPIO15`:
+
+```text
+<cir f="1" ts="0.000005" ic="10.20027730826997" cb="50" pb="43" vr="5" mts="5e-11">
+  <v x="64 192 64 64" f="16" wf="0" maxv="4.2"/>
+  <r x="64 64 192 64" f="0" r="100000"/>
+  <r x="192 192 64 192" f="0" r="100000"/>
+  <w x="192 128 288 128" f="3"/>
+  <x x="299 128 393 131" f="0" si="12" te="GPIO15 (SPARE)"/>
+  <w x="192 128 192 192" f="0"/>
+  <w x="192 64 192 128" f="0"/>
+</cir>
+```
+
 Please verify the actual board routing against:
 
 - `ESPEED32_V3_0_schematic_PCB.pdf`

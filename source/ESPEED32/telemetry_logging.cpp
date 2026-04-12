@@ -23,6 +23,13 @@ static uint8_t g_telemetrySessionStartCarIndex = 0;
 static uint8_t g_telemetryLastSelectedCarIndex = 0;
 static bool g_telemetryLastActiveCarValid = false;
 static CarParam_type g_telemetryLastActiveCar;
+static char g_telemetryLastStartError[64] = "";
+
+static void telemetrySetLastStartError(const char* msg) {
+  if (msg == nullptr) msg = "";
+  strncpy(g_telemetryLastStartError, msg, sizeof(g_telemetryLastStartError) - 1U);
+  g_telemetryLastStartError[sizeof(g_telemetryLastStartError) - 1U] = '\0';
+}
 
 static uint32_t telemetryOldestSeqLocked() {
   if (g_telemetryCount == 0 || g_telemetryNextSeq == 0) {
@@ -145,8 +152,13 @@ bool telemetryStartLogging(const StoredVar_type* storedVar,
                            uint16_t encoderInvertEnabled,
                            uint16_t adcVoltageRange_mV,
                            uint8_t activeCarIndex) {
-  if (storedVar == nullptr || activeCarIndex >= CAR_MAX_COUNT) {
+  telemetrySetLastStartError("");
+  if (storedVar == nullptr) {
+    telemetrySetLastStartError("Telemetry start failed: invalid config");
     return false;
+  }
+  if (activeCarIndex >= CAR_MAX_COUNT) {
+    activeCarIndex = (storedVar->selectedCarNumber < CAR_MAX_COUNT) ? (uint8_t)storedVar->selectedCarNumber : 0U;
   }
 
   uint32_t nowMs = millis();
@@ -155,6 +167,7 @@ bool telemetryStartLogging(const StoredVar_type* storedVar,
   if (allocatedBuffer == nullptr) {
     allocatedBuffer = (TelemetrySample*)malloc(sizeof(TelemetrySample) * TELEMETRY_BUFFER_CAPACITY);
     if (allocatedBuffer == nullptr) {
+      telemetrySetLastStartError("Telemetry start failed: out of memory");
       return false;
     }
   }
@@ -164,6 +177,7 @@ bool telemetryStartLogging(const StoredVar_type* storedVar,
       if (g_telemetrySamples == nullptr && allocatedBuffer != nullptr) {
         free(allocatedBuffer);
       }
+      telemetrySetLastStartError("Telemetry start failed: out of memory");
       return false;
     }
   }
@@ -211,6 +225,10 @@ bool telemetryStartLogging(const StoredVar_type* storedVar,
   }
 
   return true;
+}
+
+const char* telemetryGetLastStartError() {
+  return g_telemetryLastStartError;
 }
 
 void telemetryStopLogging() {

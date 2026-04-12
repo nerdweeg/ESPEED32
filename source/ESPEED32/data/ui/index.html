@@ -3530,6 +3530,10 @@ function lapOverlayAnalyze(silent){
 }
 
 async function lapOverlayUseCurrentTelemetry(){
+  if(!telemetryAvailable()){
+    ss('lapst','err',telemetryUnavailableText());
+    return;
+  }
   lapOverlaySourceKind=LAP_OVERLAY_SOURCE_CURRENT;
   if(!telemetrySamples.length && telemetryAvailable()){
     try{
@@ -3537,8 +3541,12 @@ async function lapOverlayUseCurrentTelemetry(){
     }catch(_){}
   }
   lapOverlayRefreshFromCurrentTelemetry(false);
-  if(telemetryAvailable()){
+  var status=telemetryStatus||{};
+  var hasCurrentSource=!!(lapOverlaySamples.length || telemetrySamples.length || status.hasData || status.loggingActive);
+  if(hasCurrentSource && status.loggingActive){
     ss('lapst','ok','Using current telemetry buffer. Lap Overlay will update live while telemetry runs.');
+  }else if(hasCurrentSource){
+    ss('lapst','ok','Using current telemetry buffer.');
   }
 }
 

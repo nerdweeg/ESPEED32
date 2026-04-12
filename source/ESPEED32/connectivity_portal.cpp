@@ -2371,7 +2371,10 @@ static void handleSerialCommand(const String& cmd) {
                                g_encoderInvertEnabled,
                                g_adcVoltageRange_mV,
                                (uint8_t)g_carSel)) {
-      Serial.println("ERR:Telemetry start failed");
+      const char* err = telemetryGetLastStartError();
+      if (err == nullptr || err[0] == '\0') err = "Telemetry start failed";
+      Serial.print("ERR:");
+      Serial.println(err);
       return;
     }
     sendSerialLengthPrefixedPayload(buildTelemetryStatusPayload("Telemetry logging started"));
@@ -3003,7 +3006,12 @@ static void handleTelemetryStart() {
                              g_encoderInvertEnabled,
                              g_adcVoltageRange_mV,
                              (uint8_t)g_carSel)) {
-    g_wifiServer->send(500, "application/json", "{\"ok\":false,\"error\":\"Telemetry start failed\"}");
+    const char* err = telemetryGetLastStartError();
+    if (err == nullptr || err[0] == '\0') err = "Telemetry start failed";
+    String payload = "{\"ok\":false,\"error\":\"";
+    payload += err;
+    payload += "\"}";
+    g_wifiServer->send(500, "application/json", payload);
     return;
   }
 
@@ -3520,14 +3528,14 @@ static void handleOtaUpload() {
       if (g_otaTargetSpiffs) {
         obdWriteString(&g_obd, 0, 0, 24, (char*)"SPIFFS OK!", FONT_12x16, OBD_BLACK, 1);
       } else {
-        obdWriteString(&g_obd, 0, 8, 24, (char*)"OTA OK!", FONT_12x16, OBD_BLACK, 1);
+        obdWriteString(&g_obd, 0, 16, 24, (char*)"FW OK!", FONT_12x16, OBD_BLACK, 1);
       }
     } else {
       obdFill(&g_obd, OBD_WHITE, 1);
       if (g_otaTargetSpiffs) {
         obdWriteString(&g_obd, 0, 0, 24, (char*)"SPIFFS FAIL!", FONT_12x16, OBD_BLACK, 1);
       } else {
-        obdWriteString(&g_obd, 0, 0, 24, (char*)"OTA FAIL!", FONT_12x16, OBD_BLACK, 1);
+        obdWriteString(&g_obd, 0, 8, 24, (char*)"FW FAIL!", FONT_12x16, OBD_BLACK, 1);
       }
     }
     g_otaInProgress = false;

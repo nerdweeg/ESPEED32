@@ -88,6 +88,7 @@ bool telemetryStartLogging(const StoredVar_type* storedVar,
                            uint16_t encoderInvertEnabled,
                            uint16_t adcVoltageRange_mV,
                            uint8_t activeCarIndex);
+const char* telemetryGetLastStartError();
 void telemetryStopLogging();
 void telemetryClear();
 bool telemetryIsLoggingActive();
