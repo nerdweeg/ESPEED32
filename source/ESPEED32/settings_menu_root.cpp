@@ -13,6 +13,7 @@
 #include "ui_render.h"
 
 extern StoredVar_type g_storedVar;
+extern uint16_t g_statsEnabled;
 extern uint16_t g_antiSpinStepMs;
 extern ESC_type g_escVar;
 extern OBDISP g_obd;
@@ -170,8 +171,14 @@ void showSettingsMenu() {
           resumeAfterSettingsChild();
           continue;
         }
+        /* STATS - instant toggle */
+        if (g_settingsMenu.item[settingsSelector - 1].value == (void*)&g_statsEnabled) {
+          g_statsEnabled = g_statsEnabled ? 0 : 1;
+          saveEEPROM(g_storedVar);
+          initMenuItems();
+          prevSettingsSelector = 0;
         /* Value items */
-        if (g_settingsMenu.item[settingsSelector - 1].value != ITEM_NO_VALUE) {
+        } else if (g_settingsMenu.item[settingsSelector - 1].value != ITEM_NO_VALUE) {
           settingsValuePtr = (uint16_t *)g_settingsMenu.item[settingsSelector - 1].value;
           originalSettingsValue = *settingsValuePtr;
           settingsMenuState = VALUE_SELECTION;

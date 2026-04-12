@@ -295,6 +295,8 @@ void showHardwareSettings() {
 
   uint8_t sel = 0;
   bool needRedraw = true;
+  MenuState_enum hwMenuState = ITEM_SELECTION;
+  uint16_t tempPwmProfile = 0;
   uint32_t lastInteraction = millis();
   bool screensaverActive = false;
   uint16_t screensaverEncoderPos = (uint16_t)readUiEncoder();
@@ -347,43 +349,58 @@ void showHardwareSettings() {
 
     if (g_rotaryEncoder.encoderChanged()) {
       lastInteraction = millis();
-      sel = (uint8_t)readUiEncoder();
+      if (hwMenuState == ITEM_SELECTION) {
+        sel = (uint8_t)readUiEncoder();
+      } else {
+        tempPwmProfile = (uint16_t)readUiEncoder();
+      }
       needRedraw = true;
     }
 
     if (g_rotaryEncoder.isEncoderButtonClicked()) {
       lastInteraction = millis();
-      if (sel == itemBack) {
-        break;
-      } else if (sel == itemEncInv) {
-        applyEncoderInvertSetting(g_encoderInvertEnabled ? 0 : 1);
-        saveEEPROM(g_storedVar);
-        needRedraw = true;
-      } else if (sel == itemExtPot) {
-        showExtPotSettings();
-        if (isEscapeToMainRequested()) break;
-        resumeAfterChild();
-        continue;
-      } else if (sel == itemTrigger) {
-        showTriggerSensorSettings();
-        if (isEscapeToMainRequested()) break;
-        resumeAfterChild();
-        continue;
-      } else if (sel == itemPwmMax) {
-        uint16_t nextProfile = getConfiguredPwmFreqMaxProfile() + 1U;
-        if (nextProfile > PWM_FREQ_MAX_PROFILE_20K) {
-          nextProfile = PWM_FREQ_MAX_PROFILE_5K;
-        }
-        if (applyConfiguredPwmFreqMaxProfile(nextProfile)) {
+      if (hwMenuState == VALUE_SELECTION) {
+        /* Confirm PWM MAX edit */
+        if (applyConfiguredPwmFreqMaxProfile(tempPwmProfile)) {
           initMenuItems();
           saveEEPROM(g_storedVar);
         }
+        hwMenuState = ITEM_SELECTION;
+        g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
+        setUiEncoderBoundaries(0, HARDWARE_ITEMS_COUNT - 1, false);
+        resetUiEncoder(sel);
         needRedraw = true;
-      } else if (sel == itemTest) {
-        showSelfTest();
-        if (isEscapeToMainRequested()) break;
-        resumeAfterChild();
-        continue;
+      } else {
+        if (sel == itemBack) {
+          break;
+        } else if (sel == itemEncInv) {
+          applyEncoderInvertSetting(g_encoderInvertEnabled ? 0 : 1);
+          saveEEPROM(g_storedVar);
+          needRedraw = true;
+        } else if (sel == itemExtPot) {
+          showExtPotSettings();
+          if (isEscapeToMainRequested()) break;
+          resumeAfterChild();
+          continue;
+        } else if (sel == itemTrigger) {
+          showTriggerSensorSettings();
+          if (isEscapeToMainRequested()) break;
+          resumeAfterChild();
+          continue;
+        } else if (sel == itemPwmMax) {
+          /* Enter VALUE_SELECTION */
+          hwMenuState = VALUE_SELECTION;
+          tempPwmProfile = getConfiguredPwmFreqMaxProfile();
+          g_rotaryEncoder.setAcceleration(SEL_ACCELERATION);
+          setUiEncoderBoundaries(PWM_FREQ_MAX_PROFILE_5K, PWM_FREQ_MAX_PROFILE_20K, false);
+          resetUiEncoder(tempPwmProfile);
+          needRedraw = true;
+        } else if (sel == itemTest) {
+          showSelfTest();
+          if (isEscapeToMainRequested()) break;
+          resumeAfterChild();
+          continue;
+        }
       }
       delay(200);
     }
@@ -394,8 +411,18 @@ void showHardwareSettings() {
       if (!brakeBtnInMenu && millis() - lastBrakeBtnTime > BUTTON_SHORT_PRESS_DEBOUNCE_MS) {
         brakeBtnInMenu = true;
         lastBrakeBtnTime = millis();
-        while (digitalRead(BUTT_PIN) == BUTTON_PRESSED) { vTaskDelay(5); }
-        break;
+        if (hwMenuState == VALUE_SELECTION) {
+          /* Cancel - discard edit */
+          hwMenuState = ITEM_SELECTION;
+          g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
+          setUiEncoderBoundaries(0, HARDWARE_ITEMS_COUNT - 1, false);
+          resetUiEncoder(sel);
+          obdFill(&g_obd, OBD_WHITE, 1);
+          needRedraw = true;
+        } else {
+          while (digitalRead(BUTT_PIN) == BUTTON_PRESSED) { vTaskDelay(5); }
+          break;
+        }
       }
     } else {
       brakeBtnInMenu = false;
@@ -409,15 +436,17 @@ void showHardwareSettings() {
       char familyBuf[16];
       char pwmMaxBuf[8];
       HAL_GetTriggerSensorFamilyLabel(familyBuf, sizeof(familyBuf));
-      snprintf(pwmMaxBuf, sizeof(pwmMaxBuf), "%uk", (unsigned int)getConfiguredPwmFreqMaxKHz());
+      uint16_t displayProfile = (hwMenuState == VALUE_SELECTION) ? tempPwmProfile : getConfiguredPwmFreqMaxProfile();
+      snprintf(pwmMaxBuf, sizeof(pwmMaxBuf), "%uk", (unsigned int)pwmFreqMaxProfileToWholeKHz(displayProfile));
 
       for (uint8_t i = 0; i < HARDWARE_ITEMS_COUNT; i++) {
-        bool isSelected = (sel == i);
+        bool isNameSel  = (sel == i && hwMenuState == ITEM_SELECTION);
+        bool isValueSel = (sel == i && hwMenuState == VALUE_SELECTION);
         const char* label = (i == itemBack)
           ? getBackLabel(lang)
           : getHardwareMenuLabel(lang, i);
         obdWriteString(&g_obd, 0, 0, i * lineH, (char*)label,
-                       menuFont, isSelected ? OBD_WHITE : OBD_BLACK, 1);
+                       menuFont, isNameSel ? OBD_WHITE : OBD_BLACK, 1);
 
         const char* value = nullptr;
         if (i == itemEncInv) {
@@ -435,7 +464,7 @@ void showHardwareSettings() {
           } else if (i == itemPwmMax) {
             fieldChars = 3;
           }
-          drawRightAlignedValue(i * lineH, value, isSelected, fieldChars);
+          drawRightAlignedValue(i * lineH, value, isNameSel || isValueSel, fieldChars);
         }
       }
     }

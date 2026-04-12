@@ -26,12 +26,10 @@ extern void applyAdvancedMenuSetting(uint16_t enabled);
 extern void initMenuItems();
 extern void initSettingsMenuItems();
 extern void initDisplayMenuItems();
-extern void resetEncoderForMainMenu();
 
 /**
  * Display settings submenu: VIEW, LANG, CASE, FSIZE, ADVANCED, STEPS, STATUS, BACK.
- * Handles value editing for display-related parameters.
- * ADVANCED hides/shows FADE, PWM_F and BRAKE+ in the main menu.
+ * ADVANCED toggles immediately on click (hides/shows FADE, PWM_F and BRAKE+ in the main menu).
  * STEPS opens a dedicated submenu for ANTISPIN, BRAKE STEP and SENSI STEP.
  */
 void showDisplaySettings() {
@@ -58,9 +56,6 @@ void showDisplaySettings() {
   uint16_t prevFontSize = g_storedVar.listFontSize;
   uint16_t tempFontSize = g_storedVar.listFontSize;
   bool isEditingFontSize = false;
-  uint16_t prevAdvancedMenu = g_advancedMenuEnabled ? 1 : 0;
-  uint16_t tempAdvancedMenu = prevAdvancedMenu;
-  bool isEditingAdvancedMenu = false;
 
   uint8_t visibleLines = (DISPLAY_ITEMS_COUNT > 5) ? 5 : DISPLAY_ITEMS_COUNT;  /* Compact scrollable list. */
   uint16_t frameUpper = 1;
@@ -122,7 +117,7 @@ void showDisplaySettings() {
           prevSel = 0;
           continue;
         }
-        /* STATUS submenu lives right before BACK. */
+        /* STATUS submenu */
         if (sel == DISPLAY_ITEM_STATUS_IDX + 1) {
           showStatusSettings();
           if (isEscapeToMainRequested()) break;
@@ -134,7 +129,20 @@ void showDisplaySettings() {
           prevSel = 0;
           continue;
         }
-        /* Value items */
+        /* ADVANCED - instant toggle, no VALUE_SELECTION */
+        if (sel == DISPLAY_ITEM_ADVANCED_IDX + 1) {
+          applyAdvancedMenuSetting(g_advancedMenuEnabled ? 0 : 1);
+          saveEEPROM(g_storedVar);
+          initMenuItems();
+          initSettingsMenuItems();
+          initDisplayMenuItems();
+          frameUpper = 1;
+          frameLower = visibleLines;
+          obdFill(&g_obd, OBD_WHITE, 1);
+          prevSel = 0;
+          continue;
+        }
+        /* Value items: VIEW, LANG, CASE, FSIZE */
         if (g_settingsMenu.item[sel - 1].value != ITEM_NO_VALUE) {
           if (sel == DISPLAY_ITEM_LANG_IDX + 1) {  /* LANG */
             isEditingLanguage = true;
@@ -148,25 +156,20 @@ void showDisplaySettings() {
             isEditingFontSize = true;
             tempFontSize = g_storedVar.listFontSize;
             originalValue = g_storedVar.listFontSize;
-          } else if (sel == DISPLAY_ITEM_ADVANCED_IDX + 1) {  /* ADVANCED */
-            isEditingAdvancedMenu = true;
-            tempAdvancedMenu = g_advancedMenuEnabled ? 1 : 0;
-            originalValue = tempAdvancedMenu;
           } else {
             valuePtr = (uint16_t *)g_settingsMenu.item[sel - 1].value;
             originalValue = *valuePtr;
           }
           menuState = VALUE_SELECTION;
           g_rotaryEncoder.setAcceleration(SEL_ACCELERATION);
-          if (!isEditingLanguage && !isEditingTextCase && !isEditingFontSize && !isEditingAdvancedMenu) {
+          if (!isEditingLanguage && !isEditingTextCase && !isEditingFontSize) {
             valuePtr = (uint16_t *)g_settingsMenu.item[sel - 1].value;
           }
           setUiEncoderBoundaries(g_settingsMenu.item[sel - 1].minValue,
                                         g_settingsMenu.item[sel - 1].maxValue, false);
           uint16_t resetVal = isEditingLanguage ? tempLanguage :
                               (isEditingTextCase ? tempTextCase :
-                              (isEditingFontSize ? tempFontSize :
-                              (isEditingAdvancedMenu ? tempAdvancedMenu : *valuePtr)));
+                              (isEditingFontSize ? tempFontSize : *valuePtr));
           resetUiEncoder(resetVal);
         }
       } else {
@@ -178,26 +181,20 @@ void showDisplaySettings() {
         if (isEditingLanguage) { g_storedVar.language = tempLanguage; lang = tempLanguage; isEditingLanguage = false; }
         if (isEditingTextCase) { g_storedVar.textCase = tempTextCase; isEditingTextCase = false; }
         if (isEditingFontSize) { g_storedVar.listFontSize = tempFontSize; isEditingFontSize = false; }
-        if (isEditingAdvancedMenu) {
-          applyAdvancedMenuSetting(tempAdvancedMenu);
-          isEditingAdvancedMenu = false;
-        }
         saveEEPROM(g_storedVar);
         if (g_storedVar.language != prevLanguage || g_storedVar.textCase != prevTextCase ||
-            g_storedVar.listFontSize != prevFontSize || (g_advancedMenuEnabled ? 1 : 0) != prevAdvancedMenu) {
+            g_storedVar.listFontSize != prevFontSize) {
           initMenuItems();
           initSettingsMenuItems();
           initDisplayMenuItems();  /* Must be last: shared g_settingsMenu is overwritten by initSettingsMenuItems */
           prevLanguage = g_storedVar.language;
           prevTextCase = g_storedVar.textCase;
           prevFontSize = g_storedVar.listFontSize;
-          prevAdvancedMenu = g_advancedMenuEnabled ? 1 : 0;
           /* visibleLines stays fixed - submenu always uses FONT_8x8 */
           frameUpper = 1;
           frameLower = visibleLines;
           obdFill(&g_obd, OBD_WHITE, 1);
           lang = g_storedVar.language;
-          resetEncoderForMainMenu();
         }
       }
       delay(200);
@@ -219,8 +216,6 @@ void showDisplaySettings() {
           }
         } else if (isEditingFontSize) {
           tempFontSize = readUiEncoder();
-        } else if (isEditingAdvancedMenu) {
-          tempAdvancedMenu = readUiEncoder() ? 1 : 0;
         } else {
           *valuePtr = readUiEncoder();
         }
@@ -239,7 +234,6 @@ void showDisplaySettings() {
           if (isEditingLanguage) { tempLanguage = originalValue; g_storedVar.language = originalValue; isEditingLanguage = false; }
           else if (isEditingTextCase) { tempTextCase = originalValue; g_storedVar.textCase = originalValue; isEditingTextCase = false; }
           else if (isEditingFontSize) { tempFontSize = originalValue; g_storedVar.listFontSize = originalValue; isEditingFontSize = false; }
-          else if (isEditingAdvancedMenu) { tempAdvancedMenu = originalValue ? 1 : 0; isEditingAdvancedMenu = false; }
           else if (valuePtr != NULL) { *valuePtr = originalValue; }
           menuState = ITEM_SELECTION;
           g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
@@ -296,9 +290,8 @@ void showDisplaySettings() {
         } else if (itemIdx == DISPLAY_ITEM_FSIZE_IDX) {  /* FSIZE */
           uint16_t dispFS = (isEditingFontSize && isValueSel) ? tempFontSize : value;
           sprintf(msgStr, "%5s", FONT_SIZE_LABELS[g_storedVar.language][dispFS]);
-        } else if (itemIdx == DISPLAY_ITEM_ADVANCED_IDX) {  /* ADVANCED */
-          uint16_t dispAdvanced = (isEditingAdvancedMenu && isValueSel) ? tempAdvancedMenu : (g_advancedMenuEnabled ? 1 : 0);
-          snprintf(msgStr, sizeof(msgStr), "%3s", getOnOffLabel(g_storedVar.language, dispAdvanced));
+        } else if (itemIdx == DISPLAY_ITEM_ADVANCED_IDX) {  /* ADVANCED - always show live value */
+          snprintf(msgStr, sizeof(msgStr), "%3s", getOnOffLabel(g_storedVar.language, g_advancedMenuEnabled ? 1 : 0));
         } else if (g_settingsMenu.item[itemIdx].unit[0] != '\0') {
           snprintf(msgStr, sizeof(msgStr), "%2d %s", value, g_settingsMenu.item[itemIdx].unit);
         } else {
