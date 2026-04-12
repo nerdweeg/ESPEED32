@@ -107,14 +107,14 @@ static void formatAntiSpinValue(char* out, size_t outSize, uint16_t antiSpinMs) 
 
   switch (g_antiSpinDisplayMode) {
     case ANTISPIN_UI_MODE_PERCENT:
-      snprintf(out, outSize, "%4u%%", (unsigned int)antiSpinMsToPercent(antiSpinMs));
+      snprintf(out, outSize, "%u%%", (unsigned int)antiSpinMsToPercent(antiSpinMs));
       break;
     case ANTISPIN_UI_MODE_TEXT:
-      snprintf(out, outSize, "%5s", antiSpinTextLevelToLabel(antiSpinMsToTextLevel(antiSpinMs)));
+      snprintf(out, outSize, "%s", antiSpinTextLevelToLabel(antiSpinMsToTextLevel(antiSpinMs)));
       break;
     case ANTISPIN_UI_MODE_MS:
     default:
-      snprintf(out, outSize, "%3ums", (unsigned int)antiSpinMs);
+      snprintf(out, outSize, "%ums", (unsigned int)antiSpinMs);
       break;
   }
 }
@@ -643,8 +643,12 @@ void printMainMenu(MenuState_enum currMenuState)
     uint8_t lineHeight = (g_storedVar.listFontSize == FONT_SIZE_SMALL) ? 8 : HEIGHT12x16;
     static char lastBrakeListValue[10] = "";
     static char lastSensiListValue[10] = "";
+    static char lastAntiSpinListValue[10] = "";
+    static char lastDecimalListValue[10] = "";
     static uint8_t lastBrakeListFont = 0xFF;
     static uint8_t lastSensiListFont = 0xFF;
+    static uint8_t lastAntiSpinListFont = 0xFF;
+    static uint8_t lastDecimalListFont = 0xFF;
 
     for (uint8_t i = 0; i < visibleLines; i++)
     {
@@ -652,6 +656,7 @@ void printMainMenu(MenuState_enum currMenuState)
       if (menuIndex >= mainMenuItems) break;
       bool isBrakeRow = (strcmp(g_mainMenu.item[menuIndex].name, getMenuName(g_storedVar.language, 0)) == 0);
       bool isSensiRow = (strcmp(g_mainMenu.item[menuIndex].name, getMenuName(g_storedVar.language, 1)) == 0);
+      bool isAntiSpinRow = (strcmp(g_mainMenu.item[menuIndex].name, getMenuName(g_storedVar.language, 2)) == 0);
       /* Print item name */
       /* Item color: WHITE if item is selected, black otherwise */
       obdWriteString(&g_obd, 0, 0, i * lineHeight, g_mainMenu.item[menuIndex].name, menuFont, (g_encoderMainSelector - frameUpper == i) ? OBD_WHITE : OBD_BLACK, 1);
@@ -680,7 +685,7 @@ void printMainMenu(MenuState_enum currMenuState)
               formatSensiValue(msgStr, sizeof(msgStr), sensiRaw);
             }
           }
-          else if (strcmp(g_mainMenu.item[menuIndex].name, getMenuName(g_storedVar.language, 2)) == 0) {
+          else if (isAntiSpinRow) {
             formatAntiSpinValue(msgStr, sizeof(msgStr), g_storedVar.carParam[g_carSel].antiSpin);
           }
           else {
@@ -704,6 +709,14 @@ void printMainMenu(MenuState_enum currMenuState)
             strncpy(lastSensiListValue, msgStr, sizeof(lastSensiListValue) - 1U);
             lastSensiListValue[sizeof(lastSensiListValue) - 1U] = '\0';
             lastSensiListFont = menuFont;
+          } else if (isAntiSpinRow) {
+            uint8_t clearChars = max((uint8_t)strlen(msgStr), (uint8_t)strlen(lastAntiSpinListValue));
+            if (clearChars > 0U && (strcmp(msgStr, lastAntiSpinListValue) != 0 || menuFont != lastAntiSpinListFont)) {
+              clearRightAlignedField(OLED_WIDTH, i * lineHeight, menuFont, clearChars);
+            }
+            strncpy(lastAntiSpinListValue, msgStr, sizeof(lastAntiSpinListValue) - 1U);
+            lastAntiSpinListValue[sizeof(lastAntiSpinListValue) - 1U] = '\0';
+            lastAntiSpinListFont = menuFont;
           }
           int textWidth = strlen(msgStr) * charWidth;
           obdWriteString(&g_obd, 0, OLED_WIDTH - textWidth, i * lineHeight, msgStr, menuFont, (isSelectedValueEditing ? OBD_WHITE : OBD_BLACK), 1);
@@ -713,7 +726,17 @@ void printMainMenu(MenuState_enum currMenuState)
         {
           /* value is a generic pointer to void, so first cast to uint16_t pointer, then take the pointed value */
           tmp = *(uint16_t *)(g_mainMenu.item[menuIndex].value);
-          sprintf(msgStr, " %d.%01d%s", tmp / 10, (tmp % 10), g_mainMenu.item[menuIndex].unit);
+          snprintf(msgStr, sizeof(msgStr), "%u.%01u%s",
+                   (unsigned int)(tmp / 10U),
+                   (unsigned int)(tmp % 10U),
+                   g_mainMenu.item[menuIndex].unit);
+          uint8_t clearChars = max((uint8_t)strlen(msgStr), (uint8_t)strlen(lastDecimalListValue));
+          if (clearChars > 0U && (strcmp(msgStr, lastDecimalListValue) != 0 || menuFont != lastDecimalListFont)) {
+            clearRightAlignedField(OLED_WIDTH, i * lineHeight, menuFont, clearChars);
+          }
+          strncpy(lastDecimalListValue, msgStr, sizeof(lastDecimalListValue) - 1U);
+          lastDecimalListValue[sizeof(lastDecimalListValue) - 1U] = '\0';
+          lastDecimalListFont = menuFont;
           /* Right-align: calculate text width and position from right edge */
           int textWidth = strlen(msgStr) * charWidth;
           obdWriteString(&g_obd, 0, OLED_WIDTH - textWidth, i * lineHeight, msgStr, menuFont, (((g_encoderMainSelector - frameUpper == i) && (currMenuState == VALUE_SELECTION)) ? OBD_WHITE : OBD_BLACK), 1);
