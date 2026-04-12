@@ -165,7 +165,7 @@
         <tr><td><code>ANTIS</code></td><td>0-999 ms</td><td>30</td><td>Tijd van de anti-spin-ramp boven de low-output-bypass. Hogere waarde = langere/langzamere opbouw van vermogen. Het is geen pure trigger-delay. Weergave-eenheid en encoderstap worden ingesteld in <code>DISPLAY -&gt; STAPPEN -&gt; ANTISPIN</code> (MS / % / TEXT).</td></tr>
         <tr><td><code>CURVE</code></td><td>10-90 %</td><td>50</td><td>Throttle-mapping. 50 = lineair. &lt;50 zachtere start, &gt;50 scherpere start.</td></tr>
         <tr><td><code>FADE</code></td><td>0-30 %</td><td>0</td><td>Soft-start-zone. 0 = uitgeschakeld / oud gedrag. Boven 0 loopt het eerste deel van de triggerslag van 0 naar SENSI voordat normale CURVE het overneemt.</td></tr>
-        <tr><td><code>PWM_F</code></td><td>1.0-5.0 kHz</td><td>4.0</td><td>PWM-frequentie van de motor. Een hogere waarde maakt de respons onderin vaak zachter.</td></tr>
+        <tr><td><code>PWM_F</code></td><td>1.0-5.0 / 10.0 / 20.0 kHz</td><td>4.0</td><td>PWM-frequentie van de motor. Het bereik volgt <code>SETTINGS -&gt; HARDWARE -&gt; PWM MAX</code> (5/10/20 kHz). Een hogere waarde maakt de respons onderin vaak zachter.</td></tr>
         <tr><td><code>BRAKE+ / Alt.Brake</code></td><td>0-100 %</td><td>0</td><td>Alternatieve remwaarde die wordt gebruikt terwijl de remknop is ingedrukt en de trigger los is.</td></tr>
         <tr><td><code>BRAKE+ / Rel.Brake</code></td><td>OFF/QUICK(zone+level)/DRAG(level)</td><td>OFF</td><td>Hulpfunctie voor remmen bij loslaten van de trigger. QUICK gebruikt een zone met nul output; DRAG voegt loslaatdrag toe zonder zone.</td></tr>
         <tr><td><code>LIMIT</code></td><td>(SENSI+5)-100 %</td><td>100</td><td>Maximale motoroutput. &lt;100 activeert de LIMITER-waarschuwing.</td></tr>
@@ -304,6 +304,7 @@
       <li><code>ENC INV</code>: draai de encoderrichting globaal om als het menu op jouw hardware achterstevoren aanvoelt.</li>
       <li><code>EXT POT</code>: wijs <code>POT 1</code> en <code>POT 2</code> toe aan live overrides voor <code>OFF</code>, <code>BRAKE</code> of <code>SENSI</code>.</li>
       <li><code>TRIGGER</code>: toont triggersensorfamilie en actief type. Op <code>TLE493D</code>-builds kun je ook <code>TYPE</code> overriden tussen <code>AUTO</code>, <code>W2B6</code>, <code>W2B6_A0</code> en <code>P3B6</code>.</li>
+      <li><code>PWM MAX</code>: globale bovengrens voor <code>PWM_F</code>. Kies 5, 10 of 20 kHz. Verlaag je deze, dan worden alle autoprofielen tot die limiet begrensd.</li>
       <li><code>TEST</code>: voert de 9-stappen zelftest uit voor OLED, knoppen, trigger en outputs.</li>
     </ul>
     <h3>Geschat stroomverbruik van de controller-elektronica</h3>
@@ -480,6 +481,7 @@
 |  |  |  |- ACTIVE
 |  |  |  |- TYPE (AUTO/W2B6/W2B6_A0/P3B6) [TLE493D only]
 |  |  |  `- BACK
+|  |  |- PWM MAX (5/10/20 kHz)
 |  |  |- TEST (Self-Test, 9 steps)
 |  |  `- BACK
 |  |- STATS (ON/OFF, default OFF)

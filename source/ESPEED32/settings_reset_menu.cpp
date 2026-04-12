@@ -13,6 +13,7 @@ extern uint16_t g_antiSpinDisplayMode;
 extern uint16_t g_brakeStep;
 extern uint16_t g_sensiStep;
 extern uint16_t g_encoderInvertEnabled;
+extern uint16_t g_pwmFreqMaxProfile;
 extern ESC_type g_escVar;
 extern OBDISP g_obd;
 extern AiEsp32RotaryEncoder g_rotaryEncoder;
@@ -282,6 +283,7 @@ static void doResetSettings() {
   g_sensiStep                      = SENSI_STEP_DEFAULT;
   g_antiSpinDisplayMode            = ANTISPIN_UI_MODE_DEFAULT;
   g_encoderInvertEnabled           = ENCODER_INVERT_DEFAULT;
+  g_pwmFreqMaxProfile              = PWM_FREQ_MAX_PROFILE_DEFAULT;
   strncpy(g_storedVar.screensaverLine1, SCREENSAVER_LINE1_DEFAULT, SCREENSAVER_TEXT_MAX - 1);
   g_storedVar.screensaverLine1[SCREENSAVER_TEXT_MAX - 1] = '\0';
   strncpy(g_storedVar.screensaverLine2, SCREENSAVER_LINE2_DEFAULT, SCREENSAVER_TEXT_MAX - 1);
@@ -289,6 +291,7 @@ static void doResetSettings() {
   g_statsEnabled              = STATS_ENABLED_DEFAULT;
   g_extPotTarget[0]           = EXT_POT1_TARGET_DEFAULT;
   g_extPotTarget[1]           = EXT_POT2_TARGET_DEFAULT;
+  clampStoredVarCarPwmFreqsToProfile(&g_storedVar, g_pwmFreqMaxProfile);
   resetExtPotFilter();
   HAL_ResetTriggerSensorConfig();
 }

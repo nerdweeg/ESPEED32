@@ -29,7 +29,7 @@
 #define POWER_ITEMS_COUNT    6    /* Number of items in power submenu (SCRSV, SLEEP, D-SLEEP, STARTUP, VIN CAL., BACK) */
 #define DISPLAY_ITEMS_COUNT  7    /* Number of items in display submenu (VIEW, LANG, CASE, FSIZE, STEPS, STATUS, BACK) */
 #define STEPS_ITEMS_COUNT    4    /* Number of items in steps submenu (ANTISPIN, BRAKE STEP, SENSI STEP, BACK) */
-#define HARDWARE_ITEMS_COUNT 5    /* Number of items in hardware submenu (ENC INV, EXT POT, TRIGGER, TEST, BACK) */
+#define HARDWARE_ITEMS_COUNT 6    /* Number of items in hardware submenu (ENC INV, EXT POT, TRIGGER, PWM MAX, TEST, BACK) */
 #define POWER_SAVE_TIMEOUT_DEFAULT 5    /* [min] Default auto power save delay (0=manual only) */
 #define POWER_SAVE_TIMEOUT_MAX     10   /* [min] Maximum auto power save delay */
 #define DEEP_SLEEP_TIMEOUT_DEFAULT 10   /* [min] Default auto deep sleep delay (0=manual only) */
@@ -87,7 +87,7 @@
 /* Parameter Limits */
 #define MIN_SPEED_MAX_VALUE       900   /* [0.1%] 90.0% max sensitivity */
 #define DRAG_MAX_VALUE            100   /* [%] Maximum drag brake */
-#define FREQ_MAX_VALUE            5000  /* [Hz] Maximum PWM frequency */
+#define FREQ_MAX_VALUE           20000  /* [Hz] Absolute PWM frequency ceiling supported by firmware */
 #define BRAKE_MAX_VALUE          1000   /* [0.1%] Maximum brake strength */
 #define THROTTLE_CURVE_SPEED_DIFF_MAX_VALUE  90   /* [%] Throttle curve max */
 #define THROTTLE_CURVE_SPEED_DIFF_MIN_VALUE  10   /* [%] Throttle curve min */
@@ -106,6 +106,10 @@
 #define SENSI_STEP_MIN              1   /* [0.1% raw] Minimum sensi step (0.1%) */
 #define SENSI_STEP_MAX             50   /* [0.1% raw] Maximum sensi step (5.0%) */
 #define FREQ_MIN_VALUE            1000  /* [Hz] Minimum PWM frequency */
+#define PWM_FREQ_MAX_PROFILE_5K      0  /* Soft PWM ceiling = 5 kHz */
+#define PWM_FREQ_MAX_PROFILE_10K     1  /* Soft PWM ceiling = 10 kHz */
+#define PWM_FREQ_MAX_PROFILE_20K     2  /* Soft PWM ceiling = 20 kHz */
+#define PWM_FREQ_MAX_PROFILE_DEFAULT PWM_FREQ_MAX_PROFILE_5K
 #define QUICK_BRAKE_THRESHOLD_MAX 50    /* [%] Maximum quick brake threshold */
 #define QUICK_BRAKE_STRENGTH_MAX  100   /* [%] Maximum quick brake strength */
 #define RELEASE_BRAKE_OFF          0    /* Release brake disabled */
@@ -203,6 +207,41 @@ static inline const char* antiSpinTextLevelToLabel(uint16_t level) {
     case ANTISPIN_TEXT_HIGH:
     default:                 return "HIGH";
   }
+}
+
+static inline uint16_t pwmFreqMaxProfileToRaw(uint16_t profile) {
+  switch (profile) {
+    case PWM_FREQ_MAX_PROFILE_10K:
+      return 100U;  /* 10.0 kHz in [100*Hz] units */
+    case PWM_FREQ_MAX_PROFILE_20K:
+      return 200U;  /* 20.0 kHz in [100*Hz] units */
+    case PWM_FREQ_MAX_PROFILE_5K:
+    default:
+      return 50U;   /* 5.0 kHz in [100*Hz] units */
+  }
+}
+
+static inline uint16_t pwmFreqMaxProfileToWholeKHz(uint16_t profile) {
+  switch (profile) {
+    case PWM_FREQ_MAX_PROFILE_10K:
+      return 10U;
+    case PWM_FREQ_MAX_PROFILE_20K:
+      return 20U;
+    case PWM_FREQ_MAX_PROFILE_5K:
+    default:
+      return 5U;
+  }
+}
+
+static inline uint16_t normalizePwmFreqMaxProfile(uint16_t profile) {
+  return (profile > PWM_FREQ_MAX_PROFILE_20K) ? PWM_FREQ_MAX_PROFILE_DEFAULT : profile;
+}
+
+static inline uint16_t clampPwmFreqRawToProfile(uint16_t freqRaw, uint16_t profile) {
+  uint16_t maxRaw = pwmFreqMaxProfileToRaw(normalizePwmFreqMaxProfile(profile));
+  if (freqRaw < (FREQ_MIN_VALUE / 100U)) return (FREQ_MIN_VALUE / 100U);
+  if (freqRaw > maxRaw) return maxRaw;
+  return freqRaw;
 }
 
 /* Display Font Sizes */
@@ -421,6 +460,12 @@ typedef struct {
   uint16_t lockShortcutIdx;          /* Brake hold shortcut: 0=OFF, 1=1s, 2=2s, …, 10=10s */
   uint16_t lockConfirmEnabled;       /* Show fullscreen LOCKED/UNLOCKED flash: 0=OFF, 1=ON */
 } StoredVar_type;
+
+bool clampStoredVarCarPwmFreqsToProfile(StoredVar_type* storedVar, uint16_t profile);
+uint16_t getConfiguredPwmFreqMaxProfile();
+uint16_t getConfiguredPwmFreqMaxRaw();
+uint16_t getConfiguredPwmFreqMaxKHz();
+bool applyConfiguredPwmFreqMaxProfile(uint16_t profile);
 
 /**
  * @brief ESC runtime variables

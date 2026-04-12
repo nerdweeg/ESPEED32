@@ -4441,6 +4441,7 @@ function categorizeGlobalField(id){
   if(id==='selectedCarNumber' || id==='viewMode' || id==='gridCarSelectEnabled' || id==='raceViewMode') return 'Race & Driving';
   if(id==='screensaverTimeout' || id==='powerSaveTimeout' || id==='deepSleepTimeout' || id==='startupDelay') return 'Power & Startup';
   if(id==='antiSpinDisplayMode' || id==='antiSpinStepMs' || id==='antiSpinStepPct' || id==='antiSpinStep' || id==='brakeStep' || id==='sensiStep') return 'Display & Language';
+  if(id==='encoderInvert' || id==='pwmFreqMax' || id==='adcVoltageRangeMv') return 'Hardware';
   if(id==='wifiMode' || id==='wifiStaSsid' || id==='wifiStaPassword' || id==='wifiStaPasswordClear') return 'Network';
   if(id==='uiAuthPassword' || id==='uiAuthResetDefault') return 'Controller Access';
   if(id==='language' || id==='textCase' || id==='listFontSize') return 'Display & Language';
@@ -4505,7 +4506,7 @@ function renderEditor(){
       schema.global,
       globalValues,
       categorizeGlobalField,
-      ['Race & Driving','Power & Startup','Network','Controller Access','Display & Language','Status Slots','Sound','Screensaver Text','Other']
+      ['Race & Driving','Power & Startup','Hardware','Network','Controller Access','Display & Language','Status Slots','Sound','Screensaver Text','Other']
     );
 
   var cHtml='<div class="group-title">Car Params (editing profile '+editCar+')</div>'+

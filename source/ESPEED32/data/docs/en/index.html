@@ -328,7 +328,7 @@ details.doc-fold>:not(summary){margin-top:8px}
         <tr><td><code>ANTIS</code></td><td>0-999 ms</td><td>30</td><td>Anti-spin ramp time above the low-output bypass. Higher value = longer/slower power buildup. It is not a pure trigger delay. Display unit and encoder step are configured in <code>DISPLAY -&gt; STEPS -&gt; ANTISPIN</code> (MS / % / TEXT).</td></tr>
         <tr><td><code>CURVE</code></td><td>10-90 %</td><td>50</td><td>Throttle mapping. 50 = linear. &lt;50 softer start, &gt;50 sharper start.</td></tr>
         <tr><td><code>FADE</code></td><td>0-30 %</td><td>0</td><td>Soft-start zone. 0 = disabled / old behavior. Above 0, the first part of trigger travel ramps from 0 up to SENSI before normal CURVE takes over.</td></tr>
-        <tr><td><code>PWM_F</code></td><td>1.0-5.0 kHz</td><td>4.0</td><td>Motor PWM frequency. Higher value often softens low-end response.</td></tr>
+        <tr><td><code>PWM_F</code></td><td>1.0-5.0 / 10.0 / 20.0 kHz</td><td>4.0</td><td>Motor PWM frequency. Range follows <code>SETTINGS -&gt; HARDWARE -&gt; PWM MAX</code> (5/10/20 kHz). Higher value often softens low-end response.</td></tr>
         <tr><td><code>BRAKE+ / Alt.Brake</code></td><td>0-100 %</td><td>0</td><td>Alternate brake value used while brake button is held and trigger is released.</td></tr>
         <tr><td><code>BRAKE+ / Rel.Brake</code></td><td>OFF/QUICK(zone+level)/DRAG(level)</td><td>OFF</td><td>Release-brake helper near trigger release. QUICK uses a zero-output zone; DRAG adds release drag without a zone.</td></tr>
         <tr><td><code>LIMIT</code></td><td>(SENSI+5)-100 %</td><td>100</td><td>Maximum motor output. &lt;100 enables LIMITER warning.</td></tr>
@@ -467,6 +467,7 @@ details.doc-fold>:not(summary){margin-top:8px}
       <li><code>ENC INV</code>: invert encoder rotation globally if the menu feels backwards on your hardware.</li>
       <li><code>EXT POT</code>: assign <code>POT 1</code> and <code>POT 2</code> to <code>OFF</code>, <code>BRAKE</code>, or <code>SENSI</code> live overrides.</li>
       <li><code>TRIGGER</code>: shows trigger sensor family and active type. On <code>TLE493D</code> builds you can also override <code>TYPE</code> between <code>AUTO</code>, <code>W2B6</code>, <code>W2B6_A0</code>, and <code>P3B6</code>.</li>
+      <li><code>PWM MAX</code>: global maximum for <code>PWM_F</code>. Choose 5, 10, or 20 kHz. Lowering it clamps all car profiles down to that ceiling.</li>
       <li><code>TEST</code>: runs the 9-step self-test for OLED, buttons, trigger, and outputs.</li>
     </ul>
     <h3>Estimated current draw (controller electronics)</h3>
@@ -643,6 +644,7 @@ details.doc-fold>:not(summary){margin-top:8px}
 |  |  |  |- ACTIVE
 |  |  |  |- TYPE (AUTO/W2B6/W2B6_A0/P3B6) [TLE493D only]
 |  |  |  `- BACK
+|  |  |- PWM MAX (5/10/20 kHz)
 |  |  |- TEST (Self-Test, 9 steps)
 |  |  `- BACK
 |  |- STATS (ON/OFF, default OFF)

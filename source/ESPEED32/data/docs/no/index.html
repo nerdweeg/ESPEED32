@@ -328,7 +328,7 @@ details.doc-fold>:not(summary){margin-top:8px}
         <tr><td><code>ANTIS</code></td><td>0-999 ms</td><td>30</td><td>Antispinn-rampetid over lavfarts-bypass. Høyere verdi = lengre/tregere effektoppbygging. Det er ikke ren trigger-delay. Visningsenhet og encoder-steg konfigureres i <code>SKJERM -&gt; STEG -&gt; ANTISPINN</code> (MS / % / TEXT).</td></tr>
         <tr><td><code>CURVE</code></td><td>10-90 %</td><td>50</td><td>Gasskurve. 50 = lineær. &lt;50 mykere start, &gt;50 skarpere start.</td></tr>
         <tr><td><code>FADE</code></td><td>0-30 %</td><td>0</td><td>Myk startsone. 0 = av / gammel oppføring. Over 0 rampes første del av triggeren fra 0 opp til SENSI før vanlig CURVE tar over.</td></tr>
-        <tr><td><code>PWM_F</code></td><td>1.0-5.0 kHz</td><td>4.0</td><td>PWM-frekvens til motor. Høyere frekvens gir ofte mykere lavgass.</td></tr>
+        <tr><td><code>PWM_F</code></td><td>1.0-5.0 / 10.0 / 20.0 kHz</td><td>4.0</td><td>PWM-frekvens til motor. Området følger <code>SETTINGS -&gt; HARDWARE -&gt; PWM MAX</code> (5/10/20 kHz). Høyere frekvens gir ofte mykere lavgass.</td></tr>
         <tr><td><code>BREMS+ / Alt.brems</code></td><td>0-100 %</td><td>0</td><td>Alternativ brems som brukes mens bremseknapp holdes inne og trigger er sluppet.</td></tr>
         <tr><td><code>BREMS+ / Rel.brems</code></td><td>OFF/QUICK(sone+nivå)/DRAG(nivå)</td><td>OFF</td><td>Release-brems når trigger slippes. QUICK bruker null-output-sone; DRAG legger inn drag uten sone.</td></tr>
         <tr><td><code>LIMIT</code></td><td>(SENSI+5)-100 %</td><td>100</td><td>Maks motoreffekt. Ved &lt;100 vises LIMITER-varsling.</td></tr>
@@ -467,6 +467,7 @@ details.doc-fold>:not(summary){margin-top:8px}
       <li><code>ENC INV</code>: snur encoder-retningen globalt hvis menyen føles bakvendt.</li>
       <li><code>EKST POT</code>: tildel <code>POT 1</code> og <code>POT 2</code> til <code>AV</code>, <code>BREMS</code> eller <code>SENSI</code> som live-overstyringer.</li>
       <li><code>TRIGGER</code>: viser trigger-sensorfamilie og aktiv type. På <code>TLE493D</code>-builds kan du også overstyre <code>TYPE</code> mellom <code>AUTO</code>, <code>W2B6</code>, <code>W2B6_A0</code> og <code>P3B6</code>.</li>
+      <li><code>PWM MAX</code>: global maks for <code>PWM_F</code>. Velg 5, 10 eller 20 kHz. Senker du den, begrenses alle bilprofiler ned til denne grensen.</li>
       <li><code>TEST</code>: kjører 9-trinns selvtest for OLED, knapper, trigger og utganger.</li>
     </ul>
     <h3>Anslått strømforbruk (kontroller-elektronikk)</h3>
@@ -643,6 +644,7 @@ details.doc-fold>:not(summary){margin-top:8px}
 |  |  |  |- AKTIV
 |  |  |  |- TYPE (AUTO/W2B6/W2B6_A0/P3B6) [kun TLE493D]
 |  |  |  `- TILBAKE
+|  |  |- PWM MAX (5/10/20 kHz)
 |  |  |- TEST (Self-Test, 9 steg)
 |  |  `- TILBAKE
 |  |- STATS (AV/PÅ, default AV)

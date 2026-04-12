@@ -15,6 +15,7 @@ extern uint16_t g_antiSpinDisplayMode;
 extern uint16_t g_brakeStep;
 extern uint16_t g_sensiStep;
 extern uint16_t g_encoderInvertEnabled;
+extern uint16_t g_pwmFreqMaxProfile;
 extern Menu_type g_mainMenu;
 extern Menu_type g_settingsMenu;
 extern Menu_type g_carMenu;
@@ -121,6 +122,7 @@ void initStoredVariables() {
   g_brakeStep = BRAKE_STEP_DEFAULT;
   g_sensiStep = SENSI_STEP_DEFAULT;
   g_encoderInvertEnabled = ENCODER_INVERT_DEFAULT;
+  g_pwmFreqMaxProfile = PWM_FREQ_MAX_PROFILE_DEFAULT;
 }
 
 
@@ -188,7 +190,7 @@ void initMenuItems() {
   g_mainMenu.item[i].value = (void *)&g_storedVar.carParam[g_carSel].freqPWM;
   g_mainMenu.item[i].type = VALUE_TYPE_DECIMAL;
   sprintf(g_mainMenu.item[i].unit, "k");
-  g_mainMenu.item[i].maxValue = FREQ_MAX_VALUE / 100;
+  g_mainMenu.item[i].maxValue = getConfiguredPwmFreqMaxRaw();
   g_mainMenu.item[i].minValue = FREQ_MIN_VALUE / 100;
   g_mainMenu.item[i].decimalPoint = 1;
   g_mainMenu.item[i].callback = ITEM_NO_CALLBACK;

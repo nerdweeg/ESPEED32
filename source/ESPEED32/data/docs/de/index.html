@@ -327,7 +327,7 @@ details.doc-fold>:not(summary){margin-top:8px}
         <tr><td><code>ANTIS</code></td><td>0-999 ms</td><td>30</td><td>Anti-Spin-Rampenzeit oberhalb des Low-Speed-Bypass. Hoeherer Wert = laengerer/langsamerer Leistungsaufbau. Kein reiner Trigger-Delay. Anzeigeeinheit und Encoder-Schritt werden in <code>ANZEIGE -&gt; SCHRITTE -&gt; ANTISPIN</code> eingestellt (MS / % / TEXT).</td></tr>
         <tr><td><code>CURVE</code></td><td>10-90 %</td><td>50</td><td>Trigger-Kennlinie. 50 = linear.</td></tr>
         <tr><td><code>FADE</code></td><td>0-30 %</td><td>0</td><td>Sanfte Startzone. 0 = aus / altes Verhalten. Oberhalb von 0 laeuft der erste Triggerweg von 0 bis SENSI hoch, bevor die normale CURVE uebernimmt.</td></tr>
-        <tr><td><code>PWM_F</code></td><td>1.0-5.0 kHz</td><td>4.0</td><td>PWM-Frequenz des Motors.</td></tr>
+        <tr><td><code>PWM_F</code></td><td>1.0-5.0 / 10.0 / 20.0 kHz</td><td>4.0</td><td>PWM-Frequenz des Motors. Der Bereich folgt <code>SETTINGS -&gt; HARDWARE -&gt; PWM MAX</code> (5/10/20 kHz).</td></tr>
         <tr><td><code>BREMSE+ / Alt.Brems</code></td><td>0-100 %</td><td>0</td><td>Alternativer Bremswert bei gehaltenem Bremsknopf und Trigger=0.</td></tr>
         <tr><td><code>BREMSE+ / Rel.Brems</code></td><td>OFF/QUICK(zone+stufe)/DRAG(stufe)</td><td>OFF</td><td>Bremsunterstuetzung nahe Trigger-Release. QUICK nutzt eine Null-Output-Zone; DRAG mischt Drag ohne Zone hinzu.</td></tr>
         <tr><td><code>LIMIT</code></td><td>(SENSI+5)-100 %</td><td>100</td><td>Maximale Motorleistung.</td></tr>
@@ -466,6 +466,7 @@ details.doc-fold>:not(summary){margin-top:8px}
       <li><code>ENC INV</code>: Encoder-Richtung global umkehren, falls sich das Menue verkehrt anfuehlt.</li>
       <li><code>EXT POT</code>: <code>POT 1</code> und <code>POT 2</code> als Live-Override fuer <code>AUS</code>, <code>BREMSE</code> oder <code>SENSI</code> zuweisen.</li>
       <li><code>TRIGGER</code>: zeigt Sensorfamilie und aktiven Typ. In <code>TLE493D</code>-Builds laesst sich <code>TYPE</code> auch zwischen <code>AUTO</code>, <code>W2B6</code>, <code>W2B6_A0</code> und <code>P3B6</code> umschalten.</li>
+      <li><code>PWM MAX</code>: globales Maximum fuer <code>PWM_F</code>. Waehle 5, 10 oder 20 kHz. Wenn du ihn senkst, werden alle Fahrzeugprofile auf diese Obergrenze begrenzt.</li>
       <li><code>TEST</code>: startet den 9-Schritt-Selbsttest fuer OLED, Taster, Trigger und Ausgaenge.</li>
     </ul>
     <h3>Geschaetzter Stromverbrauch (Controller-Elektronik)</h3>
@@ -640,6 +641,7 @@ details.doc-fold>:not(summary){margin-top:8px}
 |  |  |  |- AKTIV
 |  |  |  |- TYPE (AUTO/W2B6/W2B6_A0/P3B6) [nur TLE493D]
 |  |  |  `- BACK
+|  |  |- PWM MAX (5/10/20 kHz)
 |  |  |- TEST (Self-Test, 9 steps)
 |  |  `- BACK
 |  |- STATS (AUS/EIN, Standard AUS)

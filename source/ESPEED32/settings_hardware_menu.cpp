@@ -21,29 +21,30 @@ extern void requestEscapeToMain();
 extern bool isEscapeToMainRequested();
 extern void showScreensaver();
 extern void saveEEPROM(StoredVar_type toSave);
+extern void initMenuItems();
 
 static const char* HARDWARE_MENU_LABELS[9][HARDWARE_ITEMS_COUNT] = {
-  {"ENC.INVERT", "EKST.POT.", "TRIGGER", "TEST", "TILBAKE"},
-  {"ENC.INVERT", "EXT.POT.", "TRIGGER", "TEST", "BACK"},
-  {"ENC.INVERT", "EXT.POT.", "TRIGGER", "TEST", "BACK"},
-  {"ENC.INVERT", "EXT.POT.", "TRIGGER", "TEST", "BACK"},
-  {"ENC.INVERT", "POT.EXT.", "TRIGGER", "TEST", "ATRAS"},
-  {"ENC.INVERT", "EXT.POT.", "TRIGGER", "TEST", "ZURUCK"},
-  {"ENC.INVERT", "POT.EST.", "TRIGGER", "TEST", "INDIETRO"},
-  {"ENC.INVERT", "EXT.POT.", "TRIGGER", "TEST", "TERUG"},
-  {"ENC.INVERT", "POT.EXT.", "TRIGGER", "TESTE", "VOLTAR"}
+  {"ENC.INVERT", "EKST.POT.", "TRIGGER", "PWM MAX", "TEST", "TILBAKE"},
+  {"ENC.INVERT", "EXT.POT.", "TRIGGER", "PWM MAX", "TEST", "BACK"},
+  {"ENC.INVERT", "EXT.POT.", "TRIGGER", "PWM MAX", "TEST", "BACK"},
+  {"ENC.INVERT", "EXT.POT.", "TRIGGER", "PWM MAX", "TEST", "BACK"},
+  {"ENC.INVERT", "POT.EXT.", "TRIGGER", "PWM MAX", "TEST", "ATRAS"},
+  {"ENC.INVERT", "EXT.POT.", "TRIGGER", "PWM MAX", "TEST", "ZURUCK"},
+  {"ENC.INVERT", "POT.EST.", "TRIGGER", "PWM MAX", "TEST", "INDIETRO"},
+  {"ENC.INVERT", "EXT.POT.", "TRIGGER", "PWM MAX", "TEST", "TERUG"},
+  {"ENC.INVERT", "POT.EXT.", "TRIGGER", "PWM MAX", "TESTE", "VOLTAR"}
 };
 
 static const char* HARDWARE_MENU_LABELS_PASCAL[9][HARDWARE_ITEMS_COUNT] = {
-  {"Enc.Invert", "Ekst.Pot.", "Trigger", "Test", "Tilbake"},
-  {"Enc.Invert", "Ext.Pot.", "Trigger", "Test", "Back"},
-  {"Enc.Invert", "Ext.Pot.", "Trigger", "Test", "Back"},
-  {"Enc.Invert", "Ext.Pot.", "Trigger", "Test", "Back"},
-  {"Enc.Invert", "Pot.Ext.", "Trigger", "Test", "Atras"},
-  {"Enc.Invert", "Ext.Pot.", "Trigger", "Test", "Zuruck"},
-  {"Enc.Invert", "Pot.Est.", "Trigger", "Test", "Indietro"},
-  {"Enc.Invert", "Ext.Pot.", "Trigger", "Test", "Terug"},
-  {"Enc.Invert", "Pot.Ext.", "Trigger", "Teste", "Voltar"}
+  {"Enc.Invert", "Ekst.Pot.", "Trigger", "Pwm Max", "Test", "Tilbake"},
+  {"Enc.Invert", "Ext.Pot.", "Trigger", "Pwm Max", "Test", "Back"},
+  {"Enc.Invert", "Ext.Pot.", "Trigger", "Pwm Max", "Test", "Back"},
+  {"Enc.Invert", "Ext.Pot.", "Trigger", "Pwm Max", "Test", "Back"},
+  {"Enc.Invert", "Pot.Ext.", "Trigger", "Pwm Max", "Test", "Atras"},
+  {"Enc.Invert", "Ext.Pot.", "Trigger", "Pwm Max", "Test", "Zuruck"},
+  {"Enc.Invert", "Pot.Est.", "Trigger", "Pwm Max", "Test", "Indietro"},
+  {"Enc.Invert", "Ext.Pot.", "Trigger", "Pwm Max", "Test", "Terug"},
+  {"Enc.Invert", "Pot.Ext.", "Trigger", "Pwm Max", "Teste", "Voltar"}
 };
 
 static const char* SENSOR_MENU_LABELS[9][4] = {
@@ -283,8 +284,9 @@ void showHardwareSettings() {
   const uint8_t itemEncInv = 0;
   const uint8_t itemExtPot = 1;
   const uint8_t itemTrigger = 2;
-  const uint8_t itemTest = 3;
-  const uint8_t itemBack = 4;
+  const uint8_t itemPwmMax = 3;
+  const uint8_t itemTest = 4;
+  const uint8_t itemBack = 5;
 
   obdFill(&g_obd, OBD_WHITE, 1);
   g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
@@ -367,6 +369,16 @@ void showHardwareSettings() {
         if (isEscapeToMainRequested()) break;
         resumeAfterChild();
         continue;
+      } else if (sel == itemPwmMax) {
+        uint16_t nextProfile = getConfiguredPwmFreqMaxProfile() + 1U;
+        if (nextProfile > PWM_FREQ_MAX_PROFILE_20K) {
+          nextProfile = PWM_FREQ_MAX_PROFILE_5K;
+        }
+        if (applyConfiguredPwmFreqMaxProfile(nextProfile)) {
+          initMenuItems();
+          saveEEPROM(g_storedVar);
+        }
+        needRedraw = true;
       } else if (sel == itemTest) {
         showSelfTest();
         if (isEscapeToMainRequested()) break;
@@ -395,7 +407,9 @@ void showHardwareSettings() {
       needRedraw = false;
       uint8_t lang = g_storedVar.language;
       char familyBuf[16];
+      char pwmMaxBuf[8];
       HAL_GetTriggerSensorFamilyLabel(familyBuf, sizeof(familyBuf));
+      snprintf(pwmMaxBuf, sizeof(pwmMaxBuf), "%uk", (unsigned int)getConfiguredPwmFreqMaxKHz());
 
       for (uint8_t i = 0; i < HARDWARE_ITEMS_COUNT; i++) {
         bool isSelected = (sel == i);
@@ -410,10 +424,18 @@ void showHardwareSettings() {
           value = getOnOffLabel(lang, g_encoderInvertEnabled ? 1 : 0);
         } else if (i == itemTrigger) {
           value = familyBuf;
+        } else if (i == itemPwmMax) {
+          value = pwmMaxBuf;
         }
 
         if (value != nullptr && value[0] != '\0') {
-          drawRightAlignedValue(i * lineH, value, isSelected, (i == itemEncInv) ? 3 : 8);
+          uint8_t fieldChars = 8;
+          if (i == itemEncInv) {
+            fieldChars = 3;
+          } else if (i == itemPwmMax) {
+            fieldChars = 3;
+          }
+          drawRightAlignedValue(i * lineH, value, isSelected, fieldChars);
         }
       }
     }

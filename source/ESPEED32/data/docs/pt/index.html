@@ -328,7 +328,7 @@ details.doc-fold>:not(summary){margin-top:8px}
         <tr><td><code>ANTIS</code></td><td>0-999 ms</td><td>30</td><td>Tempo da rampa anti-spin acima do bypass de baixa saida. Valor mais alto = subida de potencia mais longa/lenta. Nao e um delay puro do gatilho. Unidade de visualizacao e passo do encoder configuram-se em <code>ECRA -&gt; PASSOS -&gt; ANTISPIN</code> (MS / % / TEXT).</td></tr>
         <tr><td><code>CURVE</code></td><td>10-90 %</td><td>50</td><td>Mapeamento da throttle. 50 = linear. &lt;50 arranque mais suave, &gt;50 arranque mais agressivo.</td></tr>
         <tr><td><code>FADE</code></td><td>0-30 %</td><td>0</td><td>Zona de soft-start. 0 = desligado / comportamento antigo. Acima de 0, a primeira parte do curso sobe de 0 ate SENSI antes de CURVE assumir o controlo.</td></tr>
-        <tr><td><code>PWM_F</code></td><td>1.0-5.0 kHz</td><td>4.0</td><td>Frequencia PWM do motor. Um valor mais alto costuma suavizar a resposta em baixa.</td></tr>
+        <tr><td><code>PWM_F</code></td><td>1.0-5.0 / 10.0 / 20.0 kHz</td><td>4.0</td><td>Frequencia PWM do motor. O intervalo segue <code>SETTINGS -&gt; HARDWARE -&gt; PWM MAX</code> (5/10/20 kHz). Um valor mais alto costuma suavizar a resposta em baixa.</td></tr>
         <tr><td><code>BRAKE+ / Alt.Brake</code></td><td>0-100 %</td><td>0</td><td>Valor alternativo de travagem usado enquanto o botao de travao esta premido e o gatilho esta solto.</td></tr>
         <tr><td><code>BRAKE+ / Rel.Brake</code></td><td>OFF/QUICK(zone+level)/DRAG(level)</td><td>OFF</td><td>Ajuda de travagem perto da libertacao do gatilho. QUICK usa uma zona de output zero; DRAG adiciona arrasto sem zona.</td></tr>
         <tr><td><code>LIMIT</code></td><td>(SENSI+5)-100 %</td><td>100</td><td>Output maximo do motor. &lt;100 ativa o aviso LIMITER.</td></tr>
@@ -467,6 +467,7 @@ details.doc-fold>:not(summary){margin-top:8px}
       <li><code>ENC INV</code>: inverter globalmente a rotacao do encoder se o menu parecer invertido no seu hardware.</li>
       <li><code>EXT POT</code>: atribuir <code>POT 1</code> e <code>POT 2</code> a overrides live de <code>OFF</code>, <code>BRAKE</code> ou <code>SENSI</code>.</li>
       <li><code>TRIGGER</code>: mostra a familia do sensor do gatilho e o tipo ativo. Em builds <code>TLE493D</code> tambem pode fazer override de <code>TYPE</code> entre <code>AUTO</code>, <code>W2B6</code>, <code>W2B6_A0</code> e <code>P3B6</code>.</li>
+      <li><code>PWM MAX</code>: limite global para <code>PWM_F</code>. Escolhe 5, 10 ou 20 kHz. Se baixares este valor, todos os perfis de carro ficam limitados a esse teto.</li>
       <li><code>TEST</code>: executa o auto-teste de 9 passos para OLED, botoes, gatilho e outputs.</li>
     </ul>
     <h3>Consumo estimado de corrente (eletronica do controlador)</h3>
@@ -643,6 +644,7 @@ details.doc-fold>:not(summary){margin-top:8px}
 |  |  |  |- ACTIVE
 |  |  |  |- TYPE (AUTO/W2B6/W2B6_A0/P3B6) [TLE493D only]
 |  |  |  `- BACK
+|  |  |- PWM MAX (5/10/20 kHz)
 |  |  |- TEST (Self-Test, 9 steps)
 |  |  `- BACK
 |  |- STATS (ON/OFF, default OFF)
