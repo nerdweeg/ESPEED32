@@ -295,7 +295,7 @@ void applyAdcVoltageRangeMilliVolts(uint16_t range_mV);
 #define LOCK_CONFIRM_DEFAULT       0  /* Hide fullscreen confirmation flash by default */
 #define GRID_CAR_SELECT_DEFAULT 1  /* Grid car select (RACESWP): 0=OFF, 1=ON */
 #define STATS_ENABLED_DEFAULT    0  /* Hide STATS menu item by default */
-#define EXT_POT_COUNT            2  /* Two optional external ADC pots: GPIO35 and GPIO15 */
+#define EXT_POT_COUNT            2  /* Two optional external ADC pots: GPIO39 and GPIO35 */
 #define EXT_POT_TARGET_OFF       0
 #define EXT_POT_TARGET_BRAKE     1
 #define EXT_POT_TARGET_SENSI     2

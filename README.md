@@ -266,8 +266,9 @@ The firmware also has an initial **external potentiometer override** feature for
 
 Current hardware mapping in firmware:
 
-- `POT1` = `GPIO35`
-- `POT2` = `GPIO15`
+- `POT1` = `GPIO39`
+- `POT2` = `GPIO35`
+- battery voltage divider = `GPIO36`
 
 Current behavior:
 
@@ -280,7 +281,8 @@ Current behavior:
 
 Important hardware note:
 
-- `GPIO15` is an `ADC2` pin on ESP32, so it may be unreliable for analog reading while WiFi is active
+- `GPIO39` and `GPIO35` are `ADC1` pins and are preferred for external pots because they stay available while WiFi is active
+- `GPIO36` is also an `ADC1` pin, so this mapping keeps both external pots and VIN sensing off the WiFi-affected `ADC2` side
 
 Please verify the actual board routing against:
 

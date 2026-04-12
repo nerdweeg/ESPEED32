@@ -29,8 +29,8 @@
 
 /* Analog Input Pins */
 #define BOARD_AN_VIN_DIV   36
-#define BOARD_EXT_POT1_PIN 35
-#define BOARD_EXT_POT2_PIN 15
+#define BOARD_EXT_POT1_PIN 39
+#define BOARD_EXT_POT2_PIN 35
 
 /* Rotary Encoder Pins */
 #define BOARD_ENCODER_A_PIN      18
