@@ -272,7 +272,7 @@ Current hardware mapping in firmware:
 - `POT1` = `GPIO39`
 - `POT2` = `GPIO35`
 - track `VIN` voltage divider = `GPIO36`
-- battery `VIN` voltage divider = `GPIO15` using a `100k / 100k` divider in the standard profile
+- battery/`VBAT` voltage divider = `GPIO15` using a `100k / 100k` divider in the standard profile
 
 Current behavior:
 

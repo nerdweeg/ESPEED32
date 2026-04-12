@@ -101,7 +101,6 @@ void showExtPotSettings() {
   MenuState_enum epMenuState = ITEM_SELECTION;
   uint8_t editingPotIdx = 0;
   uint16_t tempPotTarget = 0;
-  uint16_t origPotTarget = 0;
 
   uint32_t lastInteraction = millis();
   bool screensaverActive = false;
@@ -168,8 +167,7 @@ void showExtPotSettings() {
           break;
         } else if (sel == ITEM_POT1 || sel == ITEM_POT2) {
           editingPotIdx = (sel == ITEM_POT1) ? 0 : 1;
-          origPotTarget = getExtPotTarget(editingPotIdx);
-          tempPotTarget = origPotTarget;
+          tempPotTarget = getExtPotTarget(editingPotIdx);
           epMenuState = VALUE_SELECTION;
           g_rotaryEncoder.setAcceleration(SEL_ACCELERATION);
           setUiEncoderBoundaries(EXT_POT_TARGET_MIN, EXT_POT_TARGET_MAX, false);

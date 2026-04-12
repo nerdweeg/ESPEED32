@@ -171,7 +171,6 @@ static void showTriggerSensorSettings() {
   bool needRedraw = true;
   MenuState_enum trigMenuState = ITEM_SELECTION;
   uint16_t tempTrigType = 0;
-  uint16_t origTrigType = 0;
   uint32_t lastInteraction = millis();
   bool screensaverActive = false;
   uint16_t screensaverEncoderPos = (uint16_t)readUiEncoder();
@@ -235,8 +234,7 @@ static void showTriggerSensorSettings() {
         if (sel == itemBack) {
           break;
         } else if (supportsTypeOverride && sel == itemType) {
-          origTrigType = HAL_GetTriggerSensorTypeOverride();
-          tempTrigType = origTrigType;
+          tempTrigType = HAL_GetTriggerSensorTypeOverride();
           trigMenuState = VALUE_SELECTION;
           g_rotaryEncoder.setAcceleration(SEL_ACCELERATION);
           setUiEncoderBoundaries(TRIGGER_SENSOR_TYPE_AUTO, TRIGGER_SENSOR_TYPE_MAX, false);
