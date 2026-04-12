@@ -169,6 +169,9 @@ static void showTriggerSensorSettings() {
 
   uint8_t sel = 0;
   bool needRedraw = true;
+  MenuState_enum trigMenuState = ITEM_SELECTION;
+  uint16_t tempTrigType = 0;
+  uint16_t origTrigType = 0;
   uint32_t lastInteraction = millis();
   bool screensaverActive = false;
   uint16_t screensaverEncoderPos = (uint16_t)readUiEncoder();
@@ -210,20 +213,36 @@ static void showTriggerSensorSettings() {
 
     if (g_rotaryEncoder.encoderChanged()) {
       lastInteraction = millis();
-      sel = (uint8_t)readUiEncoder();
+      if (trigMenuState == ITEM_SELECTION) {
+        sel = (uint8_t)readUiEncoder();
+      } else {
+        tempTrigType = (uint16_t)readUiEncoder();
+      }
       needRedraw = true;
     }
 
     if (g_rotaryEncoder.isEncoderButtonClicked()) {
       lastInteraction = millis();
-      if (sel == itemBack) {
-        break;
-      }
-      if (supportsTypeOverride && sel == itemType) {
-        uint16_t nextType = HAL_GetTriggerSensorTypeOverride();
-        nextType = (nextType >= TRIGGER_SENSOR_TYPE_MAX) ? TRIGGER_SENSOR_TYPE_AUTO : (uint16_t)(nextType + 1);
-        (void)HAL_SetTriggerSensorTypeOverride(nextType);
+      if (trigMenuState == VALUE_SELECTION) {
+        /* Confirm */
+        (void)HAL_SetTriggerSensorTypeOverride(tempTrigType);
+        trigMenuState = ITEM_SELECTION;
+        g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
+        setUiEncoderBoundaries(0, numItems - 1, false);
+        resetUiEncoder(sel);
         needRedraw = true;
+      } else {
+        if (sel == itemBack) {
+          break;
+        } else if (supportsTypeOverride && sel == itemType) {
+          origTrigType = HAL_GetTriggerSensorTypeOverride();
+          tempTrigType = origTrigType;
+          trigMenuState = VALUE_SELECTION;
+          g_rotaryEncoder.setAcceleration(SEL_ACCELERATION);
+          setUiEncoderBoundaries(TRIGGER_SENSOR_TYPE_AUTO, TRIGGER_SENSOR_TYPE_MAX, false);
+          resetUiEncoder(tempTrigType);
+          needRedraw = true;
+        }
       }
       delay(200);
     }
@@ -234,8 +253,18 @@ static void showTriggerSensorSettings() {
       if (!brakeBtnInMenu && millis() - lastBrakeBtnTime > BUTTON_SHORT_PRESS_DEBOUNCE_MS) {
         brakeBtnInMenu = true;
         lastBrakeBtnTime = millis();
-        while (digitalRead(BUTT_PIN) == BUTTON_PRESSED) { vTaskDelay(5); }
-        break;
+        if (trigMenuState == VALUE_SELECTION) {
+          /* Cancel */
+          trigMenuState = ITEM_SELECTION;
+          g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
+          setUiEncoderBoundaries(0, numItems - 1, false);
+          resetUiEncoder(sel);
+          obdFill(&g_obd, OBD_WHITE, 1);
+          needRedraw = true;
+        } else {
+          while (digitalRead(BUTT_PIN) == BUTTON_PRESSED) { vTaskDelay(5); }
+          break;
+        }
       }
     } else {
       brakeBtnInMenu = false;
@@ -251,15 +280,17 @@ static void showTriggerSensorSettings() {
       char typeBuf[16];
       HAL_GetTriggerSensorFamilyLabel(familyBuf, sizeof(familyBuf));
       HAL_GetTriggerSensorActiveTypeLabel(activeBuf, sizeof(activeBuf));
-      HAL_GetTriggerSensorTypeOptionLabel(HAL_GetTriggerSensorTypeOverride(), typeBuf, sizeof(typeBuf));
+      uint16_t displayType = (trigMenuState == VALUE_SELECTION) ? tempTrigType : HAL_GetTriggerSensorTypeOverride();
+      HAL_GetTriggerSensorTypeOptionLabel(displayType, typeBuf, sizeof(typeBuf));
 
       for (uint8_t i = 0; i < numItems; i++) {
-        bool isSelected = (sel == i);
+        bool isNameSel  = (sel == i && trigMenuState == ITEM_SELECTION);
+        bool isValueSel = (sel == i && trigMenuState == VALUE_SELECTION);
         const char* label = (i == itemBack)
           ? getBackLabel(lang)
           : getSensorMenuLabel(lang, i);
         obdWriteString(&g_obd, 0, 0, i * lineH, (char*)label,
-                       menuFont, isSelected ? OBD_WHITE : OBD_BLACK, 1);
+                       menuFont, isNameSel ? OBD_WHITE : OBD_BLACK, 1);
 
         const char* value = nullptr;
         if (i == itemFamily) value = familyBuf;
@@ -267,7 +298,7 @@ static void showTriggerSensorSettings() {
         else if (supportsTypeOverride && i == itemType) value = typeBuf;
 
         if (value != nullptr && value[0] != '\0') {
-          drawRightAlignedValue(i * lineH, value, isSelected, 8);
+          drawRightAlignedValue(i * lineH, value, isNameSel || isValueSel, 8);
         }
       }
     }

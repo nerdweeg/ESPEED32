@@ -98,6 +98,10 @@ void showExtPotSettings() {
 
   uint8_t sel = 0;
   bool needRedraw = true;
+  MenuState_enum epMenuState = ITEM_SELECTION;
+  uint8_t editingPotIdx = 0;
+  uint16_t tempPotTarget = 0;
+  uint16_t origPotTarget = 0;
 
   uint32_t lastInteraction = millis();
   bool screensaverActive = false;
@@ -140,22 +144,39 @@ void showExtPotSettings() {
 
     if (g_rotaryEncoder.encoderChanged()) {
       lastInteraction = millis();
-      sel = (uint8_t)readUiEncoder();
+      if (epMenuState == ITEM_SELECTION) {
+        sel = (uint8_t)readUiEncoder();
+      } else {
+        tempPotTarget = (uint16_t)readUiEncoder();
+      }
       needRedraw = true;
     }
 
     if (g_rotaryEncoder.isEncoderButtonClicked()) {
       lastInteraction = millis();
-      if (sel == ITEM_BACK) {
-        break;
-      } else if (sel == ITEM_POT1) {
-        cycleExtPotTarget(0);
+      if (epMenuState == VALUE_SELECTION) {
+        /* Confirm */
+        setExtPotTarget(editingPotIdx, tempPotTarget);
         saveEEPROM(g_storedVar);
-      } else if (sel == ITEM_POT2) {
-        cycleExtPotTarget(1);
-        saveEEPROM(g_storedVar);
+        epMenuState = ITEM_SELECTION;
+        g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
+        setUiEncoderBoundaries(0, NUM_ITEMS - 1, false);
+        resetUiEncoder(sel);
+        needRedraw = true;
+      } else {
+        if (sel == ITEM_BACK) {
+          break;
+        } else if (sel == ITEM_POT1 || sel == ITEM_POT2) {
+          editingPotIdx = (sel == ITEM_POT1) ? 0 : 1;
+          origPotTarget = getExtPotTarget(editingPotIdx);
+          tempPotTarget = origPotTarget;
+          epMenuState = VALUE_SELECTION;
+          g_rotaryEncoder.setAcceleration(SEL_ACCELERATION);
+          setUiEncoderBoundaries(EXT_POT_TARGET_MIN, EXT_POT_TARGET_MAX, false);
+          resetUiEncoder(tempPotTarget);
+          needRedraw = true;
+        }
       }
-      needRedraw = true;
       delay(200);
     }
 
@@ -165,8 +186,18 @@ void showExtPotSettings() {
       if (!brakeBtnInMenu && millis() - lastBrakeBtnTime > BUTTON_SHORT_PRESS_DEBOUNCE_MS) {
         brakeBtnInMenu = true;
         lastBrakeBtnTime = millis();
-        while (digitalRead(BUTT_PIN) == BUTTON_PRESSED) { vTaskDelay(5); }
-        break;
+        if (epMenuState == VALUE_SELECTION) {
+          /* Cancel */
+          epMenuState = ITEM_SELECTION;
+          g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
+          setUiEncoderBoundaries(0, NUM_ITEMS - 1, false);
+          resetUiEncoder(sel);
+          obdFill(&g_obd, OBD_WHITE, 1);
+          needRedraw = true;
+        } else {
+          while (digitalRead(BUTT_PIN) == BUTTON_PRESSED) { vTaskDelay(5); }
+          break;
+        }
       }
     } else {
       brakeBtnInMenu = false;
@@ -178,14 +209,17 @@ void showExtPotSettings() {
       needRedraw = false;
       uint8_t lang = g_storedVar.language;
       for (uint8_t i = 0; i < NUM_ITEMS; i++) {
-        bool isSelected = (sel == i);
+        bool isNameSel  = (sel == i && epMenuState == ITEM_SELECTION);
+        bool isValueSel = (sel == i && epMenuState == VALUE_SELECTION);
         const char* label = (i == ITEM_BACK) ? getBackLabel(lang) : getExtPotItemLabel(lang, i);
         obdWriteString(&g_obd, 0, 0, i * lineH, (char*)label,
-                       menuFont, isSelected ? OBD_WHITE : OBD_BLACK, 1);
+                       menuFont, isNameSel ? OBD_WHITE : OBD_BLACK, 1);
 
         if (i == ITEM_POT1 || i == ITEM_POT2) {
-          drawRightAlignedValue(i * lineH, getExtPotTargetLabel(lang, getExtPotTarget(i)),
-                                isSelected, 5);
+          uint8_t potIdx = (i == ITEM_POT1) ? 0 : 1;
+          uint16_t displayTarget = (isValueSel) ? tempPotTarget : getExtPotTarget(potIdx);
+          drawRightAlignedValue(i * lineH, getExtPotTargetLabel(lang, displayTarget),
+                                isNameSel || isValueSel, 5);
         }
       }
     }
