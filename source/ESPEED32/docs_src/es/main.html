@@ -77,6 +77,7 @@
       <li><code>ACD</code>: estilo ACD donde hay equivalencia directa (<code>SENSI</code> y <code>CHOKE</code> para LIMIT).</li>
       <li><code>DISPLAY -&gt; CASE</code> decide si las etiquetas se muestran en <code>UPPER</code> o <code>Pascal</code>.</li>
       <li><code>DISPLAY -&gt; FONT SIZE</code> cambia la vista de listas y menus entre <code>LARGE</code> y <code>small</code>.</li>
+      <li><code>PANTALLA -&gt; AVANZADO</code> decide si <code>FADE</code>, <code>PWM_F</code> y <code>FRENO+</code> se muestran en el menu principal. En <code>OFF</code> se ocultan esas filas para dejar un menu mas simple, pero los valores guardados del coche siguen activos.</li>
       <li><code>PANTALLA -&gt; PASOS</code> abre el submenu de pasos que contiene ANTISPIN, PASO FRENO y PASO SENSI.</li>
       <li><code>PANTALLA -&gt; PASOS -&gt; ANTISPIN</code> abre el submenu de configuracion antispin donde seleccionas la unidad de visualizacion (<code>MS</code> / <code>%</code> / <code>TEXT</code>) y el paso del encoder para cada unidad.</li>
       <li><code>PANTALLA -&gt; PASOS -&gt; PASO FRENO</code> establece cuantos por ciento mueve el encoder el FRENO por clic (0,1–50,0%, por defecto 1,0%). Se configura en <code>AJUSTES → PANTALLA → PASOS → PASO FRENO</code>.</li>
@@ -107,7 +108,7 @@
 
   <section>
     <h2>4. Menu CAR y Car Params</h2>
-    <p class="small">El menu <code>CAR</code> gestiona los perfiles de coche. Cada perfil guarda sus propios <code>Car Params</code>, es decir valores como <code>BRAKE</code>, <code>SENSI</code>, <code>ANTIS</code>, <code>CURVE</code>, <code>FADE</code>, <code>PWM_F</code>, <code>FRENO+</code> y <code>LIMIT</code>. Es el mismo grupo de parametros que reaparece despues en el <code>Advanced Config Editor</code>.</p>
+    <p class="small">El menu <code>CAR</code> gestiona los perfiles de coche. Cada perfil guarda sus propios <code>Car Params</code>, es decir valores como <code>BRAKE</code>, <code>SENSI</code>, <code>ANTIS</code>, <code>CURVE</code>, <code>FADE</code>, <code>PWM_F</code>, <code>FRENO+</code> y <code>LIMIT</code>. Es el mismo grupo de parametros que reaparece despues en el <code>Advanced Config Editor</code>. Si <code>PANTALLA -&gt; AVANZADO</code> esta en <code>OFF</code>, <code>FADE</code>, <code>PWM_F</code> y <code>FRENO+</code> quedan ocultos en el menu principal, pero los valores guardados del perfil siguen aplicandose.</p>
     <ul>
       <li><code>SELECT</code>: elegir perfil activo (0-19).</li>
       <li><code>RENAME</code>: editor de 4 caracteres (ASCII 32-122). Ver <a href="https://slatecave.net/notebook/ascii/" target="_blank" rel="noopener noreferrer">tabla ASCII</a>.</li>
@@ -401,9 +402,9 @@
 |- SENSI
 |- ANTIS
 |- CURVE (graph view)
-|- FADE (graph view)
-|- PWM_F
-|- FRENO+
+|- FADE (vista grafica, AVANZADO=ON)
+|- PWM_F (AVANZADO=ON)
+|- FRENO+ (AVANZADO=ON)
 |  |- Alt.Freno (%)
 |  |- Rel.Freno (OFF/QUICK/DRAG)
 |  |- Zona (%) [solo QUICK]
@@ -435,6 +436,7 @@
 |  |  |- LANGUAGE (NOR/ENG/CS/ACD/ESP/DEU/ITA/NLD/POR)
 |  |  |- CASE (UPPER/Pascal)
 |  |  |- FONT SIZE (LARGE/small)
+|  |  |- AVANZADO (OFF/ON)
 |  |  |- PASOS
 |  |  |  |- ANTISPIN
 |  |  |  |  |- TIPO REG (MS / % / TEXT, predeterminado MS)

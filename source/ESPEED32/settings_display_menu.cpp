@@ -10,6 +10,7 @@ extern ESC_type g_escVar;
 extern OBDISP g_obd;
 extern AiEsp32RotaryEncoder g_rotaryEncoder;
 extern Menu_type g_settingsMenu;
+extern uint16_t g_advancedMenuEnabled;
 extern char msgStr[50];
 
 extern bool consumeScreensaverWakeInput(bool wakeTriggered);
@@ -21,13 +22,16 @@ extern bool isEscapeToMainRequested();
 
 extern void showScreensaver();
 extern void saveEEPROM(StoredVar_type toSave);
+extern void applyAdvancedMenuSetting(uint16_t enabled);
 extern void initMenuItems();
 extern void initSettingsMenuItems();
 extern void initDisplayMenuItems();
+extern void resetEncoderForMainMenu();
 
 /**
- * Display settings submenu: VIEW, LANG, CASE, FSIZE, STEPS, STATUS, BACK.
+ * Display settings submenu: VIEW, LANG, CASE, FSIZE, ADVANCED, STEPS, STATUS, BACK.
  * Handles value editing for display-related parameters.
+ * ADVANCED hides/shows FADE, PWM_F and BRAKE+ in the main menu.
  * STEPS opens a dedicated submenu for ANTISPIN, BRAKE STEP and SENSI STEP.
  */
 void showDisplaySettings() {
@@ -54,6 +58,9 @@ void showDisplaySettings() {
   uint16_t prevFontSize = g_storedVar.listFontSize;
   uint16_t tempFontSize = g_storedVar.listFontSize;
   bool isEditingFontSize = false;
+  uint16_t prevAdvancedMenu = g_advancedMenuEnabled ? 1 : 0;
+  uint16_t tempAdvancedMenu = prevAdvancedMenu;
+  bool isEditingAdvancedMenu = false;
 
   uint8_t visibleLines = (DISPLAY_ITEMS_COUNT > 5) ? 5 : DISPLAY_ITEMS_COUNT;  /* Compact scrollable list. */
   uint16_t frameUpper = 1;
@@ -100,11 +107,11 @@ void showDisplaySettings() {
     if (g_rotaryEncoder.isEncoderButtonClicked()) {
       lastInteraction = millis();
       if (menuState == ITEM_SELECTION) {
-        if (sel == DISPLAY_ITEMS_COUNT) {  /* BACK */
+        if (sel == DISPLAY_ITEM_BACK_IDX + 1) {  /* BACK */
           break;
         }
         /* STEPS submenu (ANTISPIN, BRAKE STEP, SENSI STEP) */
-        if (sel == DISPLAY_ITEMS_COUNT - 2) {
+        if (sel == DISPLAY_ITEM_STEPS_IDX + 1) {
           showStepsSettings();
           if (isEscapeToMainRequested()) break;
           initDisplayMenuItems();
@@ -116,7 +123,7 @@ void showDisplaySettings() {
           continue;
         }
         /* STATUS submenu lives right before BACK. */
-        if (sel == DISPLAY_ITEMS_COUNT - 1) {
+        if (sel == DISPLAY_ITEM_STATUS_IDX + 1) {
           showStatusSettings();
           if (isEscapeToMainRequested()) break;
           initDisplayMenuItems();
@@ -129,32 +136,37 @@ void showDisplaySettings() {
         }
         /* Value items */
         if (g_settingsMenu.item[sel - 1].value != ITEM_NO_VALUE) {
-          if (sel == 2) {  /* LANG */
+          if (sel == DISPLAY_ITEM_LANG_IDX + 1) {  /* LANG */
             isEditingLanguage = true;
             tempLanguage = g_storedVar.language;
             originalValue = g_storedVar.language;
-          } else if (sel == 3) {  /* CASE */
+          } else if (sel == DISPLAY_ITEM_CASE_IDX + 1) {  /* CASE */
             isEditingTextCase = true;
             tempTextCase = g_storedVar.textCase;
             originalValue = g_storedVar.textCase;
-          } else if (sel == 4) {  /* FSIZE */
+          } else if (sel == DISPLAY_ITEM_FSIZE_IDX + 1) {  /* FSIZE */
             isEditingFontSize = true;
             tempFontSize = g_storedVar.listFontSize;
             originalValue = g_storedVar.listFontSize;
+          } else if (sel == DISPLAY_ITEM_ADVANCED_IDX + 1) {  /* ADVANCED */
+            isEditingAdvancedMenu = true;
+            tempAdvancedMenu = g_advancedMenuEnabled ? 1 : 0;
+            originalValue = tempAdvancedMenu;
           } else {
             valuePtr = (uint16_t *)g_settingsMenu.item[sel - 1].value;
             originalValue = *valuePtr;
           }
           menuState = VALUE_SELECTION;
           g_rotaryEncoder.setAcceleration(SEL_ACCELERATION);
-          if (!isEditingLanguage && !isEditingTextCase && !isEditingFontSize) {
+          if (!isEditingLanguage && !isEditingTextCase && !isEditingFontSize && !isEditingAdvancedMenu) {
             valuePtr = (uint16_t *)g_settingsMenu.item[sel - 1].value;
           }
           setUiEncoderBoundaries(g_settingsMenu.item[sel - 1].minValue,
                                         g_settingsMenu.item[sel - 1].maxValue, false);
           uint16_t resetVal = isEditingLanguage ? tempLanguage :
                               (isEditingTextCase ? tempTextCase :
-                              (isEditingFontSize ? tempFontSize : *valuePtr));
+                              (isEditingFontSize ? tempFontSize :
+                              (isEditingAdvancedMenu ? tempAdvancedMenu : *valuePtr)));
           resetUiEncoder(resetVal);
         }
       } else {
@@ -166,19 +178,26 @@ void showDisplaySettings() {
         if (isEditingLanguage) { g_storedVar.language = tempLanguage; lang = tempLanguage; isEditingLanguage = false; }
         if (isEditingTextCase) { g_storedVar.textCase = tempTextCase; isEditingTextCase = false; }
         if (isEditingFontSize) { g_storedVar.listFontSize = tempFontSize; isEditingFontSize = false; }
+        if (isEditingAdvancedMenu) {
+          applyAdvancedMenuSetting(tempAdvancedMenu);
+          isEditingAdvancedMenu = false;
+        }
         saveEEPROM(g_storedVar);
-        if (g_storedVar.language != prevLanguage || g_storedVar.textCase != prevTextCase || g_storedVar.listFontSize != prevFontSize) {
+        if (g_storedVar.language != prevLanguage || g_storedVar.textCase != prevTextCase ||
+            g_storedVar.listFontSize != prevFontSize || (g_advancedMenuEnabled ? 1 : 0) != prevAdvancedMenu) {
           initMenuItems();
           initSettingsMenuItems();
           initDisplayMenuItems();  /* Must be last: shared g_settingsMenu is overwritten by initSettingsMenuItems */
           prevLanguage = g_storedVar.language;
           prevTextCase = g_storedVar.textCase;
           prevFontSize = g_storedVar.listFontSize;
+          prevAdvancedMenu = g_advancedMenuEnabled ? 1 : 0;
           /* visibleLines stays fixed - submenu always uses FONT_8x8 */
           frameUpper = 1;
           frameLower = visibleLines;
           obdFill(&g_obd, OBD_WHITE, 1);
           lang = g_storedVar.language;
+          resetEncoderForMainMenu();
         }
       }
       delay(200);
@@ -200,6 +219,8 @@ void showDisplaySettings() {
           }
         } else if (isEditingFontSize) {
           tempFontSize = readUiEncoder();
+        } else if (isEditingAdvancedMenu) {
+          tempAdvancedMenu = readUiEncoder() ? 1 : 0;
         } else {
           *valuePtr = readUiEncoder();
         }
@@ -218,6 +239,7 @@ void showDisplaySettings() {
           if (isEditingLanguage) { tempLanguage = originalValue; g_storedVar.language = originalValue; isEditingLanguage = false; }
           else if (isEditingTextCase) { tempTextCase = originalValue; g_storedVar.textCase = originalValue; isEditingTextCase = false; }
           else if (isEditingFontSize) { tempFontSize = originalValue; g_storedVar.listFontSize = originalValue; isEditingFontSize = false; }
+          else if (isEditingAdvancedMenu) { tempAdvancedMenu = originalValue ? 1 : 0; isEditingAdvancedMenu = false; }
           else if (valuePtr != NULL) { *valuePtr = originalValue; }
           menuState = ITEM_SELECTION;
           g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
@@ -263,17 +285,20 @@ void showDisplaySettings() {
         bool isValueSel = (sel - frameUpper == i && menuState == VALUE_SELECTION);
         uint16_t value = *(uint16_t *)(g_settingsMenu.item[itemIdx].value);
 
-        if (itemIdx == 0) {  /* VIEW */
+        if (itemIdx == DISPLAY_ITEM_VIEW_IDX) {  /* VIEW */
           sprintf(msgStr, "%6s", getViewModeLabel(g_storedVar.language, value));
-        } else if (itemIdx == 1) {  /* LANG */
+        } else if (itemIdx == DISPLAY_ITEM_LANG_IDX) {  /* LANG */
           uint16_t dispLang = (isEditingLanguage && isValueSel) ? tempLanguage : value;
           sprintf(msgStr, "%3s", LANG_LABELS[dispLang]);
-        } else if (itemIdx == 2) {  /* CASE */
+        } else if (itemIdx == DISPLAY_ITEM_CASE_IDX) {  /* CASE */
           uint16_t dispTC = (isEditingTextCase && isValueSel) ? tempTextCase : value;
           sprintf(msgStr, "%6s", TEXT_CASE_LABELS[g_storedVar.language][dispTC]);
-        } else if (itemIdx == 3) {  /* FSIZE */
+        } else if (itemIdx == DISPLAY_ITEM_FSIZE_IDX) {  /* FSIZE */
           uint16_t dispFS = (isEditingFontSize && isValueSel) ? tempFontSize : value;
           sprintf(msgStr, "%5s", FONT_SIZE_LABELS[g_storedVar.language][dispFS]);
+        } else if (itemIdx == DISPLAY_ITEM_ADVANCED_IDX) {  /* ADVANCED */
+          uint16_t dispAdvanced = (isEditingAdvancedMenu && isValueSel) ? tempAdvancedMenu : (g_advancedMenuEnabled ? 1 : 0);
+          snprintf(msgStr, sizeof(msgStr), "%3s", getOnOffLabel(g_storedVar.language, dispAdvanced));
         } else if (g_settingsMenu.item[itemIdx].unit[0] != '\0') {
           snprintf(msgStr, sizeof(msgStr), "%2d %s", value, g_settingsMenu.item[itemIdx].unit);
         } else {

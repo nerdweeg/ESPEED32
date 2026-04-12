@@ -78,6 +78,7 @@
       <li><code>ACD</code>: termos ACD quando aplicavel diretamente, com <code>SENSI</code> e <code>CHOKE</code> para limit. <code>ANTIS</code> continua como anti-spin porque o manual ACD nao define um termo separado para Choke2.</li>
       <li><code>DISPLAY -&gt; CASE</code> define se as etiquetas aparecem em <code>UPPER</code> ou <code>Pascal</code>.</li>
       <li><code>DISPLAY -&gt; FONT SIZE</code> altera a densidade do texto entre <code>LARGE</code> e <code>small</code>.</li>
+      <li><code>ECRA -&gt; AVANCADO</code> define se <code>FADE</code>, <code>PWM_F</code> e <code>BRAKE+</code> aparecem no menu principal. Em <code>OFF</code> essas linhas ficam ocultas para um menu mais simples, mas os valores guardados do carro continuam ativos.</li>
       <li><code>ECRA -&gt; PASSOS</code> abre o submenu de passos que contém ANTISPIN, PASSO FREIO e PASSO SENSI.</li>
       <li><code>ECRA -&gt; PASSOS -&gt; ANTISPIN</code> abre o submenu de configuracao do antispin onde seleciona a unidade de visualizacao (<code>MS</code> / <code>%</code> / <code>TEXT</code>) e o passo do encoder para cada unidade.</li>
       <li><code>ECRA -&gt; PASSOS -&gt; PASSO FREIO</code> define quantos por cento o encoder move o TRAVAO por clique (0,1–50,0%, padrao 1,0%). Configuravel em <code>DEFINICOES → ECRA → PASSOS → PASSO FREIO</code>.</li>
@@ -108,7 +109,7 @@
 
   <section>
     <h2>4. Menu CAR e Car Params</h2>
-    <p class="small">O menu <code>CAR</code> gere os perfis de carro. Cada perfil guarda os seus proprios <code>Car Params</code>: <code>BRAKE</code>, <code>SENSI</code>, <code>ANTIS</code>, <code>CURVE</code>, <code>FADE</code>, <code>PWM_F</code>, <code>BRAKE+</code> e <code>LIMIT</code>. Este e o mesmo grupo de parametros que aparece depois no <code>Advanced Config Editor</code>.</p>
+    <p class="small">O menu <code>CAR</code> gere os perfis de carro. Cada perfil guarda os seus proprios <code>Car Params</code>: <code>BRAKE</code>, <code>SENSI</code>, <code>ANTIS</code>, <code>CURVE</code>, <code>FADE</code>, <code>PWM_F</code>, <code>BRAKE+</code> e <code>LIMIT</code>. Este e o mesmo grupo de parametros que aparece depois no <code>Advanced Config Editor</code>. Se <code>ECRA -&gt; AVANCADO</code> estiver em <code>OFF</code>, <code>FADE</code>, <code>PWM_F</code> e <code>BRAKE+</code> ficam escondidos no menu principal, mas os valores guardados do perfil continuam a valer.</p>
     <ul>
       <li><code>SELECT</code>: escolher o perfil de carro ativo (0-19).</li>
       <li><code>RENAME</code>: editor de nome com 4 caracteres (ASCII 32-122). Ver <a href="https://slatecave.net/notebook/ascii/" target="_blank" rel="noopener noreferrer">tabela ASCII</a>.</li>
@@ -416,9 +417,9 @@
 |- SENSI
 |- ANTIS
 |- CURVE (graph view)
-|- FADE (graph view)
-|- PWM_F
-|- BRAKE+
+|- FADE (vista grafica, AVANCADO=ON)
+|- PWM_F (AVANCADO=ON)
+|- BRAKE+ (AVANCADO=ON)
 |  |- Alt.Brake (%)
 |  |- Rel.Brake (OFF/QUICK/DRAG)
 |  |- Zone (%) [QUICK only]
@@ -450,6 +451,7 @@
 |  |  |- LANGUAGE (NOR/ENG/CS/ACD/ESP/DEU/ITA/NLD/POR)
 |  |  |- CASE (UPPER/Pascal)
 |  |  |- FONT SIZE (LARGE/small)
+|  |  |- AVANCADO (OFF/ON)
 |  |  |- PASSOS
 |  |  |  |- ANTISPIN
 |  |  |  |  |- REG.TYPE (MS / % / TEXT, padrao MS)

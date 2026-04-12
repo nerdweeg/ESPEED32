@@ -240,6 +240,7 @@ details.doc-fold>:not(summary){margin-top:8px}
       <li><code>ACD</code>: ACD-Stil, wo es direkte Entsprechungen gibt (<code>SENSI</code> und <code>CHOKE</code> fuer LIMIT).</li>
       <li><code>DISPLAY -&gt; CASE</code> waehlt, ob Labels in <code>UPPER</code> oder <code>Pascal</code> angezeigt werden.</li>
       <li><code>DISPLAY -&gt; FONT SIZE</code> stellt die Listen- und Menueansicht auf <code>LARGE</code> oder <code>small</code>.</li>
+      <li><code>ANZEIGE -&gt; ERWEITERT</code> legt fest, ob <code>FADE</code>, <code>PWM_F</code> und <code>BREMSE+</code> im Hauptmenue sichtbar sind. Auf <code>AUS</code> werden diese Zeilen fuer ein einfacheres Menue ausgeblendet, die gespeicherten Fahrzeugwerte bleiben aber aktiv.</li>
       <li><code>ANZEIGE -&gt; SCHRITTE</code> oeffnet das Schrittweiten-Untermenu mit ANTISPIN, BRK SCHRITT und SEN SCHRITT.</li>
       <li><code>ANZEIGE -&gt; SCHRITTE -&gt; ANTISPIN</code> oeffnet das Antispin-Einstellungsmenu, in dem du die Anzeigeeinheit (<code>MS</code> / <code>%</code> / <code>TEXT</code>) und die Encoder-Schrittweite je Einheit festlegst.</li>
       <li><code>ANZEIGE -&gt; SCHRITTE -&gt; BRK SCHRITT</code> legt fest, um wie viel Prozent der Encoder BREMSE pro Klick aendert (0,1–50,0%, Standard 1,0%). Einstellbar unter <code>EINSTELLUNGEN → ANZEIGE → SCHRITTE → BRK SCHRITT</code>.</li>
@@ -270,7 +271,7 @@ details.doc-fold>:not(summary){margin-top:8px}
 
   <section>
     <h2>4. CAR-Menue und Car Params</h2>
-    <p class="small">Das <code>CAR</code>-Menue verwaltet die Fahrzeugprofile. Jedes Profil speichert seine eigenen <code>Car Params</code>, also Werte wie <code>BRAKE</code>, <code>SENSI</code>, <code>ANTIS</code>, <code>CURVE</code>, <code>FADE</code>, <code>PWM_F</code>, <code>BREMSE+</code> und <code>LIMIT</code>. Genau diese Parametergruppe taucht spaeter auch im <code>Advanced Config Editor</code> wieder auf.</p>
+    <p class="small">Das <code>CAR</code>-Menue verwaltet die Fahrzeugprofile. Jedes Profil speichert seine eigenen <code>Car Params</code>, also Werte wie <code>BRAKE</code>, <code>SENSI</code>, <code>ANTIS</code>, <code>CURVE</code>, <code>FADE</code>, <code>PWM_F</code>, <code>BREMSE+</code> und <code>LIMIT</code>. Genau diese Parametergruppe taucht spaeter auch im <code>Advanced Config Editor</code> wieder auf. Wenn <code>ANZEIGE -&gt; ERWEITERT</code> auf <code>AUS</code> steht, werden <code>FADE</code>, <code>PWM_F</code> und <code>BREMSE+</code> im Hauptmenue ausgeblendet, die gespeicherten Profilwerte gelten aber weiter.</p>
     <ul>
       <li><code>SELECT</code>: aktives Profil waehlen (0-19).</li>
       <li><code>RENAME</code>: 4-Zeichen Name (ASCII 32-122). Siehe <a href="https://slatecave.net/notebook/ascii/" target="_blank" rel="noopener noreferrer">ASCII-Tabelle</a>.</li>
@@ -576,9 +577,9 @@ details.doc-fold>:not(summary){margin-top:8px}
 |- SENSI
 |- ANTIS
 |- CURVE (graph view)
-|- FADE (graph view)
-|- PWM_F
-|- BREMSE+
+|- FADE (Grafikansicht, ERWEITERT=EIN)
+|- PWM_F (ERWEITERT=EIN)
+|- BREMSE+ (ERWEITERT=EIN)
 |  |- Alt.Brems (%)
 |  |- Rel.Brems (OFF/QUICK/DRAG)
 |  |- Zone (%) [nur QUICK]
@@ -610,6 +611,7 @@ details.doc-fold>:not(summary){margin-top:8px}
 |  |  |- LANGUAGE (NOR/ENG/CS/ACD/ESP/DEU/ITA/NLD/POR)
 |  |  |- CASE (UPPER/Pascal)
 |  |  |- FONT SIZE (LARGE/small)
+|  |  |- ERWEITERT (AUS/EIN)
 |  |  |- SCHRITTE
 |  |  |  |- ANTISPIN
 |  |  |  |  |- REG.TYP (MS / % / TEXT, Standard MS)

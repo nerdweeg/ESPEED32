@@ -78,6 +78,7 @@
       <li><code>ACD</code>: ACD-termen waar direct van toepassing, met <code>SENSI</code> en <code>CHOKE</code> voor limit. <code>ANTIS</code> blijft anti-spin omdat de ACD-handleiding geen aparte Choke2-term definieert.</li>
       <li><code>DISPLAY -&gt; CASE</code> bepaalt of labels in <code>UPPER</code> of <code>Pascal</code> worden getoond.</li>
       <li><code>DISPLAY -&gt; FONT SIZE</code> verandert de tekstdichtheid van lijsten/menu's tussen <code>LARGE</code> en <code>small</code>.</li>
+      <li><code>DISPLAY -&gt; GEAVANCEERD</code> bepaalt of <code>FADE</code>, <code>PWM_F</code> en <code>BRAKE+</code> in het hoofdmenu zichtbaar zijn. Op <code>UIT</code> worden die regels verborgen voor een eenvoudiger menu, maar de opgeslagen autowaarden blijven actief.</li>
       <li><code>DISPLAY -&gt; STAPPEN</code> opent het stapmenu met ANTISPIN, STAP REM en STAP SENSI.</li>
       <li><code>DISPLAY -&gt; STAPPEN -&gt; ANTISPIN</code> opent het antispin-instellingenmenu waar je de weergave-eenheid kiest (<code>MS</code> / <code>%</code> / <code>TEXT</code>) en de encoderstap per eenheid instelt.</li>
       <li><code>DISPLAY -&gt; STAPPEN -&gt; STAP REM</code> stelt in hoeveel procent de encoder REM per klik verplaatst (0,1–50,0%, standaard 1,0%). In te stellen via <code>INSTELLINGEN → DISPLAY → STAPPEN → STAP REM</code>.</li>
@@ -108,7 +109,7 @@
 
   <section>
     <h2>4. CAR-menu en Car Params</h2>
-    <p class="small">Het menu <code>CAR</code> beheert de autoprofilen. Elk profiel slaat zijn eigen <code>Car Params</code> op: <code>BRAKE</code>, <code>SENSI</code>, <code>ANTIS</code>, <code>CURVE</code>, <code>FADE</code>, <code>PWM_F</code>, <code>BRAKE+</code> en <code>LIMIT</code>. Dit is dezelfde parametergroep die later terugkomt in de <code>Advanced Config Editor</code>.</p>
+    <p class="small">Het menu <code>CAR</code> beheert de autoprofilen. Elk profiel slaat zijn eigen <code>Car Params</code> op: <code>BRAKE</code>, <code>SENSI</code>, <code>ANTIS</code>, <code>CURVE</code>, <code>FADE</code>, <code>PWM_F</code>, <code>BRAKE+</code> en <code>LIMIT</code>. Dit is dezelfde parametergroep die later terugkomt in de <code>Advanced Config Editor</code>. Als <code>DISPLAY -&gt; GEAVANCEERD</code> op <code>UIT</code> staat, worden <code>FADE</code>, <code>PWM_F</code> en <code>BRAKE+</code> in het hoofdmenu verborgen, maar de opgeslagen profielwaarden blijven gelden.</p>
     <ul>
       <li><code>SELECT</code>: kies actief autoprofiel (0-19).</li>
       <li><code>RENAME</code>: editor voor een naam van 4 tekens (ASCII 32-122). Zie <a href="https://slatecave.net/notebook/ascii/" target="_blank" rel="noopener noreferrer">ASCII-tabel</a>.</li>
@@ -416,9 +417,9 @@
 |- SENSI
 |- ANTIS
 |- CURVE (graph view)
-|- FADE (graph view)
-|- PWM_F
-|- BRAKE+
+|- FADE (grafiekweergave, GEAVANCEERD=AAN)
+|- PWM_F (GEAVANCEERD=AAN)
+|- BRAKE+ (GEAVANCEERD=AAN)
 |  |- Alt.Brake (%)
 |  |- Rel.Brake (OFF/QUICK/DRAG)
 |  |- Zone (%) [QUICK only]
@@ -450,6 +451,7 @@
 |  |  |- LANGUAGE (NOR/ENG/CS/ACD/ESP/DEU/ITA/NLD/POR)
 |  |  |- CASE (UPPER/Pascal)
 |  |  |- FONT SIZE (LARGE/small)
+|  |  |- GEAVANCEERD (UIT/AAN)
 |  |  |- STAPPEN
 |  |  |  |- ANTISPIN
 |  |  |  |  |- REG.TYPE (MS / % / TEXT, standaard MS)

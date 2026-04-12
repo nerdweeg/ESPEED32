@@ -78,6 +78,7 @@
       <li><code>ACD</code>: ACD-style terms where directly applicable (<code>SENSI</code> and <code>CHOKE</code> for limit). <code>ANTIS</code> remains anti-spin because the ACD manual does not define a separate Choke2 term.</li>
       <li><code>DISPLAY -&gt; CASE</code> chooses whether labels are shown in <code>UPPER</code> or <code>Pascal</code>.</li>
       <li><code>DISPLAY -&gt; FONT SIZE</code> changes list/menu text density between <code>LARGE</code> and <code>small</code>.</li>
+      <li><code>DISPLAY -&gt; ADVANCED</code> toggles whether <code>FADE</code>, <code>PWM_F</code>, and <code>BRAKE+</code> are shown in the main menu. Turning it <code>OFF</code> hides those rows for a simpler menu, but the stored car values still stay active.</li>
       <li><code>DISPLAY -&gt; STEPS</code> opens the step settings submenu containing ANTISPIN, BRAKE STEP and SENSI STEP.</li>
       <li><code>DISPLAY -&gt; STEPS -&gt; ANTISPIN</code> opens the antispin display settings submenu where you select the display unit (<code>MS</code> / <code>%</code> / <code>TEXT</code>) and the encoder step size for each unit.</li>
       <li><code>DISPLAY -&gt; STEPS -&gt; BRAKE STEP</code> sets how many percent the encoder moves BRAKE per tick (0.1–50.0%, default 1.0%). Configure in <code>SETTINGS → DISPLAY → STEPS → BRAKE STEP</code>.</li>
@@ -108,7 +109,7 @@
 
   <section>
     <h2>4. CAR menu and Car Params</h2>
-    <p class="small">The <code>CAR</code> menu manages the car profiles. Each profile stores its own <code>Car Params</code>: <code>BRAKE</code>, <code>SENSI</code>, <code>ANTIS</code>, <code>CURVE</code>, <code>FADE</code>, <code>PWM_F</code>, <code>BRAKE+</code>, and <code>LIMIT</code>. This is the same parameter group you meet later in the <code>Advanced Config Editor</code>.</p>
+    <p class="small">The <code>CAR</code> menu manages the car profiles. Each profile stores its own <code>Car Params</code>: <code>BRAKE</code>, <code>SENSI</code>, <code>ANTIS</code>, <code>CURVE</code>, <code>FADE</code>, <code>PWM_F</code>, <code>BRAKE+</code>, and <code>LIMIT</code>. This is the same parameter group you meet later in the <code>Advanced Config Editor</code>. If <code>DISPLAY -&gt; ADVANCED</code> is <code>OFF</code>, <code>FADE</code>, <code>PWM_F</code>, and <code>BRAKE+</code> are hidden from the main menu, but the stored profile values still apply.</p>
     <ul>
       <li><code>SELECT</code>: choose active car profile (0-19).</li>
       <li><code>RENAME</code>: 4-character name editor (ASCII 32-122). See <a href="https://slatecave.net/notebook/ascii/" target="_blank" rel="noopener noreferrer">ASCII table</a>.</li>
@@ -416,9 +417,9 @@
 |- SENSI
 |- ANTIS
 |- CURVE (graph view)
-|- FADE (graph view)
-|- PWM_F
-|- BRAKE+
+|- FADE (graph view, ADVANCED=ON)
+|- PWM_F (ADVANCED=ON)
+|- BRAKE+ (ADVANCED=ON)
 |  |- Alt.Brake (%)
 |  |- Rel.Brake (OFF/QUICK/DRAG)
 |  |- Zone (%) [QUICK only]
@@ -450,6 +451,7 @@
 |  |  |- LANGUAGE (NOR/ENG/CS/ACD/ESP/DEU/ITA/NLD/POR)
 |  |  |- CASE (UPPER/Pascal)
 |  |  |- FONT SIZE (LARGE/small)
+|  |  |- ADVANCED (OFF/ON)
 |  |  |- STEPS
 |  |  |  |- ANTISPIN
 |  |  |  |  |- REG.TYPE (MS / % / TEXT, default MS)

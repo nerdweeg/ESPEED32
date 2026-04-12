@@ -241,6 +241,7 @@ details.doc-fold>:not(summary){margin-top:8px}
       <li><code>ACD</code>: ACD-stil der det finnes direkte treff (<code>SENSI</code> og <code>CHOKE</code> for limit). <code>ANTIS</code> beholdes som antispinn siden ACD-manualen ikke bruker en egen Choke2-term.</li>
       <li><code>DISPLAY -&gt; CASE</code> velger om etiketter vises i <code>UPPER</code> eller <code>Pascal</code>.</li>
       <li><code>DISPLAY -&gt; FONT SIZE</code> velger mellom <code>LARGE</code> og <code>small</code> for liste- og menyvisning.</li>
+      <li><code>SKJERM -&gt; AVANSERT</code> velger om <code>FADE</code>, <code>PWM_F</code> og <code>BREMS+</code> vises i hovedmenyen. Setter du den til <code>AV</code>, skjules disse radene for en enklere meny, men de lagrede bilverdiene er fortsatt aktive.</li>
       <li><code>SKJERM -&gt; STEG</code> åpner steg-undermenyen som inneholder ANTISPINN, BREMSSTEG og SENSISTEG.</li>
       <li><code>SKJERM -&gt; STEG -&gt; ANTISPINN</code> åpner antispinn-innstillingsmenyen der du velger visningsenhet (<code>MS</code> / <code>%</code> / <code>TEXT</code>) og encoder-steg for hver enhet.</li>
       <li><code>SKJERM -&gt; STEG -&gt; BREMSSTEG</code> setter hvor mange prosent encoder flytter BREMS per klikk (0,1–50,0%, standard 1,0%). Konfigureres i <code>INNSTILLING → SKJERM → STEG → BREMSSTEG</code>.</li>
@@ -271,7 +272,7 @@ details.doc-fold>:not(summary){margin-top:8px}
 
   <section>
     <h2>4. CAR-meny og Car Params</h2>
-    <p class="small"><code>CAR</code> styrer bilprofilene. Hver profil lagrer sine egne <code>Car Params</code>, altså kjøreverdier som <code>BRAKE</code>, <code>SENSI</code>, <code>ANTIS</code>, <code>CURVE</code>, <code>FADE</code>, <code>PWM_F</code>, <code>BREMS+</code> og <code>LIMIT</code>. Det er samme parametergruppe du møter igjen senere i <code>Advanced Config Editor</code>.</p>
+    <p class="small"><code>CAR</code> styrer bilprofilene. Hver profil lagrer sine egne <code>Car Params</code>, altså kjøreverdier som <code>BRAKE</code>, <code>SENSI</code>, <code>ANTIS</code>, <code>CURVE</code>, <code>FADE</code>, <code>PWM_F</code>, <code>BREMS+</code> og <code>LIMIT</code>. Det er samme parametergruppe du møter igjen senere i <code>Advanced Config Editor</code>. Hvis <code>SKJERM -&gt; AVANSERT</code> er satt til <code>AV</code>, skjules <code>FADE</code>, <code>PWM_F</code> og <code>BREMS+</code> i hovedmenyen, men de lagrede profilverdiene virker fortsatt.</p>
     <ul>
       <li><code>SELECT</code>: velg aktiv bilprofil (0-19).</li>
       <li><code>RENAME</code>: 4-tegns navn (ASCII 32-122), redigert tegn for tegn. Se <a href="https://slatecave.net/notebook/ascii/" target="_blank" rel="noopener noreferrer">ASCII-tabell</a>.</li>
@@ -579,9 +580,9 @@ details.doc-fold>:not(summary){margin-top:8px}
 |- SENSI
 |- ANTIS
 |- CURVE (grafvisning)
-|- FADE (grafvisning)
-|- PWM_F
-|- BREMS+
+|- FADE (grafvisning, AVANSERT=PA)
+|- PWM_F (AVANSERT=PA)
+|- BREMS+ (AVANSERT=PA)
 |  |- Alt.brems (%)
 |  |- Rel.brems (OFF/QUICK/DRAG)
 |  |- Sone (%) [kun QUICK]
@@ -613,6 +614,7 @@ details.doc-fold>:not(summary){margin-top:8px}
 |  |  |- LANGUAGE (NOR/ENG/CS/ACD/ESP/DEU/ITA/NLD/POR)
 |  |  |- CASE (UPPER/Pascal)
 |  |  |- FONT SIZE (LARGE/small)
+|  |  |- AVANSERT (AV/PA)
 |  |  |- STEG
 |  |  |  |- ANTISPINN
 |  |  |  |  |- REG.TYPE (MS / % / TEXT, standard MS)

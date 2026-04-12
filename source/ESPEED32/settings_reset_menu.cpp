@@ -12,6 +12,7 @@ extern uint16_t g_antiSpinStepPct;
 extern uint16_t g_antiSpinDisplayMode;
 extern uint16_t g_brakeStep;
 extern uint16_t g_sensiStep;
+extern uint16_t g_advancedMenuEnabled;
 extern uint16_t g_encoderInvertEnabled;
 extern uint16_t g_pwmFreqMaxProfile;
 extern ESC_type g_escVar;
@@ -282,6 +283,7 @@ static void doResetSettings() {
   g_brakeStep                      = BRAKE_STEP_DEFAULT;
   g_sensiStep                      = SENSI_STEP_DEFAULT;
   g_antiSpinDisplayMode            = ANTISPIN_UI_MODE_DEFAULT;
+  g_advancedMenuEnabled            = ADVANCED_MENU_ENABLED_DEFAULT;
   g_encoderInvertEnabled           = ENCODER_INVERT_DEFAULT;
   g_pwmFreqMaxProfile              = PWM_FREQ_MAX_PROFILE_DEFAULT;
   strncpy(g_storedVar.screensaverLine1, SCREENSAVER_LINE1_DEFAULT, SCREENSAVER_TEXT_MAX - 1);

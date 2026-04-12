@@ -22,11 +22,14 @@ extern uint16_t g_antiSpinStepPct;
 extern uint16_t g_antiSpinDisplayMode;
 extern uint16_t g_brakeStep;
 extern uint16_t g_sensiStep;
+extern uint16_t g_advancedMenuEnabled;
 extern uint16_t g_encoderInvertEnabled;
 extern uint16_t g_carSel;
 extern OBDISP g_obd;
 extern AiEsp32RotaryEncoder g_rotaryEncoder;
 extern void saveEEPROM(StoredVar_type toSave);
+extern void applyAdvancedMenuSetting(uint16_t enabled);
+extern void initMenuItems();
 
 /* Web server instance (heap-allocated only when active) */
 static WebServer* g_wifiServer = nullptr;
@@ -781,6 +784,9 @@ static String buildJsonBackupFromConfig(const StoredVar_type& storedVar,
                                         uint16_t antiSpinStepMs,
                                         uint16_t antiSpinStepPct,
                                         uint16_t antiSpinDisplayMode,
+                                        uint16_t brakeStepRaw,
+                                        uint16_t sensiStepRaw,
+                                        uint16_t advancedMenuEnabled,
                                         uint16_t encoderInvertEnabled,
                                         uint16_t pwmFreqMaxProfile,
                                         uint16_t adcVoltageRange_mV,
@@ -810,8 +816,9 @@ static String buildJsonBackupFromConfig(const StoredVar_type& storedVar,
   sprintf(buf, "  \"antiSpinStepMs\": %u,\n", antiSpinStepMs);         json += buf;
   sprintf(buf, "  \"antiSpinStepPct\": %u,\n", antiSpinStepPct);       json += buf;
   sprintf(buf, "  \"antiSpinDisplayMode\": %u,\n", antiSpinDisplayMode); json += buf;
-  sprintf(buf, "  \"brakeStep\": %u.%u,\n", g_brakeStep / BRAKE_SCALE, brakeFracDigit(g_brakeStep)); json += buf;
-  sprintf(buf, "  \"sensiStep\": %u.%u,\n", g_sensiStep / SENSI_SCALE, sensiFracDigit(g_sensiStep)); json += buf;
+  sprintf(buf, "  \"brakeStep\": %u.%u,\n", brakeStepRaw / BRAKE_SCALE, brakeFracDigit(brakeStepRaw)); json += buf;
+  sprintf(buf, "  \"sensiStep\": %u.%u,\n", sensiStepRaw / SENSI_SCALE, sensiFracDigit(sensiStepRaw)); json += buf;
+  sprintf(buf, "  \"advancedMenu\": %u,\n", advancedMenuEnabled ? 1 : 0); json += buf;
   sprintf(buf, "  \"encoderInvert\": %u,\n", encoderInvertEnabled ? 1 : 0); json += buf;
   sprintf(buf, "  \"pwmFreqMax\": %u,\n", pwmFreqMaxProfileToWholeKHz(pwmFreqMaxProfile)); json += buf;
   sprintf(buf, "  \"adcVoltageRangeMv\": %u,\n", adcVoltageRange_mV);  json += buf;
@@ -875,6 +882,9 @@ static String buildJsonBackup() {
                                    g_antiSpinStepMs,
                                    g_antiSpinStepPct,
                                    g_antiSpinDisplayMode,
+                                   g_brakeStep,
+                                   g_sensiStep,
+                                   g_advancedMenuEnabled,
                                    g_encoderInvertEnabled,
                                    getConfiguredPwmFreqMaxProfile(),
                                    g_adcVoltageRange_mV,
@@ -1064,7 +1074,8 @@ static bool parsePwmFreqMaxProfileValue(int32_t valueKHz, uint16_t* outProfile) 
  */
 static bool parseAndValidateJson(const String& json, StoredVar_type* sv, uint16_t* antiSpinStepMs,
                                  uint16_t* antiSpinStepPct, uint16_t* antiSpinDisplayMode,
-                                 uint16_t* encoderInvertEnabled, uint16_t* pwmFreqMaxProfile,
+                                 uint16_t* brakeStepRaw, uint16_t* sensiStepRaw,
+                                 uint16_t* advancedMenuEnabled, uint16_t* encoderInvertEnabled, uint16_t* pwmFreqMaxProfile,
                                  uint16_t* adcVoltageRangeMv,
                                  uint16_t* wifiConfiguredMode, char* wifiClientSsid,
                                  size_t wifiClientSsidLen, char* wifiClientPassword,
@@ -1122,6 +1133,15 @@ static bool parseAndValidateJson(const String& json, StoredVar_type* sv, uint16_
   }
   if (antiSpinDisplayMode != nullptr) {
     *antiSpinDisplayMode = g_antiSpinDisplayMode;
+  }
+  if (brakeStepRaw != nullptr) {
+    *brakeStepRaw = g_brakeStep;
+  }
+  if (sensiStepRaw != nullptr) {
+    *sensiStepRaw = g_sensiStep;
+  }
+  if (advancedMenuEnabled != nullptr) {
+    *advancedMenuEnabled = g_advancedMenuEnabled ? 1 : 0;
   }
   if (encoderInvertEnabled != nullptr) {
     *encoderInvertEnabled = g_encoderInvertEnabled ? 1 : 0;
@@ -1185,15 +1205,26 @@ static bool parseAndValidateJson(const String& json, StoredVar_type* sv, uint16_
   }
   {
     uint16_t stepRaw = 0;
-    if (parseJsonTenthPercent(json, "brakeStep", BRAKE_STEP_MAX, &stepRaw) && stepRaw >= BRAKE_STEP_MIN)
-      g_brakeStep = stepRaw;
-    if (parseJsonTenthPercent(json, "sensiStep", SENSI_STEP_MAX, &stepRaw) && stepRaw >= SENSI_STEP_MIN)
-      g_sensiStep = stepRaw;
+    if (brakeStepRaw != nullptr &&
+        parseJsonTenthPercent(json, "brakeStep", BRAKE_STEP_MAX, &stepRaw) &&
+        stepRaw >= BRAKE_STEP_MIN) {
+      *brakeStepRaw = stepRaw;
+    }
+    if (sensiStepRaw != nullptr &&
+        parseJsonTenthPercent(json, "sensiStep", SENSI_STEP_MAX, &stepRaw) &&
+        stepRaw >= SENSI_STEP_MIN) {
+      *sensiStepRaw = stepRaw;
+    }
   }
   if (antiSpinDisplayMode != nullptr &&
       parseJsonInt(json, "antiSpinDisplayMode", v) &&
       inRange(v, ANTISPIN_UI_MODE_MS, ANTISPIN_UI_MODE_TEXT)) {
     *antiSpinDisplayMode = (uint16_t)v;
+  }
+  if (advancedMenuEnabled != nullptr &&
+      (parseJsonInt(json, "advancedMenu", v) || parseJsonInt(json, "advancedMenuEnabled", v)) &&
+      inRange(v, 0, 1)) {
+    *advancedMenuEnabled = (uint16_t)v;
   }
   if (encoderInvertEnabled != nullptr &&
       parseJsonInt(json, "encoderInvert", v) &&
@@ -1568,6 +1599,8 @@ static String buildSchemaJson() {
   appendSchemaIntField(json, first, "antiSpinStepPct", "ANTIS Step (%)", ANTISPIN_STEP_PCT_MIN, ANTISPIN_STEP_PCT_MAX, 1, "%");
   appendSchemaNumberField(json, first, "brakeStep", "Brake Step", "0.1", "50.0", "0.1", "%");
   appendSchemaNumberField(json, first, "sensiStep", "Sensi Step", "0.1", "5.0", "0.1", "%");
+  appendSchemaEnumField(json, first, "advancedMenu", "Advanced Menu",
+                        "[{\"value\":0,\"label\":\"OFF\"},{\"value\":1,\"label\":\"ON\"}]");
   appendSchemaEnumField(json, first, "encoderInvert", "ENC INV",
                         "[{\"value\":0,\"label\":\"OFF\"},{\"value\":1,\"label\":\"ON\"}]");
   appendSchemaEnumField(json, first, "pwmFreqMax", "PWM Max",
@@ -1661,6 +1694,7 @@ static String buildStateJson(uint8_t carIndex) {
   snprintf(buf, sizeof(buf), "\"antiSpinStepPct\":%u,", g_antiSpinStepPct); json += buf;
   snprintf(buf, sizeof(buf), "\"brakeStep\":%u.%u,", g_brakeStep / BRAKE_SCALE, brakeFracDigit(g_brakeStep)); json += buf;
   snprintf(buf, sizeof(buf), "\"sensiStep\":%u.%u,", g_sensiStep / SENSI_SCALE, sensiFracDigit(g_sensiStep)); json += buf;
+  snprintf(buf, sizeof(buf), "\"advancedMenu\":%u,", g_advancedMenuEnabled ? 1 : 0); json += buf;
   snprintf(buf, sizeof(buf), "\"encoderInvert\":%u,", g_encoderInvertEnabled ? 1 : 0); json += buf;
   snprintf(buf, sizeof(buf), "\"pwmFreqMax\":%u,", getConfiguredPwmFreqMaxKHz()); json += buf;
   snprintf(buf, sizeof(buf), "\"adcVoltageRangeMv\":%u,", g_adcVoltageRange_mV); json += buf;
@@ -1712,7 +1746,15 @@ static bool parseAndApplyWebPatch(const String& json, String* errorMsg, uint8_t*
   StoredVar_type updated = g_storedVar;
   loadWiFiNetworkSettingsIfNeeded();
   uint16_t wifiConfiguredMode = g_wifiConfiguredMode;
+  uint16_t antiSpinDisplayMode = g_antiSpinDisplayMode;
+  uint16_t antiSpinStepMs = g_antiSpinStepMs;
+  uint16_t antiSpinStepPct = g_antiSpinStepPct;
+  uint16_t brakeStepRaw = g_brakeStep;
+  uint16_t sensiStepRaw = g_sensiStep;
+  uint16_t advancedMenuEnabled = g_advancedMenuEnabled ? 1 : 0;
+  uint16_t encoderInvertEnabled = g_encoderInvertEnabled ? 1 : 0;
   uint16_t pwmFreqMaxProfile = getConfiguredPwmFreqMaxProfile();
+  uint16_t adcVoltageRangeMv = g_adcVoltageRange_mV;
   char wifiClientSsid[WIFI_STA_SSID_MAX_LEN + 1];
   char wifiClientPassword[WIFI_STA_PASS_MAX_LEN + 1];
   char requestedWiFiPassword[WIFI_STA_PASS_MAX_LEN + 1];
@@ -1773,33 +1815,37 @@ static bool parseAndApplyWebPatch(const String& json, String* errorMsg, uint8_t*
   }
   if (parseJsonInt(json, "antiSpinDisplayMode", v)) {
     if (!inRange(v, ANTISPIN_UI_MODE_MS, ANTISPIN_UI_MODE_TEXT)) { *errorMsg = "Error: invalid antiSpinDisplayMode"; return false; }
-    g_antiSpinDisplayMode = (uint16_t)v;
+    antiSpinDisplayMode = (uint16_t)v;
   }
   if (parseJsonInt(json, "antiSpinStep", v) || parseJsonInt(json, "antiSpinStepMs", v)) {
     if (!inRange(v, ANTISPIN_STEP_MIN, ANTISPIN_STEP_MAX)) { *errorMsg = "Error: invalid antiSpinStepMs"; return false; }
-    g_antiSpinStepMs = (uint16_t)v;
+    antiSpinStepMs = (uint16_t)v;
   }
   if (parseJsonInt(json, "antiSpinStepPct", v)) {
     if (!inRange(v, ANTISPIN_STEP_PCT_MIN, ANTISPIN_STEP_PCT_MAX)) { *errorMsg = "Error: invalid antiSpinStepPct"; return false; }
-    g_antiSpinStepPct = (uint16_t)v;
+    antiSpinStepPct = (uint16_t)v;
   }
   if (jsonHasKey(json, "brakeStep")) {
     uint16_t stepRaw = 0;
     if (!parseJsonTenthPercent(json, "brakeStep", BRAKE_STEP_MAX, &stepRaw) || stepRaw < BRAKE_STEP_MIN) {
       *errorMsg = "Error: invalid brakeStep"; return false;
     }
-    g_brakeStep = stepRaw;
+    brakeStepRaw = stepRaw;
   }
   if (jsonHasKey(json, "sensiStep")) {
     uint16_t stepRaw = 0;
     if (!parseJsonTenthPercent(json, "sensiStep", SENSI_STEP_MAX, &stepRaw) || stepRaw < SENSI_STEP_MIN) {
       *errorMsg = "Error: invalid sensiStep"; return false;
     }
-    g_sensiStep = stepRaw;
+    sensiStepRaw = stepRaw;
+  }
+  if (parseJsonInt(json, "advancedMenu", v) || parseJsonInt(json, "advancedMenuEnabled", v)) {
+    if (!inRange(v, 0, 1)) { *errorMsg = "Error: invalid advancedMenu"; return false; }
+    advancedMenuEnabled = (uint16_t)v;
   }
   if (parseJsonInt(json, "encoderInvert", v)) {
     if (!inRange(v, 0, 1)) { *errorMsg = "Error: invalid encoderInvert"; return false; }
-    applyEncoderInvertSetting((uint16_t)v);
+    encoderInvertEnabled = (uint16_t)v;
   }
   if (parseJsonInt(json, "pwmFreqMax", v)) {
     if (!parsePwmFreqMaxProfileValue(v, &pwmFreqMaxProfile)) {
@@ -1812,7 +1858,7 @@ static bool parseAndApplyWebPatch(const String& json, String* errorMsg, uint8_t*
       *errorMsg = "Error: invalid adcVoltageRangeMv";
       return false;
     }
-    applyAdcVoltageRangeMilliVolts((uint16_t)v);
+    adcVoltageRangeMv = (uint16_t)v;
   }
   if (parseJsonInt(json, "gridCarSelectEnabled", v)) {
     if (!inRange(v, 0, 1)) { *errorMsg = "Error: invalid gridCarSelectEnabled"; return false; }
@@ -2003,11 +2049,24 @@ static bool parseAndApplyWebPatch(const String& json, String* errorMsg, uint8_t*
   updated.carParam[carIndex] = car;
   clampStoredVarCarPwmFreqsToProfile(&updated, pwmFreqMaxProfile);
   g_storedVar = updated;
+  g_antiSpinDisplayMode = antiSpinDisplayMode;
+  g_antiSpinStepMs = antiSpinStepMs;
+  g_antiSpinStepPct = antiSpinStepPct;
+  g_brakeStep = brakeStepRaw;
+  g_sensiStep = sensiStepRaw;
+  if ((g_advancedMenuEnabled ? 1U : 0U) != (advancedMenuEnabled ? 1U : 0U)) {
+    applyAdvancedMenuSetting(advancedMenuEnabled);
+  } else {
+    g_advancedMenuEnabled = advancedMenuEnabled ? 1U : 0U;
+  }
+  applyEncoderInvertSetting(encoderInvertEnabled);
   applyConfiguredPwmFreqMaxProfile(pwmFreqMaxProfile);
+  applyAdcVoltageRangeMilliVolts(adcVoltageRangeMv);
   g_wifiConfiguredMode = wifiConfiguredMode;
   copyBoundedString(g_wifiClientSsid, sizeof(g_wifiClientSsid), wifiClientSsid);
   copyBoundedString(g_wifiClientPassword, sizeof(g_wifiClientPassword), wifiClientPassword);
   setCurrentUiAuthCredentials(uiAuthUsername, uiAuthPassword);
+  initMenuItems();
 
   if (appliedCarIndex != nullptr) *appliedCarIndex = carIndex;
   return true;
@@ -2385,6 +2444,9 @@ static void handleSerialCommand(const String& cmd) {
     uint16_t tempAntiSpinStep = g_antiSpinStepMs;
     uint16_t tempAntiSpinStepPct = g_antiSpinStepPct;
     uint16_t tempAntiSpinDisplayMode = g_antiSpinDisplayMode;
+    uint16_t tempBrakeStep = g_brakeStep;
+    uint16_t tempSensiStep = g_sensiStep;
+    uint16_t tempAdvancedMenu = g_advancedMenuEnabled ? 1 : 0;
     uint16_t tempEncoderInvert = g_encoderInvertEnabled ? 1 : 0;
     uint16_t tempPwmFreqMaxProfile = getConfiguredPwmFreqMaxProfile();
     uint16_t tempAdcVoltageRange = g_adcVoltageRange_mV;
@@ -2398,7 +2460,8 @@ static void handleSerialCommand(const String& cmd) {
     getCurrentUiAuthUsername(tempUiAuthUsername, sizeof(tempUiAuthUsername));
     getCurrentUiAuthPassword(tempUiAuthPassword, sizeof(tempUiAuthPassword));
     if (parseAndValidateJson(json, &tempVar, &tempAntiSpinStep, &tempAntiSpinStepPct, &tempAntiSpinDisplayMode,
-                             &tempEncoderInvert, &tempPwmFreqMaxProfile, &tempAdcVoltageRange,
+                             &tempBrakeStep, &tempSensiStep, &tempAdvancedMenu, &tempEncoderInvert,
+                             &tempPwmFreqMaxProfile, &tempAdcVoltageRange,
                              &tempWiFiMode, tempWiFiSsid, sizeof(tempWiFiSsid),
                              tempWiFiPassword, sizeof(tempWiFiPassword),
                              tempUiAuthUsername, sizeof(tempUiAuthUsername),
@@ -2408,12 +2471,20 @@ static void handleSerialCommand(const String& cmd) {
       g_antiSpinStepMs = tempAntiSpinStep;
       g_antiSpinStepPct = tempAntiSpinStepPct;
       g_antiSpinDisplayMode = tempAntiSpinDisplayMode;
-      g_encoderInvertEnabled = tempEncoderInvert ? 1 : 0;
+      g_brakeStep = tempBrakeStep;
+      g_sensiStep = tempSensiStep;
+      if ((g_advancedMenuEnabled ? 1U : 0U) != (tempAdvancedMenu ? 1U : 0U)) {
+        applyAdvancedMenuSetting(tempAdvancedMenu);
+      } else {
+        g_advancedMenuEnabled = tempAdvancedMenu ? 1U : 0U;
+      }
+      applyEncoderInvertSetting(tempEncoderInvert);
       applyConfiguredPwmFreqMaxProfile(tempPwmFreqMaxProfile);
       applyAdcVoltageRangeMilliVolts(tempAdcVoltageRange);
       setConfiguredWiFiMode(tempWiFiMode);
       setConfiguredWiFiClientCredentials(tempWiFiSsid, tempWiFiPassword);
       setCurrentUiAuthCredentials(tempUiAuthUsername, tempUiAuthPassword);
+      initMenuItems();
       saveEEPROM(g_storedVar);
       if (warningMsg.length() > 0) {
         Serial.println("OK - Settings restored (" + warningMsg + ")");
@@ -3273,6 +3344,9 @@ static void handleRestore() {
   uint16_t tempAntiSpinStep = g_antiSpinStepMs;
   uint16_t tempAntiSpinStepPct = g_antiSpinStepPct;
   uint16_t tempAntiSpinDisplayMode = g_antiSpinDisplayMode;
+  uint16_t tempBrakeStep = g_brakeStep;
+  uint16_t tempSensiStep = g_sensiStep;
+  uint16_t tempAdvancedMenu = g_advancedMenuEnabled ? 1 : 0;
   uint16_t tempEncoderInvert = g_encoderInvertEnabled ? 1 : 0;
   uint16_t tempPwmFreqMaxProfile = getConfiguredPwmFreqMaxProfile();
   uint16_t tempAdcVoltageRange = g_adcVoltageRange_mV;
@@ -3286,7 +3360,8 @@ static void handleRestore() {
   getCurrentUiAuthUsername(tempUiAuthUsername, sizeof(tempUiAuthUsername));
   getCurrentUiAuthPassword(tempUiAuthPassword, sizeof(tempUiAuthPassword));
   if (parseAndValidateJson(g_uploadBuffer, &tempVar, &tempAntiSpinStep, &tempAntiSpinStepPct, &tempAntiSpinDisplayMode,
-                           &tempEncoderInvert, &tempPwmFreqMaxProfile, &tempAdcVoltageRange,
+                           &tempBrakeStep, &tempSensiStep, &tempAdvancedMenu, &tempEncoderInvert,
+                           &tempPwmFreqMaxProfile, &tempAdcVoltageRange,
                            &tempWiFiMode, tempWiFiSsid, sizeof(tempWiFiSsid),
                            tempWiFiPassword, sizeof(tempWiFiPassword),
                            tempUiAuthUsername, sizeof(tempUiAuthUsername),
@@ -3296,12 +3371,20 @@ static void handleRestore() {
     g_antiSpinStepMs = tempAntiSpinStep;
     g_antiSpinStepPct = tempAntiSpinStepPct;
     g_antiSpinDisplayMode = tempAntiSpinDisplayMode;
-    g_encoderInvertEnabled = tempEncoderInvert ? 1 : 0;
+    g_brakeStep = tempBrakeStep;
+    g_sensiStep = tempSensiStep;
+    if ((g_advancedMenuEnabled ? 1U : 0U) != (tempAdvancedMenu ? 1U : 0U)) {
+      applyAdvancedMenuSetting(tempAdvancedMenu);
+    } else {
+      g_advancedMenuEnabled = tempAdvancedMenu ? 1U : 0U;
+    }
+    applyEncoderInvertSetting(tempEncoderInvert);
     applyConfiguredPwmFreqMaxProfile(tempPwmFreqMaxProfile);
     applyAdcVoltageRangeMilliVolts(tempAdcVoltageRange);
     setConfiguredWiFiMode(tempWiFiMode);
     setConfiguredWiFiClientCredentials(tempWiFiSsid, tempWiFiPassword);
     setCurrentUiAuthCredentials(tempUiAuthUsername, tempUiAuthPassword);
+    initMenuItems();
     saveEEPROM(g_storedVar);
     String response = "OK - Settings restored!";
     if (warningMsg.length() > 0) {

@@ -14,6 +14,7 @@ extern uint16_t g_antiSpinStepMs;
 extern uint16_t g_antiSpinDisplayMode;
 extern uint16_t g_brakeStep;
 extern uint16_t g_sensiStep;
+extern uint16_t g_advancedMenuEnabled;
 extern uint16_t g_encoderInvertEnabled;
 extern uint16_t g_pwmFreqMaxProfile;
 extern Menu_type g_mainMenu;
@@ -121,6 +122,7 @@ void initStoredVariables() {
   g_antiSpinStepMs = ANTISPIN_STEP_DEFAULT;
   g_brakeStep = BRAKE_STEP_DEFAULT;
   g_sensiStep = SENSI_STEP_DEFAULT;
+  g_advancedMenuEnabled = ADVANCED_MENU_ENABLED_DEFAULT;
   g_encoderInvertEnabled = ENCODER_INVERT_DEFAULT;
   g_pwmFreqMaxProfile = PWM_FREQ_MAX_PROFILE_DEFAULT;
 }
@@ -178,30 +180,32 @@ void initMenuItems() {
   g_mainMenu.item[i].minValue = THROTTLE_CURVE_SPEED_DIFF_MIN_VALUE;
   g_mainMenu.item[i].callback = &showCurveSelection;
 
-  sprintf(g_mainMenu.item[++i].name, "%s", getMenuName(lang, 4));  /* FADE */
-  g_mainMenu.item[i].value = (void *)&g_storedVar.carParam[g_carSel].fade;
-  g_mainMenu.item[i].type = VALUE_TYPE_INTEGER;
-  sprintf(g_mainMenu.item[i].unit, "%%");
-  g_mainMenu.item[i].maxValue = FADE_MAX_VALUE;
-  g_mainMenu.item[i].minValue = 0;
-  g_mainMenu.item[i].callback = &showFadeSelection;
+  if (g_advancedMenuEnabled) {
+    sprintf(g_mainMenu.item[++i].name, "%s", getMenuName(lang, 4));  /* FADE */
+    g_mainMenu.item[i].value = (void *)&g_storedVar.carParam[g_carSel].fade;
+    g_mainMenu.item[i].type = VALUE_TYPE_INTEGER;
+    sprintf(g_mainMenu.item[i].unit, "%%");
+    g_mainMenu.item[i].maxValue = FADE_MAX_VALUE;
+    g_mainMenu.item[i].minValue = 0;
+    g_mainMenu.item[i].callback = &showFadeSelection;
 
-  sprintf(g_mainMenu.item[++i].name, "%s", getMenuName(lang, 5));  /* PWM_F */
-  g_mainMenu.item[i].value = (void *)&g_storedVar.carParam[g_carSel].freqPWM;
-  g_mainMenu.item[i].type = VALUE_TYPE_DECIMAL;
-  sprintf(g_mainMenu.item[i].unit, "k");
-  g_mainMenu.item[i].maxValue = getConfiguredPwmFreqMaxRaw();
-  g_mainMenu.item[i].minValue = FREQ_MIN_VALUE / 100;
-  g_mainMenu.item[i].decimalPoint = 1;
-  g_mainMenu.item[i].callback = ITEM_NO_CALLBACK;
+    sprintf(g_mainMenu.item[++i].name, "%s", getMenuName(lang, 5));  /* PWM_F */
+    g_mainMenu.item[i].value = (void *)&g_storedVar.carParam[g_carSel].freqPWM;
+    g_mainMenu.item[i].type = VALUE_TYPE_DECIMAL;
+    sprintf(g_mainMenu.item[i].unit, "k");
+    g_mainMenu.item[i].maxValue = getConfiguredPwmFreqMaxRaw();
+    g_mainMenu.item[i].minValue = FREQ_MIN_VALUE / 100;
+    g_mainMenu.item[i].decimalPoint = 1;
+    g_mainMenu.item[i].callback = ITEM_NO_CALLBACK;
 
-  sprintf(g_mainMenu.item[++i].name, "%s", getMenuName(lang, 6));  /* BRAKE+ submenu */
-  g_mainMenu.item[i].value = ITEM_NO_VALUE;
-  g_mainMenu.item[i].type = VALUE_TYPE_INTEGER;
-  sprintf(g_mainMenu.item[i].unit, "");
-  g_mainMenu.item[i].maxValue = 0;
-  g_mainMenu.item[i].minValue = 0;
-  g_mainMenu.item[i].callback = &showAdvancedBrakeMenu;
+    sprintf(g_mainMenu.item[++i].name, "%s", getMenuName(lang, 6));  /* BRAKE+ submenu */
+    g_mainMenu.item[i].value = ITEM_NO_VALUE;
+    g_mainMenu.item[i].type = VALUE_TYPE_INTEGER;
+    sprintf(g_mainMenu.item[i].unit, "");
+    g_mainMenu.item[i].maxValue = 0;
+    g_mainMenu.item[i].minValue = 0;
+    g_mainMenu.item[i].callback = &showAdvancedBrakeMenu;
+  }
 
   sprintf(g_mainMenu.item[++i].name, "%s", getMenuName(lang, 7));  /* LIMIT */
   g_mainMenu.item[i].value = (void *)&g_storedVar.carParam[g_carSel].maxSpeed;
@@ -395,7 +399,15 @@ void initDisplayMenuItems() {
   g_settingsMenu.item[i].minValue = FONT_SIZE_LARGE;
   g_settingsMenu.item[i].callback = ITEM_NO_CALLBACK;
 
-  sprintf(g_settingsMenu.item[++i].name, "%s", getDisplayMenuName(lang, 4));  /* STEPS - opens submenu */
+  sprintf(g_settingsMenu.item[++i].name, "%s", getDisplayMenuName(lang, DISPLAY_ITEM_ADVANCED_IDX));  /* ADVANCED */
+  g_settingsMenu.item[i].value = (void *)&g_advancedMenuEnabled;
+  g_settingsMenu.item[i].type = VALUE_TYPE_STRING;
+  sprintf(g_settingsMenu.item[i].unit, "");
+  g_settingsMenu.item[i].maxValue = 1;
+  g_settingsMenu.item[i].minValue = 0;
+  g_settingsMenu.item[i].callback = ITEM_NO_CALLBACK;
+
+  sprintf(g_settingsMenu.item[++i].name, "%s", getDisplayMenuName(lang, DISPLAY_ITEM_STEPS_IDX));  /* STEPS - opens submenu */
   g_settingsMenu.item[i].value = ITEM_NO_VALUE;
   g_settingsMenu.item[i].type = VALUE_TYPE_INTEGER;
   sprintf(g_settingsMenu.item[i].unit, "");
@@ -403,7 +415,7 @@ void initDisplayMenuItems() {
   g_settingsMenu.item[i].minValue = 0;
   g_settingsMenu.item[i].callback = ITEM_NO_CALLBACK;
 
-  sprintf(g_settingsMenu.item[++i].name, "%s", getDisplayMenuName(lang, 5));  /* STATUS - opens submenu */
+  sprintf(g_settingsMenu.item[++i].name, "%s", getDisplayMenuName(lang, DISPLAY_ITEM_STATUS_IDX));  /* STATUS - opens submenu */
   g_settingsMenu.item[i].value = ITEM_NO_VALUE;
   g_settingsMenu.item[i].type = VALUE_TYPE_INTEGER;
   sprintf(g_settingsMenu.item[i].unit, "");
@@ -411,7 +423,7 @@ void initDisplayMenuItems() {
   g_settingsMenu.item[i].minValue = 0;
   g_settingsMenu.item[i].callback = ITEM_NO_CALLBACK;
 
-  sprintf(g_settingsMenu.item[++i].name, "%s", getDisplayMenuName(lang, 6));  /* BACK */
+  sprintf(g_settingsMenu.item[++i].name, "%s", getDisplayMenuName(lang, DISPLAY_ITEM_BACK_IDX));  /* BACK */
   g_settingsMenu.item[i].value = ITEM_NO_VALUE;
   g_settingsMenu.item[i].type = VALUE_TYPE_STRING;
   sprintf(g_settingsMenu.item[i].unit, "");
