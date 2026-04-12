@@ -29,6 +29,7 @@
 
 /* Analog Input Pins */
 #define BOARD_AN_VIN_DIV   36
+#define BOARD_AN_BAT_DIV   15
 #define BOARD_EXT_POT1_PIN 39
 #define BOARD_EXT_POT2_PIN 35
 

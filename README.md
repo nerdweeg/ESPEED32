@@ -268,7 +268,8 @@ Current hardware mapping in firmware:
 
 - `POT1` = `GPIO39`
 - `POT2` = `GPIO35`
-- battery voltage divider = `GPIO36`
+- track `VIN` voltage divider = `GPIO36`
+- battery `VIN` voltage divider = `GPIO15`
 
 Current behavior:
 
@@ -282,7 +283,8 @@ Current behavior:
 Important hardware note:
 
 - `GPIO39` and `GPIO35` are `ADC1` pins and are preferred for external pots because they stay available while WiFi is active
-- `GPIO36` is also an `ADC1` pin, so this mapping keeps both external pots and VIN sensing off the WiFi-affected `ADC2` side
+- `GPIO36` is also an `ADC1` pin and remains the normal track `VIN` input
+- `GPIO15` is an `ADC2` pin on ESP32, so it is better suited to non-drive-critical battery monitoring than to live throttle/brake tuning inputs
 
 Please verify the actual board routing against:
 

@@ -164,6 +164,7 @@
 
 /* Analog Input Pins */
 #define AN_VIN_DIV   BOARD_AN_VIN_DIV   /* Voltage divider input */
+#define AN_BAT_DIV   BOARD_AN_BAT_DIV   /* Optional internal battery divider input (ADC2; may be noisy while WiFi is active) */
 #define EXT_POT1_PIN BOARD_EXT_POT1_PIN /* Optional external pot #1 input (ADC1) */
 #define EXT_POT2_PIN BOARD_EXT_POT2_PIN /* Optional external pot #2 input (ADC1) */
 
