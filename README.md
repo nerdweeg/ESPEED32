@@ -288,7 +288,7 @@ Important hardware note:
 - `GPIO39` and `GPIO35` are `ADC1` pins and are preferred for external pots because they stay available while WiFi is active
 - `GPIO36` is also an `ADC1` pin and remains the normal track `VIN` input
 - `GPIO15` is an `ADC2` pin on ESP32, so it is better suited to non-drive-critical battery monitoring than to live throttle/brake tuning inputs
-- if your battery divider ratio differs from the standard controller, adjust `BOARD_BAT_RVIFBL` / `BOARD_BAT_RVIFBH` in your board profile so the `VBAT` reading is scaled correctly
+- the standard `VBAT` profile assumes a `100k / 100k` battery divider on `GPIO15`; if your hardware differs, adjust `BOARD_BAT_RVIFBL` / `BOARD_BAT_RVIFBH` in your board profile so the `VBAT` reading is scaled correctly
 
 Please verify the actual board routing against:
 
