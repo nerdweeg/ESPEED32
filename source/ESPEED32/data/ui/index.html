@@ -1355,7 +1355,7 @@ var telemetryFetchBusy=false;
 var telemetryUiBusy=false;
 var telemetryPollTimer=null;
 var telemetryPollIntervalMs=250;
-var telemetryLastError='';
+var telemetryPersistentError='';
 var telemetryRedrawQueued=false;
 var telemetryConfigSnapshot=null;
 var LAP_OVERLAY_SOURCE_NONE='none';
@@ -2498,7 +2498,8 @@ async function telemetryFetchLiveTransport(after,limit){
     var usbLimit=Math.min(Number(limit||256),96);
     return await usbReadJsonResponse('TLIVE '+String(after||0)+' '+String(usbLimit),15000,120000);
   }
-  var resp=await fetch('/api/telemetry/live?after='+encodeURIComponent(after||0)+'&limit='+encodeURIComponent(limit||256),{cache:'no-store'});
+  var wifiLimit=Math.min(Number(limit||256),120);
+  var resp=await fetch('/api/telemetry/live?after='+encodeURIComponent(after||0)+'&limit='+encodeURIComponent(wifiLimit),{cache:'no-store'});
   if(!resp.ok) throw new Error('Telemetry unavailable (HTTP '+resp.status+')');
   var data=await resp.json();
   if(!data || !data.ok) throw new Error((data&&data.error)?data.error:'Telemetry fetch failed');
@@ -2727,13 +2728,12 @@ async function telemetryExport(format){
     }else{
       telemetryDownloadBlob(await telemetryFetchExportBlob(format),baseName+(format==='csv'?'.csv':'.json'));
     }
-    telemetryLastError='';
+    telemetryPersistentError='';
     updateTelemetryMetrics();
     drawTelemetryPlot();
     ss('tst','ok','Telemetry '+String(format||'').toUpperCase()+' exported');
   }catch(e){
-    telemetryLastError=normalizeTelemetryError(e);
-    ss('tst','err',telemetryLastError);
+    ss('tst','err',normalizeTelemetryError(e));
   }finally{
     telemetryUiBusy=false;
     updateTelemetryUiState();
@@ -2908,9 +2908,9 @@ function updateTelemetryAvailabilityNote(){
   }else if(!infoLoadedFromApi){
     note.style.display='block';
     note.textContent='Telemetry becomes available when this UI is served by the controller WiFi API, or when USB WebSerial is connected.';
-  }else if(telemetryLastError){
+  }else if(telemetryPersistentError){
     note.style.display='block';
-    note.textContent=telemetryLastError;
+    note.textContent=telemetryPersistentError;
   }else{
     note.style.display='none';
     note.textContent='';
@@ -3783,7 +3783,7 @@ function initLapOverlayUi(){
   drawLapOverlayPlot();
 }
 
-async function syncTelemetryHistory(reset,silent){
+async function syncTelemetryHistory(reset,silent,persistError){
   if(otaBusy && !telemetryUsesUsb()){
     stopTelemetryPolling();
     return;
@@ -3795,7 +3795,7 @@ async function syncTelemetryHistory(reset,silent){
     telemetryEvents=[];
     telemetryAfterSeq=0;
     telemetrySessionId=0;
-    telemetryLastError='';
+    telemetryPersistentError='';
     lapOverlayRefreshFromCurrentTelemetry(true);
     updateTelemetryUiState();
     updateTelemetryMetrics();
@@ -3852,7 +3852,7 @@ async function syncTelemetryHistory(reset,silent){
       safety++;
     }
 
-    telemetryLastError='';
+    telemetryPersistentError='';
     lapOverlayRefreshFromCurrentTelemetry(true);
     updateTelemetryMetrics();
     drawTelemetryPlot();
@@ -3860,9 +3860,10 @@ async function syncTelemetryHistory(reset,silent){
       ss('tst','ok','Telemetry refreshed');
     }
   }catch(e){
-    telemetryLastError=normalizeTelemetryError(e);
+    var errorText=normalizeTelemetryError(e);
+    telemetryPersistentError=(persistError===false)?'':errorText;
     if(!silent){
-      ss('tst','err',telemetryLastError);
+      ss('tst','err',errorText);
     }
   }finally{
     telemetryFetchBusy=false;
@@ -3894,15 +3895,14 @@ async function telemetryPostAction(url,successText,resetHistory){
       telemetrySessionId=0;
       telemetryConfigSnapshot=null;
     }
-    telemetryLastError='';
+    telemetryPersistentError='';
     updateTelemetryUiState();
     updateTelemetryMetrics();
     drawTelemetryPlot();
     await syncTelemetryHistory(!!resetHistory,true);
     ss('tst','ok',successText||data.message||'Done');
   }catch(e){
-    telemetryLastError=normalizeTelemetryError(e);
-    ss('tst','err',telemetryLastError);
+    ss('tst','err',normalizeTelemetryError(e));
   }finally{
     telemetryUiBusy=false;
     updateTelemetryUiState();
@@ -3913,7 +3913,7 @@ async function telemetryPostAction(url,successText,resetHistory){
 }
 
 async function telemetryRefresh(){
-  await syncTelemetryHistory(true,false);
+  await syncTelemetryHistory(true,false,false);
 }
 
 async function telemetryStart(){
@@ -4248,7 +4248,7 @@ async function resetUsbToDisconnected(showStatus,statusType,statusMsg){
     telemetryEvents=[];
     telemetryAfterSeq=0;
     telemetrySessionId=0;
-    telemetryLastError='';
+    telemetryPersistentError='';
     lapOverlayRefreshFromCurrentTelemetry(true);
   }else{
     startTelemetryPollingIfAvailable(true);
