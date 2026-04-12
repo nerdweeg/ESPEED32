@@ -1427,8 +1427,14 @@ static bool parseAndValidateJson(const String& json, StoredVar_type* sv, uint16_
     }
     c.antiSpin = v;
 
-    if (!parseJsonInt(carJson, "freqPWM", v) || !inRange(v, FREQ_MIN_VALUE / 100, FREQ_MAX_VALUE / 100)) {
-      *errorMsg = "Error: invalid freqPWM in car " + String(i); return false;
+    {
+      uint16_t freqMaxRaw = pwmFreqMaxProfileToRaw(
+          (pwmFreqMaxProfile != nullptr)
+            ? *pwmFreqMaxProfile
+            : getConfiguredPwmFreqMaxProfile());
+      if (!parseJsonInt(carJson, "freqPWM", v) || !inRange(v, FREQ_MIN_VALUE / 100, freqMaxRaw)) {
+        *errorMsg = "Error: invalid freqPWM in car " + String(i); return false;
+      }
     }
     c.freqPWM = v;
 
