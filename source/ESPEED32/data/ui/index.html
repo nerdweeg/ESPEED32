@@ -1252,12 +1252,8 @@ form{margin:0}
 <option value="">Loading latest...</option>
 </select>
 </div>
-<p id="fw-release-note" class="tiny">Choose which official release automatic update should install. Firmware variant is matched to this controller's HAL Sensor when release metadata provides one.</p>
-<p id="fw-release-source" class="tiny" style="display:none"></p>
+<p class="tiny"><span id="fw-release-note">Release pair to install.</span> <span id="fw-release-source" style="display:none"></span></p>
 <button type="button" class="btn dl" id="btn-fw-auto" onclick="autoUpdateFirmware()">Install Selected Release</button>
-<p id="fw-auto-desc" class="tiny">Downloads the selected release pair, uploads firmware first and filesystem second, then reboots once at the end.</p>
-<p class="tiny">Recommended when you want a matched official release without downloading files manually.</p>
-<p class="tiny warn">Automatic update now tries to match firmware to this controller's HAL Sensor. If no matching firmware variant exists for the selected release, automatic firmware update is blocked and you must use Manual Update with the matching sensor-specific firmware file and the SPIFFS file from the same release.</p>
 </div>
 <p id="ota-note" style="display:none" class="warn"></p>
 <div id="auto-fw-progress" class="progress-wrap" aria-live="polite">
@@ -1356,8 +1352,14 @@ var telemetryUiBusy=false;
 var telemetryPollTimer=null;
 var telemetryPollIntervalMs=250;
 var telemetryPersistentError='';
+var telemetryPanelPinned=false;
 var telemetryRedrawQueued=false;
 var telemetryConfigSnapshot=null;
+var telemetryFetchAbortController=null;
+var TELEMETRY_WIFI_LIVE_LIMIT=48;
+var TELEMETRY_WIFI_TAIL_SAMPLES=128;
+var TELEMETRY_WIFI_MAX_FETCH_LOOPS=4;
+var TELEMETRY_USB_MAX_FETCH_LOOPS=20;
 var LAP_OVERLAY_SOURCE_NONE='none';
 var LAP_OVERLAY_SOURCE_CURRENT='current';
 var LAP_OVERLAY_SOURCE_IMPORT='import';
@@ -2057,18 +2059,18 @@ function getSelectedReleaseInstallPlan(entry){
 function describeAutoUpdatePlan(entry,plan){
   var selectedLabel=formatSelectedReleaseLabel(entry);
   if(plan.canCompare && !plan.needsFirmware && !plan.needsSpiffs){
-    return 'Selected release '+selectedLabel+' is already installed on this controller.';
+    return selectedLabel+' is already installed.';
   }
   if(plan.canCompare && !plan.needsFirmware && plan.needsSpiffs){
-    return 'Firmware already matches '+selectedLabel+'. Automatic update will download and install only the filesystem/UI image, then reboot once at the end.';
+    return 'Installs filesystem/UI only for '+selectedLabel+'.';
   }
   if(plan.canCompare && plan.needsFirmware && !plan.needsSpiffs){
-    return 'Filesystem/UI already matches '+selectedLabel+'. Automatic update will download and install only the firmware image, then reboot once at the end.';
+    return 'Installs firmware only for '+selectedLabel+'.';
   }
   if(entry && !entry.isLatest){
-    return 'Downloads release '+selectedLabel+', uploads firmware first and filesystem second, then reboots once at the end.';
+    return 'Installs '+selectedLabel+'. Firmware first, filesystem second, one reboot.';
   }
-  return 'Downloads the selected official release pair, uploads firmware first and filesystem second, then reboots once at the end.';
+  return 'Installs selected release pair. One reboot.';
 }
 
 function updateReleaseVersionUi(){
@@ -2085,8 +2087,8 @@ function updateReleaseVersionUi(){
     select.appendChild(loadingOpt);
     select.disabled=true;
     note.textContent=releaseFetchTried
-      ?'Version list unavailable right now. Automatic update will use the latest available release pair.'
-      :'Checks available releases and defaults to the latest version.';
+      ?'Using latest available release.'
+      :'Loading release list...';
     source.style.display='none';
     source.textContent='';
     return;
@@ -2107,12 +2109,12 @@ function updateReleaseVersionUi(){
   var plan=getSelectedReleaseInstallPlan(selected);
   var singleLatestFallback=(availableReleases.length<2 && selected && selected.version==='latest');
   note.textContent=singleLatestFallback
-    ?'Version list unavailable right now. Automatic update will use the latest available release pair.'
-    :'This selector controls which firmware + filesystem pair automatic update installs.';
+    ?'Using latest available release.'
+    :'Release pair to install.';
 
   if(selected && selected.source){
-    source.style.display='block';
-    source.appendChild(document.createTextNode('Source release: '));
+    source.style.display='inline';
+    source.appendChild(document.createTextNode('Source: '));
     var link=document.createElement('a');
     link.href=selected.source;
     link.target='_blank';
@@ -2482,11 +2484,46 @@ function telemetryUnavailableText(){
   return 'Telemetry is available on the controller WiFi page or over USB WebSerial.';
 }
 
+async function telemetryFetchWithTimeout(url,options,timeoutMs){
+  if(typeof AbortController==='undefined'){
+    return await fetch(url,options||{});
+  }
+  var controller=new AbortController();
+  telemetryFetchAbortController=controller;
+  var requestOptions=Object.assign({},options||{});
+  requestOptions.signal=controller.signal;
+  var timedOut=false;
+  var timer=setTimeout(function(){
+    timedOut=true;
+    controller.abort();
+  },Math.max(1000,Number(timeoutMs||10000)));
+  try{
+    return await fetch(url,requestOptions);
+  }catch(err){
+    if(err && err.name==='AbortError'){
+      throw new Error(timedOut?'Telemetry request timed out':'Telemetry request cancelled');
+    }
+    throw err;
+  }finally{
+    if(telemetryFetchAbortController===controller){
+      telemetryFetchAbortController=null;
+    }
+    clearTimeout(timer);
+  }
+}
+
+function cancelTelemetryFetches(){
+  if(!telemetryFetchAbortController) return;
+  try{
+    telemetryFetchAbortController.abort();
+  }catch(_){}
+}
+
 async function telemetryFetchStatusTransport(){
   if(telemetryUsesUsb()){
     return await usbReadJsonResponse('TSTATUS',10000,40000);
   }
-  var resp=await fetch('/api/telemetry/status',{cache:'no-store'});
+  var resp=await telemetryFetchWithTimeout('/api/telemetry/status',{cache:'no-store'},8000);
   if(!resp.ok) throw new Error('Telemetry unavailable (HTTP '+resp.status+')');
   var data=await resp.json();
   if(!data || !data.ok) throw new Error((data&&data.error)?data.error:'Telemetry fetch failed');
@@ -2498,8 +2535,8 @@ async function telemetryFetchLiveTransport(after,limit){
     var usbLimit=Math.min(Number(limit||256),96);
     return await usbReadJsonResponse('TLIVE '+String(after||0)+' '+String(usbLimit),15000,120000);
   }
-  var wifiLimit=Math.min(Number(limit||256),120);
-  var resp=await fetch('/api/telemetry/live?after='+encodeURIComponent(after||0)+'&limit='+encodeURIComponent(wifiLimit),{cache:'no-store'});
+  var wifiLimit=Math.min(Number(limit||256),TELEMETRY_WIFI_LIVE_LIMIT);
+  var resp=await telemetryFetchWithTimeout('/api/telemetry/live?after='+encodeURIComponent(after||0)+'&limit='+encodeURIComponent(wifiLimit),{cache:'no-store'},10000);
   if(!resp.ok) throw new Error('Telemetry unavailable (HTTP '+resp.status+')');
   var data=await resp.json();
   if(!data || !data.ok) throw new Error((data&&data.error)?data.error:'Telemetry fetch failed');
@@ -2511,7 +2548,7 @@ async function telemetryPostTransport(action){
     return await usbReadJsonResponse(action,15000,40000);
   }
   var url='/api/telemetry/'+action.toLowerCase().slice(1);
-  var resp=await fetch(url,{method:'POST'});
+  var resp=await telemetryFetchWithTimeout(url,{method:'POST'},10000);
   var data=await resp.json();
   if(!resp.ok || !data.ok) throw new Error((data&&data.error)?data.error:('HTTP '+resp.status));
   return data;
@@ -2747,6 +2784,15 @@ function normalizeTelemetryError(err){
   if(message==='The string did not match the expected pattern.'){
     return 'Telemetry is unavailable on this page.';
   }
+  if(message==='Load failed'){
+    return 'Telemetry live update dropped. The controller WiFi page is still connected, but the live telemetry response was too heavy or interrupted.';
+  }
+  if(message==='Telemetry request timed out'){
+    return 'Telemetry live update timed out. The controller stayed online, but the live response did not finish in time.';
+  }
+  if(message==='Telemetry request cancelled'){
+    return 'Telemetry was paused so the firmware update could start cleanly.';
+  }
   if(message.indexOf('Failed to fetch')!==-1){
     return 'Telemetry is unavailable on this page.';
   }
@@ -2794,7 +2840,8 @@ function startTelemetryPollingIfAvailable(refreshNow){
   if(otaBusy && !telemetryUsesUsb()) return;
   if(!telemetryAvailable()) return;
   if(refreshNow) syncTelemetryHistory(true,true);
-  telemetryPollTimer=setInterval(function(){ syncTelemetryHistory(false,true); },telemetryPollIntervalMs);
+  var intervalMs=telemetryUsesUsb()?telemetryPollIntervalMs:Math.max(1000,telemetryPollIntervalMs);
+  telemetryPollTimer=setInterval(function(){ syncTelemetryHistory(false,true); },intervalMs);
 }
 
 function setAnchorDisabled(id,disabled,href){
@@ -2919,7 +2966,7 @@ function updateTelemetryAvailabilityNote(){
 
 function telemetryShouldShowDetails(){
   var status=telemetryStatus||{};
-  return !!(status.loggingActive || status.hasData || telemetrySamples.length);
+  return !!(telemetryPanelPinned || telemetryUiBusy || status.loggingActive || status.hasData || telemetrySamples.length);
 }
 
 function updateTelemetryLayout(){
@@ -3796,6 +3843,7 @@ async function syncTelemetryHistory(reset,silent,persistError){
     telemetryAfterSeq=0;
     telemetrySessionId=0;
     telemetryPersistentError='';
+    telemetryPanelPinned=false;
     lapOverlayRefreshFromCurrentTelemetry(true);
     updateTelemetryUiState();
     updateTelemetryMetrics();
@@ -3814,10 +3862,24 @@ async function syncTelemetryHistory(reset,silent,persistError){
       telemetryEvents=[];
       telemetryAfterSeq=0;
       telemetrySessionId=0;
+      if(!telemetryUsesUsb()){
+        var statusSeed=await telemetryFetchStatusTransport();
+        telemetryStatus=statusSeed;
+        telemetrySessionId=Number(statusSeed.sessionId||0);
+        var latestSeq=Number(statusSeed.latestSeq||0);
+        var oldestSeq=Number(statusSeed.oldestSeq||0);
+        var tailCount=Math.max(32,Math.min(TELEMETRY_WIFI_TAIL_SAMPLES,Number(statusSeed.capacity||TELEMETRY_WIFI_TAIL_SAMPLES)));
+        if(latestSeq>0){
+          var firstWanted=Math.max(1,latestSeq-tailCount+1);
+          if(oldestSeq>0 && firstWanted<oldestSeq) firstWanted=oldestSeq;
+          telemetryAfterSeq=firstWanted>1?(firstWanted-1):0;
+        }
+      }
     }
 
     var safety=0;
-    while(safety<20){
+    var maxLoops=telemetryUsesUsb()?TELEMETRY_USB_MAX_FETCH_LOOPS:TELEMETRY_WIFI_MAX_FETCH_LOOPS;
+    while(safety<maxLoops){
       var after=telemetryAfterSeq;
       var data=await telemetryFetchLiveTransport(after,256);
 
@@ -3834,7 +3896,9 @@ async function syncTelemetryHistory(reset,silent,persistError){
       }
 
       telemetryStatus=data;
-      telemetryEvents=Array.isArray(data.events)?data.events:[];
+      if(Array.isArray(data.events) && (after===0 || data.events.length>0)){
+        telemetryEvents=data.events;
+      }
       telemetrySessionId=Number(data.sessionId||0);
       if(Array.isArray(data.samples)){
         data.samples.forEach(function(sample){
@@ -3879,10 +3943,9 @@ async function telemetryPostAction(url,successText,resetHistory){
     ss('tst','err',telemetryUnavailableText());
     return;
   }
-  var hadUsbPolling=telemetryUsesUsb();
-  if(hadUsbPolling){
-    stopTelemetryPolling();
-  }
+  telemetryPanelPinned=true;
+  var hadPolling=!!telemetryPollTimer;
+  stopTelemetryPolling();
   telemetryUiBusy=true;
   updateTelemetryUiState();
   try{
@@ -3899,20 +3962,20 @@ async function telemetryPostAction(url,successText,resetHistory){
     updateTelemetryUiState();
     updateTelemetryMetrics();
     drawTelemetryPlot();
-    await syncTelemetryHistory(!!resetHistory,true);
     ss('tst','ok',successText||data.message||'Done');
   }catch(e){
     ss('tst','err',normalizeTelemetryError(e));
   }finally{
     telemetryUiBusy=false;
     updateTelemetryUiState();
-    if(hadUsbPolling){
-      startTelemetryPollingIfAvailable(false);
+    if(hadPolling || telemetryAvailable()){
+      startTelemetryPollingIfAvailable(true);
     }
   }
 }
 
 async function telemetryRefresh(){
+  telemetryPanelPinned=true;
   await syncTelemetryHistory(true,false,false);
 }
 
@@ -4062,14 +4125,13 @@ function updateFirmwareUiState(){
   var btn=document.getElementById('btn-ota-upload');
   var releaseSelect=document.getElementById('fw-release-select');
   var autoBtn=document.getElementById('btn-fw-auto');
-  var autoDesc=document.getElementById('fw-auto-desc');
   var note=document.getElementById('ota-note');
   var fsInput=document.getElementById('spiffs');
   var manualDesc=document.getElementById('spiffs-auto-desc');
   var fsNote=document.getElementById('spiffs-note');
-  if(!input || !btn || !releaseSelect || !autoBtn || !autoDesc || !note || !fsInput || !manualDesc || !fsNote) return;
+  if(!input || !btn || !releaseSelect || !autoBtn || !note || !fsInput || !manualDesc || !fsNote) return;
 
-  var busyReason=otaBusy?'Another update is already running. Wait for completion.':'';
+  var busyReason=otaBusy?'Firmware update in progress — please wait.':'';
   var manualBaseReason=busyReason || otaUploadUnavailableReason('Manual update');
   var selected=getSelectedReleaseMeta();
   var plan=getSelectedReleaseInstallPlan(selected);
@@ -4094,7 +4156,6 @@ function updateFirmwareUiState(){
   note.textContent=autoReason;
   autoBtn.disabled=autoDisabled;
   autoBtn.classList.toggle('disabled',autoDisabled);
-  autoDesc.textContent=autoReason || describeAutoUpdatePlan(selected,plan);
 
   fsNote.style.display=manualBaseReason!==''?'block':'none';
   fsNote.textContent=manualBaseReason;
@@ -4692,12 +4753,27 @@ function setOtaBusy(busy){
 async function pauseBackgroundActivityForOta(statusId){
   otaPausedTelemetryPolling=!!telemetryPollTimer;
   stopTelemetryPolling();
-  if(!telemetryFetchBusy) return;
+  cancelTelemetryFetches();
 
-  ss(statusId,'','Waiting for background requests to settle...');
+  ss(statusId,'','Pausing telemetry...');
   var deadline=Date.now()+3000;
   while(telemetryFetchBusy && Date.now()<deadline){
     await sleepMs(50);
+  }
+
+  if(telemetryFetchBusy){
+    throw new Error('Telemetry requests did not settle. Wait a moment and try the update again.');
+  }
+
+  if(!telemetryUsesUsb() && telemetryStatus && telemetryStatus.loggingActive){
+    ss(statusId,'','Stopping telemetry logging...');
+    var stopData=await telemetryPostTransport('TSTOP');
+    telemetryStatus=stopData||telemetryStatus;
+    telemetryPersistentError='';
+    updateTelemetryUiState();
+    updateTelemetryMetrics();
+    drawTelemetryPlot();
+    await sleepMs(150);
   }
 }
 
@@ -4997,7 +5073,7 @@ async function runCombinedOtaUpdate(config){
 async function autoUpdateFirmware(){
   var selected=getSelectedReleaseMeta();
   var plan=getSelectedReleaseInstallPlan(selected);
-  var blocked=otaBusy?'Another update is already running. Wait for completion.':getAutoUpdateBlockedReason('Automatic update',selected,plan);
+  var blocked=otaBusy?'Firmware update in progress — please wait.':getAutoUpdateBlockedReason('Automatic update',selected,plan);
   var firmwareInfo=getReleaseDownloadInfo(selected,'firmware');
   var spiffsInfo=getReleaseDownloadInfo(selected,'spiffs');
   if(blocked){
@@ -5031,7 +5107,7 @@ async function autoUpdateFirmware(){
 }
 
 async function uploadSelectedUpdatePair(){
-  var blocked=otaBusy?'Another update is already running. Wait for completion.':otaUploadUnavailableReason('Manual update');
+  var blocked=otaBusy?'Firmware update in progress — please wait.':otaUploadUnavailableReason('Manual update');
   if(blocked){
     ss('manual-ota-status','err',blocked);
     return;
@@ -5064,7 +5140,7 @@ async function uploadSelectedUpdatePair(){
 }
 
 async function uploadSingleFirmware(){
-  var blocked=otaBusy?'Another update is already running. Wait for completion.':otaUploadUnavailableReason('Single firmware upload');
+  var blocked=otaBusy?'Firmware update in progress — please wait.':otaUploadUnavailableReason('Single firmware upload');
   if(blocked){ss('adv-ota-status','err',blocked);return;}
   var fwFile=document.getElementById('adv-fw').files[0];
   if(!fwFile){ss('adv-ota-status','err','Select a firmware .bin file first.');return;}
@@ -5077,7 +5153,7 @@ async function uploadSingleFirmware(){
 }
 
 async function uploadSingleSpiffs(){
-  var blocked=otaBusy?'Another update is already running. Wait for completion.':otaUploadUnavailableReason('Single filesystem upload');
+  var blocked=otaBusy?'Firmware update in progress — please wait.':otaUploadUnavailableReason('Single filesystem upload');
   if(blocked){ss('adv-ota-status','err',blocked);return;}
   var spiffsFile=document.getElementById('adv-spiffs').files[0];
   if(!spiffsFile){ss('adv-ota-status','err','Select a filesystem .bin file first.');return;}

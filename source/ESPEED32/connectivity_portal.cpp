@@ -43,6 +43,8 @@ static bool g_wifiConfigLoaded = false;
 static bool g_backupSecretLoaded = false;
 static bool g_backupSecretAvailable = false;
 static bool g_wifiRestartPending = false;
+static bool g_wifiStopPending = false;
+static bool g_wifiRestartAfterStopPending = false;
 static uint32_t g_wifiRestartAtMs = 0;
 static uint16_t g_wifiConfiguredMode = WIFI_CONFIG_AP;
 static uint8_t g_wifiActiveMode = WIFI_PORTAL_OFF;
@@ -72,7 +74,8 @@ static const size_t WIFI_BACKUP_TAG_LEN = 16;
 static const size_t WIFI_BACKUP_NONCE_B64_LEN = 16;
 static const size_t WIFI_BACKUP_TAG_B64_LEN = 24;
 static const size_t WIFI_BACKUP_PASS_B64_MAX_LEN = (((WIFI_STA_PASS_MAX_LEN + 2) / 3) * 4);
-static const size_t TELEMETRY_LIVE_RESPONSE_LIMIT = 120U;
+static const size_t TELEMETRY_LIVE_RESPONSE_LIMIT = 48U;
+static const size_t TELEMETRY_LIVE_EVENT_LIMIT = 8U;
 
 static bool readMacAddress(esp_mac_type_t type, uint8_t out[6]) {
   if (out == nullptr) return false;
@@ -83,6 +86,7 @@ static void serviceUsbSerialCommands();
 static void appendJsonEscaped(String& out, const char* in);
 static String buildTelemetryStatusPayload(const char* message);
 static String buildTelemetryLivePayload(uint32_t afterSeq, size_t limit);
+static void sendTelemetryLiveHttpPayload(uint32_t afterSeq, size_t limit);
 static String buildTelemetryConfigSnapshotJson();
 static String buildInfoJson();
 static void sendSerialLengthPrefixedPayload(const String& payload);
@@ -2909,16 +2913,17 @@ static String buildTelemetryStatusPayload(const char* message) {
 
 static String buildTelemetryLivePayload(uint32_t afterSeq, size_t limit) {
   static TelemetrySample samples[256];
-  static TelemetryEvent events[TELEMETRY_EVENT_BUFFER_CAPACITY];
+  static TelemetryEvent events[TELEMETRY_LIVE_EVENT_LIMIT];
   TelemetryStatus status;
+  bool includeEvents = (afterSeq == 0U);
   bool truncated = false;
   bool hasMore = false;
   bool eventsTruncated = false;
   size_t copied = telemetryCopySamplesAfter(afterSeq, samples, limit, &truncated, &hasMore, &status);
-  size_t eventCopied = telemetryCopyEvents(events, TELEMETRY_EVENT_BUFFER_CAPACITY, &eventsTruncated, nullptr);
+  size_t eventCopied = includeEvents ? telemetryCopyEvents(events, TELEMETRY_LIVE_EVENT_LIMIT, &eventsTruncated, nullptr) : 0U;
 
   String json;
-  json.reserve(1600 + (copied * 92U) + (eventCopied * 180U));
+  json.reserve(960 + (copied * 92U) + (eventCopied * 180U));
   json += "{\"ok\":true";
   appendTelemetryStatusFields(json, status);
   json += ",\"truncated\":";
@@ -2970,6 +2975,102 @@ static String buildTelemetryLivePayload(uint32_t afterSeq, size_t limit) {
 
   json += "]}";
   return json;
+}
+
+static void sendTelemetryLiveHttpPayload(uint32_t afterSeq, size_t limit) {
+  static TelemetrySample samples[256];
+  static TelemetryEvent events[TELEMETRY_LIVE_EVENT_LIMIT];
+  TelemetryStatus status;
+  bool includeEvents = (afterSeq == 0U);
+  bool truncated = false;
+  bool hasMore = false;
+  bool eventsTruncated = false;
+  size_t copied = telemetryCopySamplesAfter(afterSeq, samples, limit, &truncated, &hasMore, &status);
+  size_t eventCopied = includeEvents ? telemetryCopyEvents(events, TELEMETRY_LIVE_EVENT_LIMIT, &eventsTruncated, nullptr) : 0U;
+
+  g_wifiServer->setContentLength(CONTENT_LENGTH_UNKNOWN);
+  g_wifiServer->send(200, "application/json", "");
+
+  /* Chunk 1: header + status fields */
+  {
+    String hdr;
+    hdr.reserve(960);
+    hdr += "{\"ok\":true";
+    appendTelemetryStatusFields(hdr, status);
+    hdr += ",\"truncated\":";
+    hdr += truncated ? "true" : "false";
+    hdr += ",\"hasMore\":";
+    hdr += hasMore ? "true" : "false";
+    hdr += ",\"returned\":";
+    hdr += String((unsigned long)copied);
+    hdr += ",\"eventTruncated\":";
+    hdr += eventsTruncated ? "true" : "false";
+    hdr += ",\"events\":[";
+    g_wifiServer->sendContent(hdr);
+  }
+
+  /* Events are only included on reset / initial fetch. Repeating full car-param
+   * events on every incremental poll makes the live payload much heavier than needed. */
+  if (includeEvents && eventCopied > 0U) {
+    static const size_t EVENT_BATCH = 4U;
+    String evBatch;
+    for (size_t i = 0; i < eventCopied; i++) {
+      if (i % EVENT_BATCH == 0) {
+        evBatch = "";
+        evBatch.reserve(EVENT_BATCH * 192U);
+      }
+      if (i > 0) evBatch += ",";
+      appendTelemetryEventJson(evBatch, events[i]);
+      if (((i + 1) % EVENT_BATCH == 0) || ((i + 1) == eventCopied)) {
+        g_wifiServer->sendContent(evBatch);
+      }
+    }
+  }
+
+  g_wifiServer->sendContent("],\"samples\":[");
+
+  /* Samples batched 16 at a time (~1.2 KB per batch, avoids large heap allocs) */
+  {
+    static const size_t SAMPLE_BATCH = 16U;
+    String sBatch;
+    for (size_t i = 0; i < copied; i++) {
+      if (i % SAMPLE_BATCH == 0) {
+        sBatch = "";
+        sBatch.reserve(SAMPLE_BATCH * 80U);
+      }
+      const TelemetrySample& s = samples[i];
+      if (i > 0) sBatch += ",";
+      sBatch += "[";
+      sBatch += String((unsigned long)s.seq);
+      sBatch += ",";
+      sBatch += String((unsigned long)s.t_ms);
+      sBatch += ",";
+      sBatch += String((unsigned int)s.trigger_pct);
+      sBatch += ",";
+      sBatch += String((unsigned int)s.output_pct);
+      sBatch += ",";
+      sBatch += String((unsigned int)s.vin_mV);
+      sBatch += ",";
+      sBatch += String((unsigned int)s.current_mA);
+      sBatch += ",";
+      appendPercentX10JsonValue(sBatch, s.brake_pct);
+      sBatch += ",";
+      sBatch += String((unsigned int)s.sensi_halfPct);
+      sBatch += ",";
+      sBatch += String((unsigned int)s.carIndex);
+      sBatch += ",";
+      sBatch += String((unsigned int)s.releaseMode);
+      sBatch += ",";
+      sBatch += String((unsigned int)s.flags);
+      sBatch += "]";
+      if (((i + 1) % SAMPLE_BATCH == 0) || ((i + 1) == copied)) {
+        g_wifiServer->sendContent(sBatch);
+      }
+    }
+  }
+
+  g_wifiServer->sendContent("]}");
+  g_wifiServer->sendContent("");  /* Finalize chunked transfer so fetch() does not hang waiting for EOF. */
 }
 
 static String buildTelemetryConfigSnapshotJson() {
@@ -3033,7 +3134,7 @@ static void handleTelemetryClear() {
 static void handleTelemetryLive() {
   uint32_t afterSeq = getTelemetryArgU32("after", 0U);
   size_t limit = getTelemetryLiveLimit();
-  g_wifiServer->send(200, "application/json", buildTelemetryLivePayload(afterSeq, limit));
+  sendTelemetryLiveHttpPayload(afterSeq, limit);
 }
 
 static void handleTelemetryExportCsv() {
@@ -3456,7 +3557,7 @@ static void handleOtaUpload() {
     if (g_otaTargetSpiffs) {
       obdWriteString(&g_obd, 0, 8, 0, (char*)"SPIFFS Update", FONT_8x8, OBD_BLACK, 1);
     } else {
-      obdWriteString(&g_obd, 0, 16, 0, (char*)"OTA Update", FONT_8x8, OBD_BLACK, 1);
+      obdWriteString(&g_obd, 0, 16, 0, (char*)"FW Update", FONT_8x8, OBD_BLACK, 1);
     }
     obdWriteString(&g_obd, 0, 0, 3 * HEIGHT8x8, (char*)"Updating...", FONT_8x8, OBD_BLACK, 1);
     obdWriteString(&g_obd, 0, 0, 6 * HEIGHT8x8, (char*)"Do not power off!", FONT_6x8, OBD_BLACK, 1);
@@ -3566,7 +3667,7 @@ static void handleOta() {
   String requestToken = g_wifiServer->header("X-Ota-Token");
   if (!requestToken.isEmpty() && requestToken == g_otaRejectedToken) {
     g_otaRejectedToken = "";
-    g_wifiServer->send(409, "text/plain", "Another update is already running. Wait for completion.");
+    g_wifiServer->send(409, "text/plain", "Firmware update already in progress. Please wait for it to complete.");
     return;
   }
 
@@ -4259,16 +4360,52 @@ static void stopWiFiTransportOnly() {
   }
 
   WiFi.mode(WIFI_OFF);
+  delay(120);
   g_wifiActiveMode = WIFI_PORTAL_OFF;
   g_wifiApFallbackActive = false;
   g_wifiConnectedSsid[0] = '\0';
+}
+
+static void stopWiFiPortalNow() {
+  g_wifiStopPending = false;
+  bool willRestart = g_wifiRestartAfterStopPending && !isOtaInProgress();
+
+  if (g_wifiServer != nullptr) {
+    if (!willRestart) telemetryStopLogging();
+    g_wifiServer->stop();
+    delay(50);  /* Let lwIP drain in-flight requests before tearing down WiFi */
+    delete g_wifiServer;
+    g_wifiServer = nullptr;
+  } else if (!willRestart) {
+    telemetryStopLogging();  /* Server already null — still stop logging on clean shutdown */
+  }
+
+  stopWiFiTransportOnly();
+
+  if (g_spiffsMounted) {
+    SPIFFS.end();
+    g_spiffsMounted = false;
+  }
+
+  if (willRestart) {
+    g_wifiRestartAfterStopPending = false;
+    startWiFiPortal();
+  } else {
+    g_wifiRestartAfterStopPending = false;
+  }
 }
 
 static bool startWiFiApTransport() {
   char ssid[20];
   getWiFiPortalSsid(ssid, sizeof(ssid));
 
+  WiFi.persistent(false);
+  WiFi.disconnect(true, false, 250);
+  WiFi.mode(WIFI_OFF);
+  delay(120);
   WiFi.mode(WIFI_AP);
+  WiFi.setSleep(false);
+  esp_wifi_set_max_tx_power(84); /* Keep AP/client link as strong/stable as possible. */
   if (!WiFi.softAP(ssid, WIFI_PASS, WIFI_AP_CHANNEL, 0, WIFI_MAX_CONNECTIONS)) {
     WiFi.mode(WIFI_OFF);
     return false;
@@ -4364,8 +4501,15 @@ static bool startWiFiServerOnly() {
 }
 
 bool startWiFiPortal() {
+  g_wifiStopPending = false;
+  g_wifiRestartAfterStopPending = false;
+
   if (g_wifiServer != nullptr) {
     return true;
+  }
+
+  if (g_wifiActiveMode != WIFI_PORTAL_OFF) {
+    stopWiFiTransportOnly();  /* Recover from half-torn-down WiFi state before rebuilding portal/server. */
   }
 
   loadWiFiNetworkSettingsIfNeeded();
@@ -4402,8 +4546,17 @@ bool startWiFiPortal() {
 }
 
 void serviceWiFiPortal() {
+  if (g_wifiStopPending) {
+    stopWiFiPortalNow();
+    return;
+  }
+
   if (g_wifiServer != nullptr) {
     g_wifiServer->handleClient();
+  }
+
+  if (g_wifiStopPending) {
+    stopWiFiPortalNow();
   }
 }
 
@@ -4415,7 +4568,9 @@ void serviceConnectivityPortal() {
       (int32_t)(millis() - g_wifiRestartAtMs) >= 0) {
     g_wifiRestartPending = false;
     if (isWiFiPortalActive()) {
+      g_wifiRestartAfterStopPending = true;
       stopWiFiPortal();
+    } else {
       startWiFiPortal();
     }
   }
@@ -4429,20 +4584,12 @@ void stopWiFiPortal() {
   g_wifiRestartPending = false;
   g_wifiRestartAtMs = 0;
 
-  telemetryStopLogging();
-
-  if (g_wifiServer != nullptr) {
-    g_wifiServer->stop();
-    delete g_wifiServer;
-    g_wifiServer = nullptr;
+  if (g_wifiServer != nullptr || g_wifiStopPending) {
+    g_wifiStopPending = true;
+    return;
   }
 
-  stopWiFiTransportOnly();
-
-  if (g_spiffsMounted) {
-    SPIFFS.end();
-    g_spiffsMounted = false;
-  }
+  stopWiFiPortalNow();
 }
 
 
