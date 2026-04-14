@@ -5338,6 +5338,12 @@ document.getElementById('uf').onsubmit=async function(e){
 };
 
 document.getElementById('btn-fw-backup-modal-download').onclick=async function(){
+  try{
+    await pauseBackgroundActivityForOta(otaBackupPromptStatusId);
+  }catch(e){
+    ss(otaBackupPromptStatusId,'err',e.message);
+    return;
+  }
   await doBackup(otaBackupPromptStatusId);
   if(backupDownloadedThisSession) closeFirmwareBackupPrompt(true);
 };
