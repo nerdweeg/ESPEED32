@@ -629,11 +629,32 @@ form{margin:0}
 }
 .progress-head{
   display:flex;
+  align-items:flex-start;
+  flex-wrap:wrap;
   justify-content:space-between;
   gap:10px;
   font-size:12px;
   color:var(--progress-head);
   margin-bottom:6px;
+}
+.update-panel,
+.update-actions,
+.progress-wrap,
+.progress-head,
+.progress-head span{
+  min-width:0;
+}
+.update-panel .tiny,
+.update-panel .warn,
+.progress-head span{
+  overflow-wrap:anywhere;
+  word-break:break-word;
+}
+.progress-head span:first-child{
+  flex:1 1 180px;
+}
+.progress-head span:last-child{
+  flex:0 0 auto;
 }
 .progress-track{
   width:100%;
@@ -1124,8 +1145,8 @@ form{margin:0}
 <button id="btn-telemetry-refresh" class="btn doc" type="button" onclick="telemetryRefresh()">Refresh Status</button>
 </div>
 <div class="telemetry-actions telemetry-secondary-actions">
-<a id="btn-telemetry-export-csv" class="btn dl" href="/api/telemetry/export.csv" download="espeed32-telemetry.csv">Export CSV</a>
-<a id="btn-telemetry-export-json" class="btn ota" href="/api/telemetry/export.json" download="espeed32-telemetry.json">Export JSON</a>
+<a id="btn-telemetry-export-csv" class="btn dl" href="#" download="espeed32-telemetry.csv">Export CSV</a>
+<a id="btn-telemetry-export-json" class="btn ota" href="#" download="espeed32-telemetry.json">Export JSON</a>
 </div>
 <div class="telemetry-config">
 <div class="row">
@@ -1356,8 +1377,11 @@ var telemetryPanelPinned=false;
 var telemetryRedrawQueued=false;
 var telemetryConfigSnapshot=null;
 var telemetryFetchAbortController=null;
-var TELEMETRY_WIFI_LIVE_LIMIT=32;
-var TELEMETRY_WIFI_TAIL_SAMPLES=96;
+var telemetryPollingPausedByError=false;
+var telemetryLastSuccessAtMs=0;
+var telemetryLastErrorAtMs=0;
+var TELEMETRY_WIFI_LIVE_LIMIT=16;
+var TELEMETRY_WIFI_TAIL_SAMPLES=64;
 var TELEMETRY_WIFI_MAX_FETCH_LOOPS=4;
 var TELEMETRY_USB_MAX_FETCH_LOOPS=20;
 var LAP_OVERLAY_SOURCE_NONE='none';
@@ -2558,7 +2582,11 @@ async function telemetryLoadConfigSnapshot(){
   if(telemetryConfigSnapshot) return telemetryConfigSnapshot;
   if(telemetryUsesUsb()){
     telemetryConfigSnapshot=await usbReadJsonResponse('TCONFIG',15000,120000);
+    return telemetryConfigSnapshot;
   }
+  var resp=await telemetryFetchWithTimeout('/api/telemetry/config',{cache:'no-store'},10000);
+  if(!resp.ok) throw new Error('Telemetry config unavailable (HTTP '+resp.status+')');
+  telemetryConfigSnapshot=await resp.json();
   return telemetryConfigSnapshot;
 }
 
@@ -2601,36 +2629,35 @@ function telemetryDownloadBlob(blob,fileName){
   },1000);
 }
 
-async function telemetryFetchExportBlob(format){
-  var url=(format==='csv')?'/api/telemetry/export.csv':'/api/telemetry/export.json';
-  var resp=await fetch(url,{cache:'no-store'});
-  if(!resp.ok){
-    var errText='';
-    try{ errText=await resp.text(); }catch(_){}
-    throw new Error(errText||('Telemetry export failed (HTTP '+resp.status+')'));
-  }
-  return await resp.blob();
-}
-
 async function telemetryCollectExportData(){
   var snapshot=null;
-  if(telemetryUsesUsb()){
+  try{
     snapshot=await telemetryLoadConfigSnapshot();
+  }catch(_){
+    snapshot=null;
   }
 
   var samples=[];
   var events=[];
   var restarts=0;
+  var batchLimit=telemetryUsesUsb()?96:TELEMETRY_WIFI_LIVE_LIMIT;
+  var targetSamples=Math.max(
+    1,
+    Number((telemetryStatus&&telemetryStatus.storedCount)||0),
+    Number((telemetryStatus&&telemetryStatus.capacity)||0)
+  );
+  var maxBatches=Math.max(32,Math.ceil(targetSamples/Math.max(1,batchLimit))+16);
 
   while(restarts<3){
     var after=0;
     var sessionId=0;
     var restarted=false;
+    var sawEvents=false;
     samples=[];
     events=[];
 
-    for(var safety=0;safety<32;safety++){
-      var data=await telemetryFetchLiveTransport(after,256);
+    for(var safety=0;safety<maxBatches;safety++){
+      var data=await telemetryFetchLiveTransport(after,batchLimit);
       if(!data || !data.ok) throw new Error('Telemetry export failed');
       if(!data.hasData) return {status:data,snapshot:snapshot,samples:[],events:[]};
 
@@ -2641,12 +2668,25 @@ async function telemetryCollectExportData(){
       }
 
       sessionId=Number(data.sessionId||0);
-      events=Array.isArray(data.events)?data.events:[];
+      targetSamples=Math.max(
+        targetSamples,
+        Number(data.storedCount||0),
+        Number(data.capacity||0)
+      );
+      maxBatches=Math.max(maxBatches,Math.ceil(targetSamples/Math.max(1,batchLimit))+16);
+      if(!sawEvents && Array.isArray(data.events) && data.events.length){
+        events=data.events.slice();
+        sawEvents=true;
+      }
       if(Array.isArray(data.samples)){
+        var beforeCount=samples.length;
         data.samples.forEach(function(sample){
           samples.push(sample);
           after=Number(sample[TELEMETRY_FIELDS.SEQ]||after);
         });
+        if(data.hasMore && samples.length===beforeCount){
+          throw new Error('Telemetry export stalled before all samples were fetched');
+        }
       }
 
       if(!data.hasMore){
@@ -2741,30 +2781,25 @@ async function telemetryExport(format){
 
   try{
     var baseName=telemetryGetExportBaseName();
-    var exportData=null;
-    if(telemetryUsesUsb()){
-      exportData=await telemetryCollectExportData();
-      if(!exportData.samples.length){
-        throw new Error('No telemetry data available');
-      }
-
-      if(format==='csv'){
-        telemetryDownloadBlob(
-          new Blob([telemetryBuildCsvExport(exportData.samples,exportData.snapshot)],{type:'text/csv;charset=utf-8'}),
-          baseName+'.csv'
-        );
-      }else{
-        telemetryDownloadBlob(
-          new Blob([JSON.stringify(telemetryBuildJsonExport(exportData.samples,exportData.status,exportData.snapshot,exportData.events),null,2)],{type:'application/json;charset=utf-8'}),
-          baseName+'.json'
-        );
-      }
-
-      telemetryStatus=exportData.status||telemetryStatus;
-      telemetryEvents=Array.isArray(exportData.events)?exportData.events:telemetryEvents;
-    }else{
-      telemetryDownloadBlob(await telemetryFetchExportBlob(format),baseName+(format==='csv'?'.csv':'.json'));
+    var exportData=await telemetryCollectExportData();
+    if(!exportData.samples.length){
+      throw new Error('No telemetry data available');
     }
+
+    if(format==='csv'){
+      telemetryDownloadBlob(
+        new Blob([telemetryBuildCsvExport(exportData.samples,exportData.snapshot)],{type:'text/csv;charset=utf-8'}),
+        baseName+'.csv'
+      );
+    }else{
+      telemetryDownloadBlob(
+        new Blob([JSON.stringify(telemetryBuildJsonExport(exportData.samples,exportData.status,exportData.snapshot,exportData.events),null,2)],{type:'application/json;charset=utf-8'}),
+        baseName+'.json'
+      );
+    }
+
+    telemetryStatus=exportData.status||telemetryStatus;
+    telemetryEvents=Array.isArray(exportData.events)?exportData.events:telemetryEvents;
     telemetryPersistentError='';
     updateTelemetryMetrics();
     drawTelemetryPlot();
@@ -2785,10 +2820,10 @@ function normalizeTelemetryError(err){
     return 'Telemetry is unavailable on this page.';
   }
   if(message==='Load failed'){
-    return 'Telemetry live update dropped. The controller WiFi page is still connected, but the live telemetry response was too heavy or interrupted.';
+    return 'Telemetry live update dropped. Live polling was paused so the page does not overload the controller. Press Refresh Status to retry.';
   }
   if(message==='Telemetry request timed out'){
-    return 'Telemetry live update timed out. The controller stayed online, but the live response did not finish in time.';
+    return 'Telemetry live update timed out. Live polling was paused so the page does not overload the controller. Press Refresh Status to retry.';
   }
   if(message==='Telemetry request cancelled'){
     return 'Telemetry was paused so the firmware update could start cleanly.';
@@ -2839,6 +2874,8 @@ function startTelemetryPollingIfAvailable(refreshNow){
   stopTelemetryPolling();
   if(otaBusy && !telemetryUsesUsb()) return;
   if(!telemetryAvailable()) return;
+  if(telemetryPollingPausedByError && !refreshNow) return;
+  if(refreshNow) telemetryPollingPausedByError=false;
   if(refreshNow) syncTelemetryHistory(true,true);
   var intervalMs=telemetryUsesUsb()?telemetryPollIntervalMs:Math.max(1000,telemetryPollIntervalMs);
   telemetryPollTimer=setInterval(function(){ syncTelemetryHistory(false,true); },intervalMs);
@@ -2946,6 +2983,8 @@ function telemetryBuildEventLabel(event){
 function updateTelemetryAvailabilityNote(){
   var note=document.getElementById('telemetry-note');
   if(!note) return;
+  var recoveredSinceError=telemetryLastSuccessAtMs>0 && telemetryLastSuccessAtMs>=telemetryLastErrorAtMs;
+  var status=telemetryStatus||{};
   if(telemetryUsesUsb()){
     note.style.display='none';
     note.textContent='';
@@ -2955,7 +2994,7 @@ function updateTelemetryAvailabilityNote(){
   }else if(!infoLoadedFromApi){
     note.style.display='block';
     note.textContent='Telemetry becomes available when this UI is served by the controller WiFi API, or when USB WebSerial is connected.';
-  }else if(telemetryPersistentError){
+  }else if(telemetryPersistentError && !recoveredSinceError && !(status.loggingActive && telemetrySamples.length>0)){
     note.style.display='block';
     note.textContent=telemetryPersistentError;
   }else{
@@ -3040,8 +3079,8 @@ function updateTelemetryUiState(){
     btn.classList.toggle('disabled',!!btn.disabled);
   });
 
-  setAnchorDisabled('btn-telemetry-export-csv',!available || !hasData,telemetryUsesUsb()?'#':'/api/telemetry/export.csv');
-  setAnchorDisabled('btn-telemetry-export-json',!available || !hasData,telemetryUsesUsb()?'#':'/api/telemetry/export.json');
+  setAnchorDisabled('btn-telemetry-export-csv',!available || !hasData,'#');
+  setAnchorDisabled('btn-telemetry-export-json',!available || !hasData,'#');
   updateTelemetryAvailabilityNote();
   updateTelemetryLayout();
 }
@@ -3917,6 +3956,8 @@ async function syncTelemetryHistory(reset,silent,persistError){
     }
 
     telemetryPersistentError='';
+    telemetryPollingPausedByError=false;
+    telemetryLastSuccessAtMs=Date.now();
     lapOverlayRefreshFromCurrentTelemetry(true);
     updateTelemetryMetrics();
     drawTelemetryPlot();
@@ -3926,6 +3967,11 @@ async function syncTelemetryHistory(reset,silent,persistError){
   }catch(e){
     var errorText=normalizeTelemetryError(e);
     telemetryPersistentError=(persistError===false)?'':errorText;
+    telemetryLastErrorAtMs=Date.now();
+    if(!telemetryUsesUsb() && errorText!=='Telemetry was paused so the firmware update could start cleanly.'){
+      telemetryPollingPausedByError=true;
+      stopTelemetryPolling();
+    }
     if(!silent){
       ss('tst','err',errorText);
     }
@@ -3946,6 +3992,7 @@ async function telemetryPostAction(url,successText,resetHistory){
   telemetryPanelPinned=true;
   var hadPolling=!!telemetryPollTimer;
   stopTelemetryPolling();
+  telemetryPollingPausedByError=false;
   telemetryUiBusy=true;
   updateTelemetryUiState();
   try{
@@ -3976,6 +4023,7 @@ async function telemetryPostAction(url,successText,resetHistory){
 
 async function telemetryRefresh(){
   telemetryPanelPinned=true;
+  telemetryPollingPausedByError=false;
   await syncTelemetryHistory(true,false,false);
 }
 
@@ -4036,13 +4084,13 @@ function initTelemetryUi(){
 
 function otaUploadUnavailableReason(label){
   if(hostedMode){
-    return label+' unavailable in hosted mode. Open controller WiFi page to upload.';
+    return label+' unavailable in hosted mode. Open the live controller page to upload.';
   }
   if(usb){
-    return label+' unavailable while USB WebSerial is connected. Disconnect USB to use WiFi OTA.';
+    return label+' unavailable while USB WebSerial is connected. Disconnect USB to continue.';
   }
   if(!infoLoadedFromApi){
-    return label+' requires the live controller WiFi page.';
+    return label+' requires the live controller page.';
   }
   return '';
 }
@@ -4051,7 +4099,7 @@ function autoUpdateUnavailableReason(label,kind){
   var baseReason=otaUploadUnavailableReason(label);
   if(baseReason) return baseReason;
   if(Number(info.portalMode||0)!==2){
-    return label+' requires Client mode with internet access on this device.';
+    return label+' requires Client mode with internet access.';
   }
   return '';
 }
@@ -5231,6 +5279,14 @@ if(typeof window!=='undefined'){
   window.addEventListener('online',updateFirmwareUiState);
   window.addEventListener('offline',updateFirmwareUiState);
   window.addEventListener('resize',scheduleTelemetryPlotRedraw);
+  window.addEventListener('pagehide',function(){
+    cancelTelemetryFetches();
+    stopTelemetryPolling();
+  });
+  window.addEventListener('beforeunload',function(){
+    cancelTelemetryFetches();
+    stopTelemetryPolling();
+  });
 }
 loadInfo();
 loadLatestReleaseInfo();

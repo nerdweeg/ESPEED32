@@ -74,7 +74,7 @@ static const size_t WIFI_BACKUP_TAG_LEN = 16;
 static const size_t WIFI_BACKUP_NONCE_B64_LEN = 16;
 static const size_t WIFI_BACKUP_TAG_B64_LEN = 24;
 static const size_t WIFI_BACKUP_PASS_B64_MAX_LEN = (((WIFI_STA_PASS_MAX_LEN + 2) / 3) * 4);
-static const size_t TELEMETRY_LIVE_RESPONSE_LIMIT = 32U;
+static const size_t TELEMETRY_LIVE_RESPONSE_LIMIT = 16U;
 static const size_t TELEMETRY_LIVE_EVENT_LIMIT = 4U;
 
 static bool readMacAddress(esp_mac_type_t type, uint8_t out[6]) {
@@ -3005,6 +3005,10 @@ static void handleTelemetryStatus() {
   g_wifiServer->send(200, "application/json", buildTelemetryStatusPayload(""));
 }
 
+static void handleTelemetryConfig() {
+  g_wifiServer->send(200, "application/json", buildTelemetryConfigSnapshotJson());
+}
+
 static void handleTelemetryStart() {
   if (!telemetryStartLogging(&g_storedVar,
                              g_antiSpinStepMs,
@@ -4188,6 +4192,7 @@ static void registerWebRoutes() {
   g_wifiServer->on("/api/apply", HTTP_POST, []() { if (!requireControllerAuth()) return; handleApply(); });
   g_wifiServer->on("/api/save", HTTP_POST, []() { if (!requireControllerAuth()) return; handleSave(); });
   g_wifiServer->on("/api/telemetry/status", HTTP_GET, []() { if (!requireControllerAuth()) return; handleTelemetryStatus(); });
+  g_wifiServer->on("/api/telemetry/config", HTTP_GET, []() { if (!requireControllerAuth()) return; handleTelemetryConfig(); });
   g_wifiServer->on("/api/telemetry/live", HTTP_GET, []() { if (!requireControllerAuth()) return; handleTelemetryLive(); });
   g_wifiServer->on("/api/telemetry/start", HTTP_POST, []() { if (!requireControllerAuth()) return; handleTelemetryStart(); });
   g_wifiServer->on("/api/telemetry/stop", HTTP_POST, []() { if (!requireControllerAuth()) return; handleTelemetryStop(); });
