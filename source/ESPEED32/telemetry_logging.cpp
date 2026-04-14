@@ -337,13 +337,9 @@ bool telemetryStartLogging(const StoredVar_type* storedVar,
 }
 
 const char* telemetryGetLastStartError() {
-  static thread_local char lastStartErrorSnapshot[sizeof(g_telemetryLastStartError)];
-  portENTER_CRITICAL(&g_telemetryMux);
-  strncpy(lastStartErrorSnapshot, g_telemetryLastStartError,
-          sizeof(lastStartErrorSnapshot) - 1U);
-  lastStartErrorSnapshot[sizeof(lastStartErrorSnapshot) - 1U] = '\0';
-  portEXIT_CRITICAL(&g_telemetryMux);
-  return lastStartErrorSnapshot;
+  static char snapshot[sizeof(g_telemetryLastStartError)];
+  telemetryCopyLastStartError(snapshot, sizeof(snapshot));
+  return snapshot;
 }
 
 void telemetryStopLogging() {
