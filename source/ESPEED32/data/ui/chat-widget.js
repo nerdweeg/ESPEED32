@@ -11,6 +11,7 @@
   var TURNSTILE_TOKEN_STALE_MS = 4 * 60 * 1000;
   var MAX_MESSAGE_LENGTH = 500;
   var MAX_STORED_MESSAGES = 24;
+  var MAX_REQUEST_HISTORY_MESSAGES = 12;
   var STORAGE_PREFIX = 'espeed32-chat-widget';
   var PLACEHOLDER_SITE_KEY = 'YOUR_TURNSTILE_SITE_KEY';
 
@@ -464,13 +465,21 @@
         return message &&
           (message.role === 'assistant' || message.role === 'user') &&
           typeof message.text === 'string';
-      }).slice(-MAX_STORED_MESSAGES);
+      }).slice(-MAX_STORED_MESSAGES).map(function (message) {
+        return {
+          role: message.role === 'user' ? 'user' : 'assistant',
+          text: String(message.text || ''),
+          sources: Array.isArray(message.sources) ? message.sources.slice(0, 6) : [],
+          responseId: typeof message.responseId === 'string' ? message.responseId.trim() : ''
+        };
+      });
     }
     if (!this.state.messages.length) {
       this.state.messages = [{
         role: 'assistant',
         text: this.text.welcomeMessage,
-        sources: []
+        sources: [],
+        responseId: ''
       }];
       this.persistMessages();
     }
@@ -662,7 +671,8 @@
     this.state.messages.push({
       role: message.role === 'user' ? 'user' : 'assistant',
       text: String(message.text || ''),
-      sources: Array.isArray(message.sources) ? message.sources.slice(0, 6) : []
+      sources: Array.isArray(message.sources) ? message.sources.slice(0, 6) : [],
+      responseId: typeof message.responseId === 'string' ? message.responseId.trim() : ''
     });
     if (this.state.messages.length > MAX_STORED_MESSAGES) {
       this.state.messages = this.state.messages.slice(-MAX_STORED_MESSAGES);
@@ -676,6 +686,42 @@
 
   Espeed32ChatWidget.prototype.persistMessages = function () {
     this.storage.set('messages', this.state.messages);
+  };
+
+  Espeed32ChatWidget.prototype.getRequestHistory = function () {
+    return this.state.messages
+      .filter(function (message) {
+        return message &&
+          (message.role === 'assistant' || message.role === 'user') &&
+          typeof message.text === 'string' &&
+          message.text.trim();
+      })
+      .slice(-MAX_REQUEST_HISTORY_MESSAGES)
+      .map(function (message) {
+        return {
+          role: message.role === 'user' ? 'user' : 'assistant',
+          content: String(message.text || '').trim()
+        };
+      });
+  };
+
+  Espeed32ChatWidget.prototype.getPreviousResponseId = function () {
+    var index;
+    var message;
+
+    for (index = this.state.messages.length - 1; index >= 0; index -= 1) {
+      message = this.state.messages[index];
+      if (
+        message &&
+        message.role === 'assistant' &&
+        typeof message.responseId === 'string' &&
+        message.responseId.trim()
+      ) {
+        return message.responseId.trim();
+      }
+    }
+
+    return '';
   };
 
   Espeed32ChatWidget.prototype.open = function (persist) {
@@ -943,6 +989,7 @@
     var payload;
     var answer;
     var sources;
+    var responseId;
 
     if (this.state.isSending) {
       return;
@@ -992,6 +1039,7 @@
       sources = Array.isArray(payload.sources) ? payload.sources.filter(function (source) {
         return source && typeof source.title === 'string' && typeof source.url === 'string';
       }).slice(0, 6) : [];
+      responseId = typeof payload.responseId === 'string' && payload.responseId.trim() ? payload.responseId.trim() : '';
       if (typeof payload.answer !== 'string') {
         throw {
           kind: 'invalid_response',
@@ -1001,7 +1049,8 @@
       this.addMessage({
         role: 'assistant',
         text: answer,
-        sources: sources
+        sources: sources,
+        responseId: responseId
       }, true);
     } catch (error) {
       this.showStatus(
@@ -1025,16 +1074,24 @@
     }
 
     var response;
+    var requestPayload = {
+      message: message,
+      turnstileToken: turnstileToken,
+      history: this.getRequestHistory()
+    };
+    var previousResponseId = this.getPreviousResponseId();
+
+    if (previousResponseId) {
+      requestPayload.previousResponseId = previousResponseId;
+    }
+
     try {
       response = await fetch(this.config.apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          message: message,
-          turnstileToken: turnstileToken
-        })
+        body: JSON.stringify(requestPayload)
       });
     } catch (error) {
       throw {
@@ -1082,7 +1139,8 @@
       sources: [
         { title: 'ESPEED32 Docs', url: docsUrl },
         { title: 'ESPEED32 UI', url: uiUrl }
-      ]
+      ],
+      responseId: ''
     };
   };
 
