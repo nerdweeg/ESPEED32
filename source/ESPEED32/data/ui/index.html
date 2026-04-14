@@ -1376,7 +1376,7 @@ var telemetryPersistentError='';
 var telemetryPanelPinned=false;
 var telemetryRedrawQueued=false;
 var telemetryConfigSnapshot=null;
-var telemetryFetchAbortController=null;
+var telemetryFetchAbortControllers=new Set();
 var telemetryPollingPausedByError=false;
 var telemetryLastSuccessAtMs=0;
 var telemetryLastErrorAtMs=0;
@@ -2532,7 +2532,7 @@ async function telemetryFetchWithTimeout(url,options,timeoutMs){
     return await fetch(url,options||{});
   }
   var controller=new AbortController();
-  telemetryFetchAbortController=controller;
+  telemetryFetchAbortControllers.add(controller);
   var requestOptions=Object.assign({},options||{});
   requestOptions.signal=controller.signal;
   var timedOut=false;
@@ -2548,18 +2548,18 @@ async function telemetryFetchWithTimeout(url,options,timeoutMs){
     }
     throw err;
   }finally{
-    if(telemetryFetchAbortController===controller){
-      telemetryFetchAbortController=null;
-    }
+    telemetryFetchAbortControllers.delete(controller);
     clearTimeout(timer);
   }
 }
 
 function cancelTelemetryFetches(){
-  if(!telemetryFetchAbortController) return;
-  try{
-    telemetryFetchAbortController.abort();
-  }catch(_){}
+  if(!telemetryFetchAbortControllers.size) return;
+  var snapshot=Array.from(telemetryFetchAbortControllers);
+  telemetryFetchAbortControllers.clear();
+  snapshot.forEach(function(c){
+    try{ c.abort(); }catch(_){}
+  });
 }
 
 async function telemetryFetchStatusTransport(){
