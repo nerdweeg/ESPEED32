@@ -1356,8 +1356,8 @@ var telemetryPanelPinned=false;
 var telemetryRedrawQueued=false;
 var telemetryConfigSnapshot=null;
 var telemetryFetchAbortController=null;
-var TELEMETRY_WIFI_LIVE_LIMIT=48;
-var TELEMETRY_WIFI_TAIL_SAMPLES=128;
+var TELEMETRY_WIFI_LIVE_LIMIT=32;
+var TELEMETRY_WIFI_TAIL_SAMPLES=96;
 var TELEMETRY_WIFI_MAX_FETCH_LOOPS=4;
 var TELEMETRY_USB_MAX_FETCH_LOOPS=20;
 var LAP_OVERLAY_SOURCE_NONE='none';
@@ -4165,6 +4165,7 @@ function updateFirmwareUiState(){
 }
 
 function setUsbReadyState(ready,msg){
+  var hadPolling=!!telemetryPollTimer;
   usbReady=!!ready;
   var b=document.getElementById('ucb');
   if(b && usb){
@@ -4173,9 +4174,11 @@ function setUsbReadyState(ready,msg){
   updateDocsLinkState();
   updateFirmwareUiState();
   updateReleaseInfoUi();
-  if(usbReady) startTelemetryPollingIfAvailable(true);
-  else if(infoLoadedFromApi) startTelemetryPollingIfAvailable(false);
-  else stopTelemetryPolling();
+  if(!usbReady && !infoLoadedFromApi){
+    stopTelemetryPolling();
+  }else if(hadPolling){
+    startTelemetryPollingIfAvailable(false);
+  }
   updateTelemetryUiState();
   updateTelemetryMetrics();
   scheduleTelemetryPlotRedraw();
@@ -4231,9 +4234,10 @@ async function loadInfoFromUsb(){
 }
 
 async function loadInfo(){
+  var hadPolling=!!telemetryPollTimer;
   var apiOk=false;
   try{
-    var r=await fetch('/api/info',{cache:'no-store'});
+    var r=await telemetryFetchWithTimeout('/api/info',{cache:'no-store'},6000);
     if(r.ok){
       var j=await r.json();
       infoLoadedFromApi=true;
@@ -4246,7 +4250,9 @@ async function loadInfo(){
   applyHostedMode();
   applyInfo();
   if(apiOk){
-    startTelemetryPollingIfAvailable(true);
+    if(hadPolling){
+      startTelemetryPollingIfAvailable(false);
+    }
   }else{
     stopTelemetryPolling();
   }
@@ -4283,6 +4289,7 @@ async function ws(s){
 }
 
 async function resetUsbToDisconnected(showStatus,statusType,statusMsg){
+  var hadPolling=!!telemetryPollTimer;
   usb=false;
   usbReady=false;
   infoLoadedFromUsb=false;
@@ -4311,8 +4318,8 @@ async function resetUsbToDisconnected(showStatus,statusType,statusMsg){
     telemetrySessionId=0;
     telemetryPersistentError='';
     lapOverlayRefreshFromCurrentTelemetry(true);
-  }else{
-    startTelemetryPollingIfAvailable(true);
+  }else if(hadPolling){
+    startTelemetryPollingIfAvailable(false);
   }
   updateTelemetryUiState();
   updateTelemetryMetrics();

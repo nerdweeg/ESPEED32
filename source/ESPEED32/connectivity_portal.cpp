@@ -74,8 +74,8 @@ static const size_t WIFI_BACKUP_TAG_LEN = 16;
 static const size_t WIFI_BACKUP_NONCE_B64_LEN = 16;
 static const size_t WIFI_BACKUP_TAG_B64_LEN = 24;
 static const size_t WIFI_BACKUP_PASS_B64_MAX_LEN = (((WIFI_STA_PASS_MAX_LEN + 2) / 3) * 4);
-static const size_t TELEMETRY_LIVE_RESPONSE_LIMIT = 48U;
-static const size_t TELEMETRY_LIVE_EVENT_LIMIT = 8U;
+static const size_t TELEMETRY_LIVE_RESPONSE_LIMIT = 32U;
+static const size_t TELEMETRY_LIVE_EVENT_LIMIT = 4U;
 
 static bool readMacAddress(esp_mac_type_t type, uint8_t out[6]) {
   if (out == nullptr) return false;
@@ -86,7 +86,6 @@ static void serviceUsbSerialCommands();
 static void appendJsonEscaped(String& out, const char* in);
 static String buildTelemetryStatusPayload(const char* message);
 static String buildTelemetryLivePayload(uint32_t afterSeq, size_t limit);
-static void sendTelemetryLiveHttpPayload(uint32_t afterSeq, size_t limit);
 static String buildTelemetryConfigSnapshotJson();
 static String buildInfoJson();
 static void sendSerialLengthPrefixedPayload(const String& payload);
@@ -2786,19 +2785,19 @@ static String buildTelemetryConfigSummaryJsonFromSnapshot(const TelemetryConfigS
   json.reserve(960);
   json += "{";
   json += "\"selectedCarNumber\":";
-  json += String(activeCarIndex);
+  json.concat((unsigned int)activeCarIndex);
   json += ",\"antiSpinStepMs\":";
-  json += String(snapshot.antiSpinStepMs);
+  json.concat((unsigned int)snapshot.antiSpinStepMs);
   json += ",\"encoderInvert\":";
-  json += String(snapshot.encoderInvertEnabled ? 1U : 0U);
+  json.concat((unsigned int)(snapshot.encoderInvertEnabled ? 1U : 0U));
   json += ",\"adcVoltageRangeMv\":";
-  json += String(snapshot.adcVoltageRange_mV);
+  json.concat((unsigned int)snapshot.adcVoltageRange_mV);
   json += ",\"statusSlots\":[";
   for (uint8_t i = 0; i < STATUS_SLOTS; i++) {
     if (i > 0) {
       json += ",";
     }
-    json += String(normalizeStatusSlotForUi(snapshot.storedVar.statusSlot[i]));
+    json.concat((unsigned int)normalizeStatusSlotForUi(snapshot.storedVar.statusSlot[i]));
   }
   json += "],\"carNames\":";
   appendTelemetryCarNamesJson(json, snapshot.storedVar);
@@ -2811,19 +2810,19 @@ static String buildTelemetryConfigSummaryJsonFromSnapshot(const TelemetryConfigS
 static void appendTelemetryEventJson(String& json, const TelemetryEvent& event) {
   json += "{";
   json += "\"id\":";
-  json += String((unsigned long)event.id);
+  json.concat((unsigned long)event.id);
   json += ",\"tMs\":";
-  json += String((unsigned long)event.t_ms);
+  json.concat((unsigned long)event.t_ms);
   json += ",\"sampleSeq\":";
-  json += String((unsigned long)event.sampleSeq);
+  json.concat((unsigned long)event.sampleSeq);
   json += ",\"type\":\"";
   json += (event.type == TELEMETRY_EVENT_CAR_SELECT) ? "car_select" : "car_params";
   json += "\",\"carIndex\":";
-  json += String((unsigned int)event.carIndex);
+  json.concat((unsigned int)event.carIndex);
   json += ",\"previousCarIndex\":";
-  json += String((unsigned int)event.previousCarIndex);
+  json.concat((unsigned int)event.previousCarIndex);
   json += ",\"changedMask\":";
-  json += String((unsigned int)event.changedMask);
+  json.concat((unsigned int)event.changedMask);
   json += ",\"carParams\":";
   appendTelemetryCarParamJson(json, event.carParam);
   json += "}";
@@ -2889,7 +2888,7 @@ static void appendTelemetryStatusFields(String& json, const TelemetryStatus& sta
   json += ",\"statusSlots\":[";
   for (uint8_t i = 0; i < STATUS_SLOTS; i++) {
     if (i > 0) json += ",";
-    json += String(normalizeStatusSlotForUi(g_storedVar.statusSlot[i]));
+    json.concat((unsigned int)normalizeStatusSlotForUi(g_storedVar.statusSlot[i]));
   }
   json += "]}";
 }
@@ -2931,7 +2930,7 @@ static String buildTelemetryLivePayload(uint32_t afterSeq, size_t limit) {
   json += ",\"hasMore\":";
   json += hasMore ? "true" : "false";
   json += ",\"returned\":";
-  json += String((unsigned long)copied);
+  json.concat((unsigned long)copied);
   json += ",\"eventTruncated\":";
   json += eventsTruncated ? "true" : "false";
   json += ",\"events\":[";
@@ -2949,128 +2948,32 @@ static String buildTelemetryLivePayload(uint32_t afterSeq, size_t limit) {
       json += ",";
     }
     json += "[";
-    json += String((unsigned long)s.seq);
+    json.concat((unsigned long)s.seq);
     json += ",";
-    json += String((unsigned long)s.t_ms);
+    json.concat((unsigned long)s.t_ms);
     json += ",";
-    json += String((unsigned int)s.trigger_pct);
+    json.concat((unsigned int)s.trigger_pct);
     json += ",";
-    json += String((unsigned int)s.output_pct);
+    json.concat((unsigned int)s.output_pct);
     json += ",";
-    json += String((unsigned int)s.vin_mV);
+    json.concat((unsigned int)s.vin_mV);
     json += ",";
-    json += String((unsigned int)s.current_mA);
+    json.concat((unsigned int)s.current_mA);
     json += ",";
     appendPercentX10JsonValue(json, s.brake_pct);
     json += ",";
-    json += String((unsigned int)s.sensi_halfPct);
+    json.concat((unsigned int)s.sensi_halfPct);
     json += ",";
-    json += String((unsigned int)s.carIndex);
+    json.concat((unsigned int)s.carIndex);
     json += ",";
-    json += String((unsigned int)s.releaseMode);
+    json.concat((unsigned int)s.releaseMode);
     json += ",";
-    json += String((unsigned int)s.flags);
+    json.concat((unsigned int)s.flags);
     json += "]";
   }
 
   json += "]}";
   return json;
-}
-
-static void sendTelemetryLiveHttpPayload(uint32_t afterSeq, size_t limit) {
-  static TelemetrySample samples[256];
-  static TelemetryEvent events[TELEMETRY_LIVE_EVENT_LIMIT];
-  TelemetryStatus status;
-  bool includeEvents = (afterSeq == 0U);
-  bool truncated = false;
-  bool hasMore = false;
-  bool eventsTruncated = false;
-  size_t copied = telemetryCopySamplesAfter(afterSeq, samples, limit, &truncated, &hasMore, &status);
-  size_t eventCopied = includeEvents ? telemetryCopyEvents(events, TELEMETRY_LIVE_EVENT_LIMIT, &eventsTruncated, nullptr) : 0U;
-
-  g_wifiServer->setContentLength(CONTENT_LENGTH_UNKNOWN);
-  g_wifiServer->send(200, "application/json", "");
-
-  /* Chunk 1: header + status fields */
-  {
-    String hdr;
-    hdr.reserve(960);
-    hdr += "{\"ok\":true";
-    appendTelemetryStatusFields(hdr, status);
-    hdr += ",\"truncated\":";
-    hdr += truncated ? "true" : "false";
-    hdr += ",\"hasMore\":";
-    hdr += hasMore ? "true" : "false";
-    hdr += ",\"returned\":";
-    hdr += String((unsigned long)copied);
-    hdr += ",\"eventTruncated\":";
-    hdr += eventsTruncated ? "true" : "false";
-    hdr += ",\"events\":[";
-    g_wifiServer->sendContent(hdr);
-  }
-
-  /* Events are only included on reset / initial fetch. Repeating full car-param
-   * events on every incremental poll makes the live payload much heavier than needed. */
-  if (includeEvents && eventCopied > 0U) {
-    static const size_t EVENT_BATCH = 4U;
-    String evBatch;
-    for (size_t i = 0; i < eventCopied; i++) {
-      if (i % EVENT_BATCH == 0) {
-        evBatch = "";
-        evBatch.reserve(EVENT_BATCH * 192U);
-      }
-      if (i > 0) evBatch += ",";
-      appendTelemetryEventJson(evBatch, events[i]);
-      if (((i + 1) % EVENT_BATCH == 0) || ((i + 1) == eventCopied)) {
-        g_wifiServer->sendContent(evBatch);
-      }
-    }
-  }
-
-  g_wifiServer->sendContent("],\"samples\":[");
-
-  /* Samples batched 16 at a time (~1.2 KB per batch, avoids large heap allocs) */
-  {
-    static const size_t SAMPLE_BATCH = 16U;
-    String sBatch;
-    for (size_t i = 0; i < copied; i++) {
-      if (i % SAMPLE_BATCH == 0) {
-        sBatch = "";
-        sBatch.reserve(SAMPLE_BATCH * 80U);
-      }
-      const TelemetrySample& s = samples[i];
-      if (i > 0) sBatch += ",";
-      sBatch += "[";
-      sBatch += String((unsigned long)s.seq);
-      sBatch += ",";
-      sBatch += String((unsigned long)s.t_ms);
-      sBatch += ",";
-      sBatch += String((unsigned int)s.trigger_pct);
-      sBatch += ",";
-      sBatch += String((unsigned int)s.output_pct);
-      sBatch += ",";
-      sBatch += String((unsigned int)s.vin_mV);
-      sBatch += ",";
-      sBatch += String((unsigned int)s.current_mA);
-      sBatch += ",";
-      appendPercentX10JsonValue(sBatch, s.brake_pct);
-      sBatch += ",";
-      sBatch += String((unsigned int)s.sensi_halfPct);
-      sBatch += ",";
-      sBatch += String((unsigned int)s.carIndex);
-      sBatch += ",";
-      sBatch += String((unsigned int)s.releaseMode);
-      sBatch += ",";
-      sBatch += String((unsigned int)s.flags);
-      sBatch += "]";
-      if (((i + 1) % SAMPLE_BATCH == 0) || ((i + 1) == copied)) {
-        g_wifiServer->sendContent(sBatch);
-      }
-    }
-  }
-
-  g_wifiServer->sendContent("]}");
-  g_wifiServer->sendContent("");  /* Finalize chunked transfer so fetch() does not hang waiting for EOF. */
 }
 
 static String buildTelemetryConfigSnapshotJson() {
@@ -3134,7 +3037,7 @@ static void handleTelemetryClear() {
 static void handleTelemetryLive() {
   uint32_t afterSeq = getTelemetryArgU32("after", 0U);
   size_t limit = getTelemetryLiveLimit();
-  sendTelemetryLiveHttpPayload(afterSeq, limit);
+  g_wifiServer->send(200, "application/json", buildTelemetryLivePayload(afterSeq, limit));
 }
 
 static void handleTelemetryExportCsv() {
