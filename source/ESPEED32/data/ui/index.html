@@ -647,8 +647,8 @@ form{margin:0}
 .update-panel .tiny,
 .update-panel .warn,
 .progress-head span{
-  overflow-wrap:anywhere;
-  word-break:break-word;
+  overflow-wrap:break-word;
+  word-break:normal;
 }
 .progress-head span:first-child{
   flex:1 1 180px;
@@ -1380,6 +1380,7 @@ var telemetryFetchAbortController=null;
 var telemetryPollingPausedByError=false;
 var telemetryLastSuccessAtMs=0;
 var telemetryLastErrorAtMs=0;
+var TELEMETRY_USB_LIVE_LIMIT=96;
 var TELEMETRY_WIFI_LIVE_LIMIT=16;
 var TELEMETRY_WIFI_TAIL_SAMPLES=64;
 var TELEMETRY_WIFI_MAX_FETCH_LOOPS=4;
@@ -2508,6 +2509,24 @@ function telemetryUnavailableText(){
   return 'Telemetry is available on the controller WiFi page or over USB WebSerial.';
 }
 
+async function telemetryHydrateStatusFromDevice(){
+  if(!telemetryAvailable()) return false;
+  try{
+    var status=await telemetryFetchStatusTransport();
+    telemetryStatus=status;
+    if(status && (status.loggingActive || status.hasData)){
+      telemetryPanelPinned=true;
+    }
+    telemetryPersistentError='';
+    updateTelemetryUiState();
+    updateTelemetryMetrics();
+    drawTelemetryPlot();
+    return true;
+  }catch(_){
+    return false;
+  }
+}
+
 async function telemetryFetchWithTimeout(url,options,timeoutMs){
   if(typeof AbortController==='undefined'){
     return await fetch(url,options||{});
@@ -2556,7 +2575,7 @@ async function telemetryFetchStatusTransport(){
 
 async function telemetryFetchLiveTransport(after,limit){
   if(telemetryUsesUsb()){
-    var usbLimit=Math.min(Number(limit||256),96);
+    var usbLimit=Math.min(Number(limit||256),TELEMETRY_USB_LIVE_LIMIT);
     return await usbReadJsonResponse('TLIVE '+String(after||0)+' '+String(usbLimit),15000,120000);
   }
   var wifiLimit=Math.min(Number(limit||256),TELEMETRY_WIFI_LIVE_LIMIT);
@@ -2640,7 +2659,7 @@ async function telemetryCollectExportData(){
   var samples=[];
   var events=[];
   var restarts=0;
-  var batchLimit=telemetryUsesUsb()?96:TELEMETRY_WIFI_LIVE_LIMIT;
+  var batchLimit=telemetryUsesUsb()?TELEMETRY_USB_LIVE_LIMIT:TELEMETRY_WIFI_LIVE_LIMIT;
   var targetSamples=Math.max(
     1,
     Number((telemetryStatus&&telemetryStatus.storedCount)||0),
@@ -4300,6 +4319,8 @@ async function loadInfo(){
   if(apiOk){
     if(hadPolling){
       startTelemetryPollingIfAvailable(false);
+    }else if(!otaBusy){
+      await telemetryHydrateStatusFromDevice();
     }
   }else{
     stopTelemetryPolling();
@@ -4818,6 +4839,10 @@ async function pauseBackgroundActivityForOta(statusId){
 
   if(telemetryFetchBusy){
     throw new Error('Telemetry requests did not settle. Wait a moment and try the update again.');
+  }
+
+  if(!telemetryUsesUsb() && telemetryAvailable()){
+    await telemetryHydrateStatusFromDevice();
   }
 
   if(!telemetryUsesUsb() && telemetryStatus && telemetryStatus.loggingActive){
