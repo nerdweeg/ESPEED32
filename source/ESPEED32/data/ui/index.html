@@ -2586,6 +2586,17 @@ async function telemetryFetchLiveTransport(after,limit){
   return data;
 }
 
+async function telemetryFetchEventsTransport(){
+  if(telemetryUsesUsb()){
+    return await usbReadJsonResponse('TEVENTS',15000,120000);
+  }
+  var resp=await telemetryFetchWithTimeout('/api/telemetry/events',{cache:'no-store'},10000);
+  if(!resp.ok) throw new Error('Telemetry events unavailable (HTTP '+resp.status+')');
+  var data=await resp.json();
+  if(!data || !data.ok) throw new Error((data&&data.error)?data.error:'Telemetry events fetch failed');
+  return data;
+}
+
 async function telemetryPostTransport(action){
   if(telemetryUsesUsb()){
     return await usbReadJsonResponse(action,15000,40000);
@@ -2648,7 +2659,22 @@ function telemetryDownloadBlob(blob,fileName){
   },1000);
 }
 
-async function telemetryCollectExportData(){
+function telemetryEventsWereTruncated(status){
+  return !!(status && (status.eventsTruncated || status.eventTruncated));
+}
+
+function telemetryFilterEventsForSnapshot(events,targetLatestEventId,targetLatestSeq){
+  if(!Array.isArray(events)) return [];
+  return events.filter(function(event){
+    var eventId=Number((event&&event.id)||0);
+    var sampleSeq=Number((event&&event.sampleSeq)||0);
+    if(targetLatestEventId>0 && eventId>targetLatestEventId) return false;
+    if(targetLatestSeq>0 && sampleSeq>targetLatestSeq) return false;
+    return true;
+  });
+}
+
+async function telemetryCollectExportData(includeEvents){
   var snapshot=null;
   try{
     snapshot=await telemetryLoadConfigSnapshot();
@@ -2656,60 +2682,69 @@ async function telemetryCollectExportData(){
     snapshot=null;
   }
 
-  var samples=[];
-  var events=[];
   var restarts=0;
   var batchLimit=telemetryUsesUsb()?TELEMETRY_USB_LIVE_LIMIT:TELEMETRY_WIFI_LIVE_LIMIT;
-  var targetSamples=Math.max(
-    1,
-    Number((telemetryStatus&&telemetryStatus.storedCount)||0),
-    Number((telemetryStatus&&telemetryStatus.capacity)||0)
-  );
-  var maxBatches=Math.max(32,Math.ceil(targetSamples/Math.max(1,batchLimit))+16);
 
   while(restarts<3){
+    var statusSeed=await telemetryFetchStatusTransport();
+    if(!statusSeed || !statusSeed.hasData){
+      return {status:statusSeed||null,snapshot:snapshot,samples:[],events:[]};
+    }
+
+    var targetSessionId=Number(statusSeed.sessionId||0);
+    var targetLatestSeq=Number(statusSeed.latestSeq||0);
+    var targetLatestEventId=Number(statusSeed.latestEventId||0);
+    var targetSamples=Math.max(
+      1,
+      Number(statusSeed.storedCount||0),
+      Number(statusSeed.capacity||0)
+    );
+    var maxBatches=Math.max(32,Math.ceil(targetSamples/Math.max(1,batchLimit))+16);
     var after=0;
-    var sessionId=0;
     var restarted=false;
-    var sawEvents=false;
-    samples=[];
-    events=[];
+    var samples=[];
+    var fallbackEvents=[];
+    var fallbackEventsTruncated=false;
 
     for(var safety=0;safety<maxBatches;safety++){
       var data=await telemetryFetchLiveTransport(after,batchLimit);
       if(!data || !data.ok) throw new Error('Telemetry export failed');
       if(!data.hasData) return {status:data,snapshot:snapshot,samples:[],events:[]};
 
-      if((sessionId && Number(data.sessionId||0)!==sessionId) || (data.truncated && after!==0)){
+      if(Number(data.sessionId||0)!==targetSessionId || (data.truncated && after!==0)){
         restarts++;
         restarted=true;
         break;
       }
 
-      sessionId=Number(data.sessionId||0);
-      targetSamples=Math.max(
-        targetSamples,
-        Number(data.storedCount||0),
-        Number(data.capacity||0)
-      );
-      maxBatches=Math.max(maxBatches,Math.ceil(targetSamples/Math.max(1,batchLimit))+16);
-      if(!sawEvents && Array.isArray(data.events) && data.events.length){
-        events=data.events.slice();
-        sawEvents=true;
+      if(after===0 && Array.isArray(data.events) && data.events.length){
+        fallbackEvents=data.events.slice();
+        fallbackEventsTruncated=telemetryEventsWereTruncated(data);
       }
+
+      var reachedTarget=false;
       if(Array.isArray(data.samples)){
         var beforeCount=samples.length;
         data.samples.forEach(function(sample){
+          var seq=Number(sample[TELEMETRY_FIELDS.SEQ]||0);
+          if(seq<=0) return;
+          if(targetLatestSeq>0 && seq>targetLatestSeq){
+            reachedTarget=true;
+            return;
+          }
           samples.push(sample);
-          after=Number(sample[TELEMETRY_FIELDS.SEQ]||after);
+          after=seq;
+          if(targetLatestSeq>0 && seq>=targetLatestSeq){
+            reachedTarget=true;
+          }
         });
-        if(data.hasMore && samples.length===beforeCount){
+        if(data.hasMore && samples.length===beforeCount && !reachedTarget){
           throw new Error('Telemetry export stalled before all samples were fetched');
         }
       }
 
-      if(!data.hasMore){
-        return {status:data,snapshot:snapshot,samples:samples,events:events};
+      if(reachedTarget || !data.hasMore){
+        break;
       }
     }
 
@@ -2717,7 +2752,39 @@ async function telemetryCollectExportData(){
       continue;
     }
 
-    throw new Error('Telemetry export exceeded expected batch count');
+    if(targetLatestSeq>0 && after<targetLatestSeq){
+      restarts++;
+      continue;
+    }
+
+    var events=[];
+    var eventsTruncated=false;
+    if(includeEvents && targetLatestEventId>0){
+      try{
+        var eventsData=await telemetryFetchEventsTransport();
+        if(Number(eventsData.sessionId||0)!==targetSessionId){
+          restarts++;
+          continue;
+        }
+        events=telemetryFilterEventsForSnapshot(eventsData.events,targetLatestEventId,targetLatestSeq);
+        eventsTruncated=telemetryEventsWereTruncated(eventsData);
+      }catch(e){
+        events=telemetryFilterEventsForSnapshot(fallbackEvents,targetLatestEventId,targetLatestSeq);
+        eventsTruncated=fallbackEventsTruncated;
+        if(!events.length){
+          throw e;
+        }
+      }
+    }
+
+    var exportStatus=Object.assign({},statusSeed,{
+      storedCount:samples.length,
+      latestSeq:targetLatestSeq,
+      latestEventId:targetLatestEventId,
+      eventTruncated:!!eventsTruncated,
+      eventsTruncated:!!eventsTruncated
+    });
+    return {status:exportStatus,snapshot:snapshot,samples:samples,events:events};
   }
 
   throw new Error('Telemetry export could not stabilize while logging. Stop logging and try again.');
@@ -2767,7 +2834,7 @@ function telemetryBuildJsonExport(samples,status,snapshot,events){
     sessionStartMs:Number((status && status.sessionStartMs)||0),
     sessionStartCarIndex:Number((status && status.sessionStartCarIndex)||0),
     configAtStart:snapshot||null,
-    eventsTruncated:!!(status && status.eventTruncated),
+    eventsTruncated:telemetryEventsWereTruncated(status),
     events:Array.isArray(events)?events:[],
     samples:samples.map(function(sample){
       return {
@@ -2800,7 +2867,7 @@ async function telemetryExport(format){
 
   try{
     var baseName=telemetryGetExportBaseName();
-    var exportData=await telemetryCollectExportData();
+    var exportData=await telemetryCollectExportData(format==='json');
     if(!exportData.samples.length){
       throw new Error('No telemetry data available');
     }

@@ -87,6 +87,7 @@ static void serviceUsbSerialCommands();
 static void appendJsonEscaped(String& out, const char* in);
 static String buildTelemetryStatusPayload(const char* message);
 static String buildTelemetryLivePayload(uint32_t afterSeq, size_t limit);
+static String buildTelemetryEventsPayload();
 static String buildTelemetryConfigSnapshotJson();
 static String buildInfoJson();
 static void sendSerialLengthPrefixedPayload(const String& payload);
@@ -2284,6 +2285,7 @@ static void serviceUsbSerialCommands() {
  *   "SAVE"           → "OK - Saved to flash"
  *   "TSTATUS"        → "<bytecount>\n<json>"
  *   "TLIVE a l"      → "<bytecount>\n<json>" (afterSeq=a, limit=l)
+ *   "TEVENTS"        → "<bytecount>\n<json>"
  *   "TSTART"         → "<bytecount>\n<json>"
  *   "TSTOP"          → "<bytecount>\n<json>"
  *   "TCLEAR"         → "<bytecount>\n<json>"
@@ -2369,6 +2371,9 @@ static void handleSerialCommand(const String& cmd) {
     if (limit < 1U) limit = 1U;
     if (limit > TELEMETRY_USB_SERIAL_LIVE_LIMIT) limit = TELEMETRY_USB_SERIAL_LIVE_LIMIT;
     sendSerialLengthPrefixedPayload(buildTelemetryLivePayload(afterSeq, limit));
+
+  } else if (cmd == "TEVENTS") {
+    sendSerialLengthPrefixedPayload(buildTelemetryEventsPayload());
 
   } else if (cmd == "TSTART") {
     if (!telemetryStartLogging(&g_storedVar,
@@ -2977,6 +2982,33 @@ static String buildTelemetryLivePayload(uint32_t afterSeq, size_t limit) {
   return json;
 }
 
+static String buildTelemetryEventsPayload() {
+  static TelemetryEvent events[TELEMETRY_EVENT_BUFFER_CAPACITY];
+  TelemetryStatus status;
+  bool eventsTruncated = false;
+  size_t copied = telemetryCopyEvents(events, TELEMETRY_EVENT_BUFFER_CAPACITY, &eventsTruncated, &status);
+
+  String json;
+  json.reserve(768 + (copied * 180U));
+  json += "{\"ok\":true";
+  appendTelemetryStatusFields(json, status);
+  json += ",\"eventTruncated\":";
+  json += eventsTruncated ? "true" : "false";
+  json += ",\"eventsTruncated\":";
+  json += eventsTruncated ? "true" : "false";
+  json += ",\"returned\":";
+  json.concat((unsigned long)copied);
+  json += ",\"events\":[";
+  for (size_t i = 0; i < copied; i++) {
+    if (i > 0) {
+      json += ",";
+    }
+    appendTelemetryEventJson(json, events[i]);
+  }
+  json += "]}";
+  return json;
+}
+
 static String buildTelemetryConfigSnapshotJson() {
   TelemetryConfigSnapshot snapshot;
   TelemetryStatus status;
@@ -3043,6 +3075,10 @@ static void handleTelemetryLive() {
   uint32_t afterSeq = getTelemetryArgU32("after", 0U);
   size_t limit = getTelemetryLiveLimit();
   g_wifiServer->send(200, "application/json", buildTelemetryLivePayload(afterSeq, limit));
+}
+
+static void handleTelemetryEvents() {
+  g_wifiServer->send(200, "application/json", buildTelemetryEventsPayload());
 }
 
 static void handleTelemetryExportCsv() {
@@ -4195,6 +4231,7 @@ static void registerWebRoutes() {
   g_wifiServer->on("/api/telemetry/status", HTTP_GET, []() { if (!requireControllerAuth()) return; handleTelemetryStatus(); });
   g_wifiServer->on("/api/telemetry/config", HTTP_GET, []() { if (!requireControllerAuth()) return; handleTelemetryConfig(); });
   g_wifiServer->on("/api/telemetry/live", HTTP_GET, []() { if (!requireControllerAuth()) return; handleTelemetryLive(); });
+  g_wifiServer->on("/api/telemetry/events", HTTP_GET, []() { if (!requireControllerAuth()) return; handleTelemetryEvents(); });
   g_wifiServer->on("/api/telemetry/start", HTTP_POST, []() { if (!requireControllerAuth()) return; handleTelemetryStart(); });
   g_wifiServer->on("/api/telemetry/stop", HTTP_POST, []() { if (!requireControllerAuth()) return; handleTelemetryStop(); });
   g_wifiServer->on("/api/telemetry/clear", HTTP_POST, []() { if (!requireControllerAuth()) return; handleTelemetryClear(); });
