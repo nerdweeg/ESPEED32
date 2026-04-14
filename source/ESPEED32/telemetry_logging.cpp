@@ -27,10 +27,26 @@ static bool g_telemetryLastActiveCarValid = false;
 static CarParam_type g_telemetryLastActiveCar;
 static char g_telemetryLastStartError[64] = "";
 
+static void telemetryCopyLastStartError(char* out, size_t outLen) {
+  if (out == nullptr || outLen == 0U) {
+    return;
+  }
+
+  portENTER_CRITICAL(&g_telemetryMux);
+  strncpy(out, g_telemetryLastStartError, outLen - 1U);
+  out[outLen - 1U] = '\0';
+  portEXIT_CRITICAL(&g_telemetryMux);
+}
+
 static void telemetrySetLastStartError(const char* msg) {
+  char localError[sizeof(g_telemetryLastStartError)];
   if (msg == nullptr) msg = "";
-  strncpy(g_telemetryLastStartError, msg, sizeof(g_telemetryLastStartError) - 1U);
-  g_telemetryLastStartError[sizeof(g_telemetryLastStartError) - 1U] = '\0';
+  strncpy(localError, msg, sizeof(localError) - 1U);
+  localError[sizeof(localError) - 1U] = '\0';
+
+  portENTER_CRITICAL(&g_telemetryMux);
+  memcpy(g_telemetryLastStartError, localError, sizeof(g_telemetryLastStartError));
+  portEXIT_CRITICAL(&g_telemetryMux);
 }
 
 static uint16_t telemetryAlignCapacityDown(uint16_t value, uint16_t step, uint16_t minimum) {
