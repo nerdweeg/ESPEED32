@@ -515,7 +515,13 @@ function hostedDocsPath(){
 }
 
 function isLikelyDeviceHost(h){
-  return h==='192.168.4.1' || h==='localhost' || h==='127.0.0.1' || /\.local$/i.test(h||'');
+  if(!h) return false;
+  if(h==='localhost' || h==='127.0.0.1' || /\.local$/i.test(h)) return true;
+  /* RFC1918 private ranges — any page served from a private IP is on the device directly */
+  if(/^10\./.test(h)) return true;
+  if(/^192\.168\./.test(h)) return true;
+  if(/^172\.(1[6-9]|2\d|3[01])\./.test(h)) return true;
+  return false;
 }
 
 async function isControllerHostedPage(){
