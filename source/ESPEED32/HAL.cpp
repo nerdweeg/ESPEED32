@@ -4,6 +4,7 @@
 #include "HAL.h"
 #include "slot_ESC.h"
 #include <math.h>
+#include <esp_system.h>
 #include <Preferences.h>
 
 /* Datasheet tAPC is in the sub-millisecond range; keep a small margin plus retries. */
@@ -381,6 +382,23 @@ static constexpr int BOOT_SOUND_NOTE_MS = 20;
 /*                                            Function Implementations                                              */
 /*********************************************************************************************************************/
 
+static const char* HAL_GetResetReasonName(esp_reset_reason_t reason) {
+  switch (reason) {
+    case ESP_RST_UNKNOWN:   return "UNKNOWN";
+    case ESP_RST_POWERON:   return "POWERON";
+    case ESP_RST_EXT:       return "EXT";
+    case ESP_RST_SW:        return "SW";
+    case ESP_RST_PANIC:     return "PANIC";
+    case ESP_RST_INT_WDT:   return "INT_WDT";
+    case ESP_RST_TASK_WDT:  return "TASK_WDT";
+    case ESP_RST_WDT:       return "WDT";
+    case ESP_RST_DEEPSLEEP: return "DEEPSLEEP";
+    case ESP_RST_BROWNOUT:  return "BROWNOUT";
+    case ESP_RST_SDIO:      return "SDIO";
+    default:                return "OTHER";
+  }
+}
+
 /**
  * @brief Initialize hardware components
  * @details Sets up serial communication, I2C, and PWM channels
@@ -388,6 +406,14 @@ static constexpr int BOOT_SOUND_NOTE_MS = 20;
 void HAL_InitHW() {
   /* Initialize serial for debugging */
   Serial.begin(115200);
+  delay(20);
+  Serial.println();
+  Serial.print("[BOOT] Reset reason: ");
+  Serial.println(HAL_GetResetReasonName(esp_reset_reason()));
+  Serial.print("[BOOT] Build: v");
+  Serial.print(SW_MAJOR_VERSION);
+  Serial.print(".");
+  Serial.println(SW_MINOR_VERSION);
 #ifdef AS5600_MAG
   Wire1.begin(SDA0_PIN, SCL0_PIN, 400000L);
 #endif

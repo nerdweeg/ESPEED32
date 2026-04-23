@@ -667,6 +667,11 @@ uint8_t getMainMenuSelector();
 void resetEncoderForMainMenu();
 void initDisplayMenuItems();
 
+static void bootDebugLog(const char* msg) {
+  Serial.print("[BOOT] ");
+  Serial.println(msg);
+}
+
 /*********************************************************************************************************************/
 /*                                                Setup Function                                                     */
 /*********************************************************************************************************************/
@@ -680,10 +685,12 @@ void setup() {
 
   /* HalfBridge & Hardware Setup */
   HalfBridge_Setup();
+  bootDebugLog("setup: hardware init complete");
 
   /* Mark this firmware as valid unconditionally so the ESP32 bootloader
    * does not roll back regardless of stored-var migration state. */
   esp_ota_mark_app_valid_cancel_rollback();
+  bootDebugLog("setup: OTA rollback marked valid");
 
   /* Create FreeRTOS Tasks */
   /* Task 1: UI and state machine (low priority, core 0) */
@@ -695,6 +702,7 @@ void setup() {
     1,           /* Priority */
     &Task1,      /* Task handle */
     0);          /* Core 0 */
+  bootDebugLog("setup: Task1 created");
     
   /* Task 2: Trigger reading and motor control (high priority, core 1) */
   xTaskCreatePinnedToCore(
@@ -705,6 +713,7 @@ void setup() {
     2,           /* Priority */
     &Task2,      /* Task handle */
     1);          /* Core 1 */
+  bootDebugLog("setup: Task2 created");
 
   /* WiFiTask: web server client handling (same priority as Task1, core 0).
    * Pinned to Core 0 alongside Task1 — FreeRTOS runs only one at a time so
@@ -719,6 +728,7 @@ void setup() {
     1,            /* Priority 1 — same as Task1, time-sliced fairly */
     &WiFiTask,    /* Task handle */
     0);           /* Core 0 — same core as Task1, safe without mutex */
+  bootDebugLog("setup: WiFiTask created");
 }
 
 void applyAdcVoltageRangeMilliVolts(uint16_t range_mV) {
@@ -742,6 +752,7 @@ void Task1code(void *pvParameters) {
     static uint16_t prevFreqPWM = 0;
     static MenuState_enum menuState = ITEM_SELECTION;
     static uint8_t swMajVer, swMinVer, storedVarVersion;
+    static bool initBootLogged = false;
 
     /* Read motor current (voltage is read exclusively in Task2 to avoid ADC contention) */
     g_escVar.motorCurrent_mA = HAL_ReadMotorCurrent();
@@ -755,8 +766,13 @@ void Task1code(void *pvParameters) {
     /* Task 1 state machine */
     switch (g_currState) {
       case INIT:
+        if (!initBootLogged) {
+          bootDebugLog("Task1: entering INIT state");
+          initBootLogged = true;
+        }
 
         g_pref.begin("stored_var", false); /* Open the "stored" namespace in read/write mode. If it doesn't exist, it creates it */
+        bootDebugLog("INIT: preferences opened");
 
         if (g_pref.isKey("stored_var_ver") && g_pref.isKey("sw_maj_ver") && g_pref.isKey("sw_min_ver") && g_pref.isKey("user_param")) /* If all keys exists, then check their value */
         {
@@ -764,6 +780,7 @@ void Task1code(void *pvParameters) {
           swMajVer = g_pref.getUChar("sw_maj_ver");
           swMinVer = g_pref.getUChar("sw_min_ver");
           storedVarVersion = g_pref.getUChar("stored_var_ver");
+          Serial.printf("[BOOT] INIT: stored fw=%u.%u, stored_var_ver=%u\n", swMajVer, swMinVer, storedVarVersion);
 
           if ((storedVarVersion == STORED_VAR_VERSION) || canMigrateStoredVarVersion(storedVarVersion)) /* Load current storage directly, or migrate v22/v23 in-place to 0.1% BRAKE/SENSI */
           {
@@ -850,6 +867,7 @@ void Task1code(void *pvParameters) {
               if (g_storedVar.soundBoot) {
                 calibSound();
               }
+              bootDebugLog("INIT: force_calib set, calling initDisplayAndEncoder");
               initDisplayAndEncoder();
               obdFill(&g_obd, OBD_WHITE, 1);
               break;
@@ -865,12 +883,14 @@ void Task1code(void *pvParameters) {
               if (g_storedVar.soundBoot) {
                 calibSound();             /* Play calibration sound */
               }
+              bootDebugLog("INIT: encoder button held, entering CALIBRATION path");
               initDisplayAndEncoder();  /* init and clear OLED and Encoder */
 
               /* Wait until button is released, then go to CALIBRATION state */
               while (digitalRead(ENCODER_BUTTON_PIN) == BUTTON_PRESSED)
               {
                 showScreenPreCalibration();
+                vTaskDelay(1);
               }
               
               obdFill(&g_obd, OBD_WHITE, 1); /* Clear OLED */
@@ -880,6 +900,7 @@ void Task1code(void *pvParameters) {
               /* Hold brake button at startup → run self-test */
               g_currState = WELCOME;
               g_carSel = g_storedVar.selectedCarNumber;
+              bootDebugLog("INIT: brake button held, entering self-test path");
               initDisplayAndEncoder();
               showSelfTest();
             }
@@ -887,6 +908,7 @@ void Task1code(void *pvParameters) {
             {
               g_currState = WELCOME;                    /* Go to WELCOME state */
               g_carSel = g_storedVar.selectedCarNumber; /* now it is safe to address the proper car */
+              bootDebugLog("INIT: normal startup path, calling initDisplayAndEncoder");
               initDisplayAndEncoder();  /* init and clear OLED and Encoder */
               if (g_startWiFiAfterOtaBoot) {
                 startTimedWiFiPortal(getWiFiTimedMinutes());
@@ -907,6 +929,7 @@ void Task1code(void *pvParameters) {
         - the sw version stored are not up to date --> stored var are initialized but might be outdated
 
         Calibration values are NOT stored, go to CALIBRATION state */
+        bootDebugLog("INIT: no valid stored vars found, clearing prefs and entering first-boot path");
         initDisplayAndEncoder();  /* init and clear OLED and Encoder */
                               
         g_pref.clear();           /* Clear all the keys in this namespace */
@@ -953,10 +976,12 @@ void Task1code(void *pvParameters) {
         }
         g_currState = CALIBRATION;      /* Go to CALIBRATION state */
         obdFill(&g_obd, OBD_WHITE, 1); /* Clear OLED */
+        bootDebugLog("INIT: waiting for encoder click to acknowledge first-boot calibration screen");
         /* Press and release button to go to CALIBRATION state */
         while (!g_rotaryEncoder.isEncoderButtonClicked()) /* Loop until button is pressed */
         {
           showScreenNoEEPROM();
+          vTaskDelay(1);
         }
 
         break;

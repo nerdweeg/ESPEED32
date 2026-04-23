@@ -42,23 +42,31 @@ void IRAM_ATTR readEncoderISR();
 void initDisplayAndEncoder() 
 {
   uint16_t rc;
+  Serial.println("[BOOT] initDisplayAndEncoder: begin");
   /***** OLED Display Setup *****/
   rc = obdI2CInit(&g_obd, MY_OLED, OLED_ADDR, FLIP180, INVERT_DISP, USE_HW_I2C, SDA1_PIN, SCL1_PIN, RESET_PIN, 800000L);  // use standard I2C bus at 400Khz
+  Serial.print("[BOOT] OLED init rc=");
+  Serial.println(rc);
   if (rc != OLED_NOT_FOUND) 
   {
     obdSetBackBuffer(&g_obd, ucBackBuffer);
     obdFill(&g_obd, OBD_WHITE, 1);
+    Serial.println("[BOOT] OLED ready");
   } 
   else 
   {
     Serial.println("Error! Failed OLED Display initialization!");
+    Serial.println("[BOOT] OLED not found; firmware still continues into normal UI flow");
   }
 
   /***** Encoder Setup *****/
+  Serial.println("[BOOT] Encoder init: begin");
   g_rotaryEncoder.begin();
   g_rotaryEncoder.setup(readEncoderISR);
   setUiEncoderBoundaries(1, getMainMenuItemsCount(), false); /* minValue, maxValue, circleValues true|false (when max go to min and vice versa) */
   g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);        /* Larger number = more accelearation; 0 or 1 means disabled acceleration */
+  Serial.println("[BOOT] Encoder init: done");
+  Serial.println("[BOOT] initDisplayAndEncoder: done");
 }
 
 
