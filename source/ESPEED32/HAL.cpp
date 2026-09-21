@@ -660,14 +660,16 @@ void HAL_PinSetup() {
  * @return Voltage applied to voltage divider [mV]
  */
 uint16_t HAL_ReadVoltageDivider(int analogInput, uint32_t rvfbl, uint32_t rvfbh) {
+  if (rvfbl == 0) return 0;
+
   uint32_t adcRaw = analogRead(analogInput);
-  
+
   /* Calculate voltage at ADC pin */
   uint32_t voltage = ((uint32_t)g_adcVoltageRange_mV * adcRaw) / ACD_RESOLUTION_STEPS;
-  
+
   /* Calculate voltage applied to voltage divider */
   voltage = (voltage * (rvfbl + rvfbh)) / rvfbl;
-  
+
   return voltage;
 }
 
@@ -705,6 +707,7 @@ uint16_t HAL_ConvertMotorCurrentAdcToMilliAmps(uint32_t adcRaw) {
   (void)voltage_mV;
   return 0;
 #elif CURRENT_SENSE_PROFILE == CURRENT_SENSE_PROFILE_BTS7960
+  if (BTS7960_CURRENT_SENSE_EFFECTIVE_R_OHMS == 0) return 0;
   if (voltage_mV <= BTS7960_CURRENT_SENSE_OFFSET_MV) return 0;
 
   uint32_t senseVoltage_mV = voltage_mV - BTS7960_CURRENT_SENSE_OFFSET_MV;
