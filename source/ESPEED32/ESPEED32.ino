@@ -784,7 +784,18 @@ void Task1code(void *pvParameters) {
 
           if ((storedVarVersion == STORED_VAR_VERSION) || canMigrateStoredVarVersion(storedVarVersion)) /* Load current storage directly, or migrate v22/v23 in-place to 0.1% BRAKE/SENSI */
           {
-            g_pref.getBytes("user_param", &g_storedVar, sizeof(g_storedVar)); /* Get the value of the stored user_param */
+            /* Zero-fill before reading: if the stored blob is shorter than
+             * sizeof(g_storedVar) (corrupt NVS entry, or a downgrade from a
+             * firmware version with a larger StoredVar_type), getBytes()
+             * only overwrites the bytes it actually read, leaving the rest
+             * as whatever was already in memory instead of safe zeros/empty
+             * strings (e.g. non-NUL-terminated car names). */
+            memset(&g_storedVar, 0, sizeof(g_storedVar));
+            size_t storedVarBytesRead = g_pref.getBytes("user_param", &g_storedVar, sizeof(g_storedVar)); /* Get the value of the stored user_param */
+            if (storedVarBytesRead != sizeof(g_storedVar)) {
+              Serial.printf("[BOOT] INIT: user_param blob is %u bytes, expected %u; zero-filled the rest\n",
+                            (unsigned)storedVarBytesRead, (unsigned)sizeof(g_storedVar));
+            }
             bool migratedToTenths = false;
             if (storedVarVersion != STORED_VAR_VERSION) {
               migrateStoredVarFromHalfPctToTenthPct(&g_storedVar);
