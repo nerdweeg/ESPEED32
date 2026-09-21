@@ -1760,22 +1760,75 @@ uint16_t saturateParamValue(uint16_t paramValue, uint16_t minValue, uint16_t max
 }
 
 
+/* Packed so the byte layout has no compiler-inserted gaps between members,
+ * which keeps the memcmp() dirty-check below reliable. */
+#pragma pack(push, 1)
+struct EepromSnapshot_type {
+  StoredVar_type storedVar;
+  uint8_t statsEnabled;
+  uint16_t antiSpinStepMs;
+  uint16_t antiSpinStepPct;
+  uint8_t antiSpinDisplayMode;
+  uint16_t brakeStep;
+  uint16_t sensiStep;
+  uint8_t advancedMenuEnabled;
+  uint8_t encoderInvertEnabled;
+  uint8_t pwmFreqMaxProfile;
+  uint16_t adcVoltageRange_mV;
+  uint8_t extPot1Target;
+  uint8_t extPot2Target;
+};
+#pragma pack(pop)
+
 void saveEEPROM(StoredVar_type toSave) {
-  g_pref.begin("stored_var", false);                      /* Open the "stored" namespace in read/write mode */
   clampStoredVarCarPwmFreqsToProfile(&toSave, g_pwmFreqMaxProfile);
-  g_pref.putBytes("user_param", &toSave, sizeof(toSave)); /* Put the value of the stored user_param */
-  g_pref.putUChar(PREF_KEY_STATS_ENABLED, g_statsEnabled ? 1 : 0);
-  g_pref.putUShort(PREF_KEY_ANTIS_STEP, constrain(g_antiSpinStepMs, ANTISPIN_STEP_MIN, ANTISPIN_STEP_MAX));
-  g_pref.putUShort(PREF_KEY_ANTIS_STEP_PCT, constrain(g_antiSpinStepPct, ANTISPIN_STEP_PCT_MIN, ANTISPIN_STEP_PCT_MAX));
-  g_pref.putUChar(PREF_KEY_ANTIS_MODE, constrain(g_antiSpinDisplayMode, ANTISPIN_UI_MODE_MS, ANTISPIN_UI_MODE_TEXT));
-  g_pref.putUShort(PREF_KEY_BRAKE_STEP, constrain(g_brakeStep, BRAKE_STEP_MIN, BRAKE_STEP_MAX));
-  g_pref.putUShort(PREF_KEY_SENSI_STEP, constrain(g_sensiStep, SENSI_STEP_MIN, SENSI_STEP_MAX));
-  g_pref.putUChar(PREF_KEY_ADVANCED_MENU, g_advancedMenuEnabled ? 1 : 0);
-  g_pref.putUChar(PREF_KEY_ENC_INVERT, g_encoderInvertEnabled ? 1 : 0);
-  g_pref.putUChar(PREF_KEY_PWM_FREQ_MAX, getConfiguredPwmFreqMaxProfile());
-  g_pref.putUShort(PREF_KEY_ADC_RANGE, constrain(g_adcVoltageRange_mV, ADC_VOLTAGE_RANGE_MIN_MVOLTS, ADC_VOLTAGE_RANGE_MAX_MVOLTS));
-  g_pref.putUChar(PREF_KEY_EXT_POT1_TARGET, constrain(g_extPotTarget[0], EXT_POT_TARGET_MIN, EXT_POT_TARGET_MAX));
-  g_pref.putUChar(PREF_KEY_EXT_POT2_TARGET, constrain(g_extPotTarget[1], EXT_POT_TARGET_MIN, EXT_POT_TARGET_MAX));
-  g_pref.end();                                           /* Close the namespace */
+
+  EepromSnapshot_type snapshot = {
+    toSave,
+    (uint8_t)(g_statsEnabled ? 1 : 0),
+    (uint16_t)constrain(g_antiSpinStepMs, ANTISPIN_STEP_MIN, ANTISPIN_STEP_MAX),
+    (uint16_t)constrain(g_antiSpinStepPct, ANTISPIN_STEP_PCT_MIN, ANTISPIN_STEP_PCT_MAX),
+    (uint8_t)constrain(g_antiSpinDisplayMode, ANTISPIN_UI_MODE_MS, ANTISPIN_UI_MODE_TEXT),
+    (uint16_t)constrain(g_brakeStep, BRAKE_STEP_MIN, BRAKE_STEP_MAX),
+    (uint16_t)constrain(g_sensiStep, SENSI_STEP_MIN, SENSI_STEP_MAX),
+    (uint8_t)(g_advancedMenuEnabled ? 1 : 0),
+    (uint8_t)(g_encoderInvertEnabled ? 1 : 0),
+    (uint8_t)getConfiguredPwmFreqMaxProfile(),
+    (uint16_t)constrain(g_adcVoltageRange_mV, ADC_VOLTAGE_RANGE_MIN_MVOLTS, ADC_VOLTAGE_RANGE_MAX_MVOLTS),
+    (uint8_t)constrain(g_extPotTarget[0], EXT_POT_TARGET_MIN, EXT_POT_TARGET_MAX),
+    (uint8_t)constrain(g_extPotTarget[1], EXT_POT_TARGET_MIN, EXT_POT_TARGET_MAX)
+  };
+
+  /* Skip the "stored_var" flash write if nothing has changed since the last
+   * save: saveEEPROM() is called on almost every menu confirm (and even on
+   * a plain GRID/LIST view toggle), so this avoids needless NVS wear during
+   * trackside tuning sessions. saveWiFiNetworkSettings() is unaffected by
+   * this check and always runs, since WiFi credentials live outside this
+   * snapshot and are not otherwise persisted here. */
+  static EepromSnapshot_type s_lastSaved;
+  static bool s_hasLastSaved = false;
+  bool storedVarUnchanged = s_hasLastSaved && memcmp(&s_lastSaved, &snapshot, sizeof(snapshot)) == 0;
+
+  if (!storedVarUnchanged) {
+    s_lastSaved = snapshot;
+    s_hasLastSaved = true;
+
+    g_pref.begin("stored_var", false);                      /* Open the "stored" namespace in read/write mode */
+    g_pref.putBytes("user_param", &snapshot.storedVar, sizeof(snapshot.storedVar)); /* Put the value of the stored user_param */
+    g_pref.putUChar(PREF_KEY_STATS_ENABLED, snapshot.statsEnabled);
+    g_pref.putUShort(PREF_KEY_ANTIS_STEP, snapshot.antiSpinStepMs);
+    g_pref.putUShort(PREF_KEY_ANTIS_STEP_PCT, snapshot.antiSpinStepPct);
+    g_pref.putUChar(PREF_KEY_ANTIS_MODE, snapshot.antiSpinDisplayMode);
+    g_pref.putUShort(PREF_KEY_BRAKE_STEP, snapshot.brakeStep);
+    g_pref.putUShort(PREF_KEY_SENSI_STEP, snapshot.sensiStep);
+    g_pref.putUChar(PREF_KEY_ADVANCED_MENU, snapshot.advancedMenuEnabled);
+    g_pref.putUChar(PREF_KEY_ENC_INVERT, snapshot.encoderInvertEnabled);
+    g_pref.putUChar(PREF_KEY_PWM_FREQ_MAX, snapshot.pwmFreqMaxProfile);
+    g_pref.putUShort(PREF_KEY_ADC_RANGE, snapshot.adcVoltageRange_mV);
+    g_pref.putUChar(PREF_KEY_EXT_POT1_TARGET, snapshot.extPot1Target);
+    g_pref.putUChar(PREF_KEY_EXT_POT2_TARGET, snapshot.extPot2Target);
+    g_pref.end();                                           /* Close the namespace */
+  }
+
   saveWiFiNetworkSettings();
 }
