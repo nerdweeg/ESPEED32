@@ -40,10 +40,13 @@ static uint16_t mapExtPotToBrakeRaw(uint16_t raw) {
   return (uint16_t)map(raw, 0, ACD_RESOLUTION_STEPS, 0, BRAKE_MAX_VALUE);
 }
 
+static uint16_t sensiMaxRawForCurrentCar() {
+  return min((uint16_t)MIN_SPEED_MAX_VALUE,
+             (uint16_t)(g_storedVar.carParam[g_carSel].maxSpeed * SENSI_SCALE));
+}
+
 static uint16_t mapExtPotToSensiRaw(uint16_t raw) {
-  uint16_t maxSensiRaw = min((uint16_t)MIN_SPEED_MAX_VALUE,
-                             (uint16_t)(g_storedVar.carParam[g_carSel].maxSpeed * SENSI_SCALE));
-  return (uint16_t)map(raw, 0, ACD_RESOLUTION_STEPS, 0, maxSensiRaw);
+  return (uint16_t)map(raw, 0, ACD_RESOLUTION_STEPS, 0, sensiMaxRawForCurrentCar());
 }
 
 uint16_t getExtPotTarget(uint8_t potIndex) {
@@ -124,8 +127,7 @@ void updateExtPotRuntimeValues() {
     if (g_extPotTarget[i] == EXT_POT_TARGET_BRAKE) {
       g_escVar.effectiveBrake_raw = constrain(mapExtPotToBrakeRaw(filteredRaw), 0, BRAKE_MAX_VALUE);
     } else if (g_extPotTarget[i] == EXT_POT_TARGET_SENSI) {
-      g_escVar.effectiveSensi_raw = constrain(mapExtPotToSensiRaw(filteredRaw), 0,
-                                              min((uint16_t)MIN_SPEED_MAX_VALUE, (uint16_t)(g_storedVar.carParam[g_carSel].maxSpeed * SENSI_SCALE)));
+      g_escVar.effectiveSensi_raw = constrain(mapExtPotToSensiRaw(filteredRaw), 0, sensiMaxRawForCurrentCar());
     }
   }
 }
