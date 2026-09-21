@@ -141,6 +141,10 @@ void showPowerSave(uint32_t inactivityStartMs) {
   setCpuFrequencyMhz(80);
   /* Suspend motor control task */
   vTaskSuspend(Task2);
+  /* Task2 may have re-applied PWM from a live trigger reading in the brief
+   * window before the suspend above took effect; force the motor off again
+   * now that it's guaranteed to be stopped. */
+  HalfBridge_SetPwmDrag(0, 0);
 
   /* Wait for encoder button press to wake.
    * While waiting, allow deep sleep timeout to take over. */
