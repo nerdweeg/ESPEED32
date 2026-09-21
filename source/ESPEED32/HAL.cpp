@@ -508,6 +508,27 @@ int16_t HAL_ReadTriggerRaw() {
 }
 
 /**
+ * @brief Compile-time sensor family name, shared by the label getters below.
+ *        For TLE493D this is just the family name; callers that need the
+ *        detected variant/address handle that themselves.
+ */
+static const char* HAL_GetCompileTimeSensorFamilyName() {
+#if defined(TLE493D_MAG)
+  return "TLE493D";
+#elif defined(AS5600L_MAG)
+  return "AS5600L";
+#elif defined(AS5600_MAG)
+  return "AS5600";
+#elif defined(MT6701_MAG)
+  return "MT6701";
+#elif defined(ANALOG_TRIG)
+  return "ANALOG";
+#else
+  return "UNKNOWN";
+#endif
+}
+
+/**
  * @brief Get human-readable trigger sensor info for About screen.
  */
 void HAL_GetTriggerSensorInfo(char* buffer, size_t bufferSize) {
@@ -523,35 +544,15 @@ void HAL_GetTriggerSensorInfo(char* buffer, size_t bufferSize) {
   } else {
     snprintf(buffer, bufferSize, "TLE493D not detected");
   }
-#elif defined(AS5600L_MAG)
-  snprintf(buffer, bufferSize, "AS5600L");
-#elif defined(AS5600_MAG)
-  snprintf(buffer, bufferSize, "AS5600");
-#elif defined(MT6701_MAG)
-  snprintf(buffer, bufferSize, "MT6701");
-#elif defined(ANALOG_TRIG)
-  snprintf(buffer, bufferSize, "ANALOG");
 #else
-  snprintf(buffer, bufferSize, "UNKNOWN");
+  snprintf(buffer, bufferSize, "%s", HAL_GetCompileTimeSensorFamilyName());
 #endif
 }
 
 void HAL_GetTriggerSensorFamilyLabel(char* buffer, size_t bufferSize) {
   if (buffer == nullptr || bufferSize == 0) return;
 
-#if defined(TLE493D_MAG)
-  snprintf(buffer, bufferSize, "TLE493D");
-#elif defined(AS5600L_MAG)
-  snprintf(buffer, bufferSize, "AS5600L");
-#elif defined(AS5600_MAG)
-  snprintf(buffer, bufferSize, "AS5600");
-#elif defined(MT6701_MAG)
-  snprintf(buffer, bufferSize, "MT6701");
-#elif defined(ANALOG_TRIG)
-  snprintf(buffer, bufferSize, "ANALOG");
-#else
-  snprintf(buffer, bufferSize, "UNKNOWN");
-#endif
+  snprintf(buffer, bufferSize, "%s", HAL_GetCompileTimeSensorFamilyName());
 }
 
 void HAL_GetTriggerSensorActiveTypeLabel(char* buffer, size_t bufferSize) {
@@ -567,16 +568,8 @@ void HAL_GetTriggerSensorActiveTypeLabel(char* buffer, size_t bufferSize) {
   } else {
     snprintf(buffer, bufferSize, "NONE");
   }
-#elif defined(AS5600L_MAG)
-  snprintf(buffer, bufferSize, "AS5600L");
-#elif defined(AS5600_MAG)
-  snprintf(buffer, bufferSize, "AS5600");
-#elif defined(MT6701_MAG)
-  snprintf(buffer, bufferSize, "MT6701");
-#elif defined(ANALOG_TRIG)
-  snprintf(buffer, bufferSize, "ANALOG");
 #else
-  snprintf(buffer, bufferSize, "UNKNOWN");
+  snprintf(buffer, bufferSize, "%s", HAL_GetCompileTimeSensorFamilyName());
 #endif
 }
 
