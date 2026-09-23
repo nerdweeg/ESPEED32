@@ -108,6 +108,11 @@ ESC_type g_escVar {
   .lapStartTime_ms = 0
 };
 
+/* Guards g_escVar.lapCount/lapTimes[]/bestLapTime_ms across the two cores:
+ * Task2 writes them on every lap completion, while the lap-stats UI screen
+ * (Task1) resets them on a long brake press. */
+portMUX_TYPE g_lapStatsMux = portMUX_INITIALIZER_UNLOCKED;
+
 /* Menu Structures */
 Menu_type g_mainMenu {
   .lines = 3

@@ -6,6 +6,7 @@
 
 extern StoredVar_type g_storedVar;
 extern ESC_type g_escVar;
+extern portMUX_TYPE g_lapStatsMux;
 extern OBDISP g_obd;
 extern AiEsp32RotaryEncoder g_rotaryEncoder;
 extern char msgStr[50];
@@ -95,12 +96,14 @@ void showLapStats() {
       }
       if (!brakeLongHandled && (millis() - brakePressStartMs > BUTTON_LONG_PRESS_MS)) {
         brakeLongHandled = true;
+        portENTER_CRITICAL(&g_lapStatsMux);
         g_escVar.lapCount = 0;
         g_escVar.bestLapTime_ms = 0;
         g_escVar.lapStartTime_ms = 0;
         for (uint8_t i = 0; i < LAP_MAX_COUNT; i++) {
           g_escVar.lapTimes[i] = 0;
         }
+        portEXIT_CRITICAL(&g_lapStatsMux);
         resetUiEncoder(0);
         needFullRedraw = true;
       }
