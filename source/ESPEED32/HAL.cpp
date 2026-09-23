@@ -121,7 +121,9 @@ int16_t HAL_ReadTriggerRaw() {
   #elif defined(TLE493D_MAG)
     if (g_tleVariant == TLE493DVariant::W2B6 || g_tleVariant == TLE493DVariant::W2B6_A0) {
       uint8_t data[7];
-      if (!TLE493D_ReadFrame(g_tleAddress, data, sizeof(data))) {
+      bool readOk = TLE493D_ReadFrame(g_tleAddress, data, sizeof(data));
+      TLE493D_NoteReadOutcome(readOk);
+      if (!readOk) {
         retVal = g_tleLastAngleValid ? (uint16_t)g_tleLastAngle : 0;
       } else {
         int16_t x = ((int16_t)data[0] << 4) | (data[4] >> 4);
@@ -134,7 +136,9 @@ int16_t HAL_ReadTriggerRaw() {
       }
     } else if (g_tleVariant == TLE493DVariant::P3B6) {
       uint8_t data[4];
-      if (!TLE493D_ReadFrame(g_tleAddress, data, sizeof(data))) {
+      bool readOk = TLE493D_ReadFrame(g_tleAddress, data, sizeof(data));
+      TLE493D_NoteReadOutcome(readOk);
+      if (!readOk) {
         retVal = g_tleLastAngleValid ? (uint16_t)g_tleLastAngle : 0;
       } else {
         int16_t x = ((int16_t)data[0] << 6) | (data[1] & 0x3F);  /* 14-bit signed */
@@ -243,6 +247,14 @@ void HAL_GetTriggerSensorTypeOptionLabel(uint16_t type, char* buffer, size_t buf
 bool HAL_TriggerSensorSupportsTypeOverride() {
 #if defined(TLE493D_MAG)
   return true;
+#else
+  return false;
+#endif
+}
+
+bool HAL_TriggerSensorHasFault() {
+#if defined(TLE493D_MAG)
+  return TLE493D_HasSustainedFault();
 #else
   return false;
 #endif

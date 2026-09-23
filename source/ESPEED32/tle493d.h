@@ -34,6 +34,13 @@ void TLE493D_SaveOverrideMode(uint16_t mode);
 void TLE493D_ClearStoredConfig(bool clearMode);
 bool TLE493D_ApplyMode(uint8_t overrideMode);
 
+/* Fault tracking: call TLE493D_NoteReadOutcome() after every TLE493D_ReadFrame()
+ * attempt. A single failed read is expected occasionally and not a fault; only a
+ * long run of consecutive failures (i.e. the sensor has actually stopped
+ * responding, not just missed one frame) is reported as a sustained fault. */
+void TLE493D_NoteReadOutcome(bool success);
+bool TLE493D_HasSustainedFault();
+
 #endif  /* TLE493D_MAG */
 
 #endif  /* TLE493D_H_ */

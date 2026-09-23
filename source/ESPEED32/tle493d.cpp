@@ -32,6 +32,13 @@ uint8_t g_tleOverrideMode = TRIGGER_SENSOR_TYPE_AUTO;
 int16_t g_tleLastAngle = 0;
 bool g_tleLastAngleValid = false;
 
+/* ~200ms of sustained failure at the ESC_PERIOD_US (500us) read rate before
+ * flagging a fault; a handful of missed frames is normal I2C noise, not a
+ * fault worth surfacing to the user. */
+static constexpr uint16_t TLE493D_FAULT_THRESHOLD = 400;
+static uint16_t g_tleConsecutiveFailures = 0;
+static bool g_tleSustainedFault = false;
+
 static int16_t g_tleXavg = 0;
 static int16_t g_tleYavg = 0;
 static bool g_tleFilterInit = false;
@@ -228,6 +235,8 @@ static void TLE493D_ResetRuntimeState() {
   g_tleFilterInit = false;
   g_tleLastAngle = 0;
   g_tleLastAngleValid = false;
+  g_tleConsecutiveFailures = 0;
+  g_tleSustainedFault = false;
 }
 
 static bool TLE493D_DetectAuto(TLE493DVariant* detectedVariant, uint8_t* detectedAddress) {
@@ -352,6 +361,25 @@ bool TLE493D_ApplyMode(uint8_t overrideMode) {
   }
 
   return tleReady;
+}
+
+void TLE493D_NoteReadOutcome(bool success) {
+  if (success) {
+    g_tleConsecutiveFailures = 0;
+    g_tleSustainedFault = false;
+    return;
+  }
+
+  if (g_tleConsecutiveFailures < UINT16_MAX) {
+    g_tleConsecutiveFailures++;
+  }
+  if (g_tleConsecutiveFailures >= TLE493D_FAULT_THRESHOLD) {
+    g_tleSustainedFault = true;
+  }
+}
+
+bool TLE493D_HasSustainedFault() {
+  return g_tleSustainedFault;
 }
 
 #endif  /* TLE493D_MAG */

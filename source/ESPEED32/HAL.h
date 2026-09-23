@@ -199,6 +199,7 @@ void     HAL_GetTriggerSensorFamilyLabel(char* buffer, size_t bufferSize);
 void     HAL_GetTriggerSensorActiveTypeLabel(char* buffer, size_t bufferSize);
 void     HAL_GetTriggerSensorTypeOptionLabel(uint16_t type, char* buffer, size_t bufferSize);
 bool     HAL_TriggerSensorSupportsTypeOverride();
+bool     HAL_TriggerSensorHasFault();
 uint16_t HAL_GetTriggerSensorTypeOverride();
 bool     HAL_SetTriggerSensorTypeOverride(uint16_t type);
 void     HAL_ResetTriggerSensorConfig();

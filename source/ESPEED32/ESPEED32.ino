@@ -758,6 +758,15 @@ void Task1code(void *pvParameters) {
     g_escVar.motorCurrent_mA = HAL_ReadMotorCurrent();
     serviceTimedWiFiPortal();
 
+    /* Warn the user once (rising edge only) if the trigger sensor has been
+     * unresponsive for a sustained period. Purely informational. */
+    static bool prevTriggerSensorFault = false;
+    bool triggerSensorFault = (g_currState != INIT) && HAL_TriggerSensorHasFault();
+    if (triggerSensorFault && !prevTriggerSensorFault) {
+      showTriggerSensorFaultWarning();
+    }
+    prevTriggerSensorFault = triggerSensorFault;
+
     /* Update selected car if initialization complete */
     if (g_currState != INIT) {
       g_carSel = g_storedVar.selectedCarNumber;
@@ -1325,13 +1334,31 @@ void showScreenPreCalibration()
 /**
  * Show the screen indicating that the stored variables are not present in the EEPROM
  */
-void showScreenNoEEPROM() 
+void showScreenNoEEPROM()
 {
   sprintf(msgStr, "ESPEED32 v%d.%d", SW_MAJOR_VERSION, SW_MINOR_VERSION);  //print SW version
   obdWriteString(&g_obd, 0, 0, 0, msgStr, FONT_8x8, OBD_WHITE, 1);
   obdWriteString(&g_obd, 0, (OLED_WIDTH / 2) - 64, 3 * HEIGHT8x8, (char *)"EEPROM NOT init!", FONT_8x8, OBD_BLACK, 1);
   obdWriteString(&g_obd, 0, (OLED_WIDTH / 2) - 48, 5 * HEIGHT8x8, (char *)"Press button", FONT_8x8, OBD_BLACK, 1);
   obdWriteString(&g_obd, 0, (OLED_WIDTH / 2) - 48, 6 * HEIGHT8x8, (char *)"to calibrate", FONT_8x8, OBD_BLACK, 1);
+}
+
+/**
+ * Show a one-time informational warning when the trigger sensor has stopped
+ * responding for a sustained period. Purely informational: does not stop
+ * the motor or override the trigger, since Task2 keeps driving the car from
+ * whatever the sensor last reported (or the last known-good angle).
+ */
+void showTriggerSensorFaultWarning()
+{
+  obdFill(&g_obd, OBD_WHITE, 1);
+  obdWriteString(&g_obd, 0, (OLED_WIDTH / 2) - 52, 1 * HEIGHT8x8, (char *)"SENSOR FAULT", FONT_8x8, OBD_BLACK, 1);
+  obdWriteString(&g_obd, 0, (OLED_WIDTH / 2) - 57, 3 * HEIGHT8x8, (char *)"Trigger sensor not", FONT_6x8, OBD_BLACK, 1);
+  obdWriteString(&g_obd, 0, (OLED_WIDTH / 2) - 54, 4 * HEIGHT8x8, (char *)"responding. Check", FONT_6x8, OBD_BLACK, 1);
+  obdWriteString(&g_obd, 0, (OLED_WIDTH / 2) - 57, 5 * HEIGHT8x8, (char *)"sensor connection.", FONT_6x8, OBD_BLACK, 1);
+  obdWriteString(&g_obd, 0, (OLED_WIDTH / 2) - 63, 7 * HEIGHT8x8, (char *)"Car drives normally.", FONT_6x8, OBD_BLACK, 1);
+  delay(3000);
+  obdFill(&g_obd, OBD_WHITE, 1);
 }
 
 
