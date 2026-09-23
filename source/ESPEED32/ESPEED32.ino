@@ -1469,7 +1469,6 @@ uint16_t addDeadBand(uint16_t inputVal, uint16_t minVal, uint16_t maxVal, uint16
   } 
   else 
   {
-    /* retVal = (THROTTLE_NORMALIZED * (inputVal - deadBand)) / (THROTTLE_NORMALIZED - 2 * deadBand); TODO: verify what this is suppose to do */
     retVal = map(inputVal, deadBand, maxVal - deadBand, minVal, maxVal);  /* Scale the inputValue (which ranges from (minVal + deadBand) to (maxVal - deadBand))
                                                                              so that it ranges from minVal to maxVal */
   }
