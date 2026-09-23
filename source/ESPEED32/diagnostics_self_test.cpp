@@ -74,7 +74,7 @@ void showSelfTest() {
   obdWriteString(&g_obd, 0, 0,  7 * HEIGHT8x8, (char*)"enc >   (start)", FONT_6x8, OBD_BLACK, 1);
   selfTestWaitEnc();
 
-  /* ======== Step 1: Display (auto-pass) ======== */
+  /* ======== Step 1: Display ======== */
   /* Phase A: all pixels ON - verify no dead/stuck-off pixels */
   obdFill(&g_obd, OBD_BLACK, 1);
   obdWriteString(&g_obd, 0, 25, 3 * HEIGHT8x8, (char*)"All pixels ON", FONT_6x8, OBD_WHITE, 1);
@@ -84,8 +84,16 @@ void showSelfTest() {
   obdFill(&g_obd, OBD_WHITE, 1);
   obdWriteString(&g_obd, 0, 22, 3 * HEIGHT8x8, (char*)"All pixels OFF", FONT_6x8, OBD_BLACK, 1);
   obdWriteString(&g_obd, 0, 16, 6 * HEIGHT8x8, (char*)"1/9 Display", FONT_6x8, OBD_BLACK, 1);
-  delay(2000);
-  results[0] = true;  /* auto-pass: screen is visibly working */
+  delay(1000);
+  /* Require operator confirmation, same as every other step, so a dead/
+   * malfunctioning display can't silently report PASS. */
+  obdWriteString(&g_obd, 0, 0, 4 * HEIGHT8x8, (char*)"Both phases OK?", FONT_6x8, OBD_BLACK, 1);
+  obdWriteString(&g_obd, 0, 0, 5 * HEIGHT8x8, (char*)"Enc btn = yes", FONT_6x8, OBD_BLACK, 1);
+  obdWriteString(&g_obd, 0, 0, 6 * HEIGHT8x8, (char*)"Brk btn = no", FONT_6x8, OBD_BLACK, 1);
+  while (g_rotaryEncoder.isEncoderButtonClicked()) {}
+  results[0] = selfTestWaitEnc();
+  selfTestResult(results[0]);
+  delay(1000);
 
   /* ======== Step 2: Buzzer ======== */
   selfTestStep(2, TOTAL, "Buzzer");
