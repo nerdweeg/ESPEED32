@@ -108,6 +108,11 @@ ESC_type g_escVar {
   .lapStartTime_ms = 0
 };
 
+/* Guards g_escVar.lapCount/lapTimes[]/bestLapTime_ms across the two cores:
+ * Task2 writes them on every lap completion, while the lap-stats UI screen
+ * (Task1) resets them on a long brake press. */
+portMUX_TYPE g_lapStatsMux = portMUX_INITIALIZER_UNLOCKED;
+
 /* Menu Structures */
 Menu_type g_mainMenu {
   .lines = 3
@@ -667,6 +672,11 @@ uint8_t getMainMenuSelector();
 void resetEncoderForMainMenu();
 void initDisplayMenuItems();
 
+static void bootDebugLog(const char* msg) {
+  Serial.print("[BOOT] ");
+  Serial.println(msg);
+}
+
 /*********************************************************************************************************************/
 /*                                                Setup Function                                                     */
 /*********************************************************************************************************************/
@@ -680,10 +690,12 @@ void setup() {
 
   /* HalfBridge & Hardware Setup */
   HalfBridge_Setup();
+  bootDebugLog("setup: hardware init complete");
 
   /* Mark this firmware as valid unconditionally so the ESP32 bootloader
    * does not roll back regardless of stored-var migration state. */
   esp_ota_mark_app_valid_cancel_rollback();
+  bootDebugLog("setup: OTA rollback marked valid");
 
   /* Create FreeRTOS Tasks */
   /* Task 1: UI and state machine (low priority, core 0) */
@@ -695,6 +707,7 @@ void setup() {
     1,           /* Priority */
     &Task1,      /* Task handle */
     0);          /* Core 0 */
+  bootDebugLog("setup: Task1 created");
     
   /* Task 2: Trigger reading and motor control (high priority, core 1) */
   xTaskCreatePinnedToCore(
@@ -705,6 +718,7 @@ void setup() {
     2,           /* Priority */
     &Task2,      /* Task handle */
     1);          /* Core 1 */
+  bootDebugLog("setup: Task2 created");
 
   /* WiFiTask: web server client handling (same priority as Task1, core 0).
    * Pinned to Core 0 alongside Task1 — FreeRTOS runs only one at a time so
@@ -719,6 +733,7 @@ void setup() {
     1,            /* Priority 1 — same as Task1, time-sliced fairly */
     &WiFiTask,    /* Task handle */
     0);           /* Core 0 — same core as Task1, safe without mutex */
+  bootDebugLog("setup: WiFiTask created");
 }
 
 void applyAdcVoltageRangeMilliVolts(uint16_t range_mV) {
@@ -742,10 +757,20 @@ void Task1code(void *pvParameters) {
     static uint16_t prevFreqPWM = 0;
     static MenuState_enum menuState = ITEM_SELECTION;
     static uint8_t swMajVer, swMinVer, storedVarVersion;
+    static bool initBootLogged = false;
 
     /* Read motor current (voltage is read exclusively in Task2 to avoid ADC contention) */
     g_escVar.motorCurrent_mA = HAL_ReadMotorCurrent();
     serviceTimedWiFiPortal();
+
+    /* Warn the user once (rising edge only) if the trigger sensor has been
+     * unresponsive for a sustained period. Purely informational. */
+    static bool prevTriggerSensorFault = false;
+    bool triggerSensorFault = (g_currState != INIT) && HAL_TriggerSensorHasFault();
+    if (triggerSensorFault && !prevTriggerSensorFault) {
+      showTriggerSensorFaultWarning();
+    }
+    prevTriggerSensorFault = triggerSensorFault;
 
     /* Update selected car if initialization complete */
     if (g_currState != INIT) {
@@ -755,8 +780,13 @@ void Task1code(void *pvParameters) {
     /* Task 1 state machine */
     switch (g_currState) {
       case INIT:
+        if (!initBootLogged) {
+          bootDebugLog("Task1: entering INIT state");
+          initBootLogged = true;
+        }
 
         g_pref.begin("stored_var", false); /* Open the "stored" namespace in read/write mode. If it doesn't exist, it creates it */
+        bootDebugLog("INIT: preferences opened");
 
         if (g_pref.isKey("stored_var_ver") && g_pref.isKey("sw_maj_ver") && g_pref.isKey("sw_min_ver") && g_pref.isKey("user_param")) /* If all keys exists, then check their value */
         {
@@ -764,10 +794,22 @@ void Task1code(void *pvParameters) {
           swMajVer = g_pref.getUChar("sw_maj_ver");
           swMinVer = g_pref.getUChar("sw_min_ver");
           storedVarVersion = g_pref.getUChar("stored_var_ver");
+          Serial.printf("[BOOT] INIT: stored fw=%u.%u, stored_var_ver=%u\n", swMajVer, swMinVer, storedVarVersion);
 
           if ((storedVarVersion == STORED_VAR_VERSION) || canMigrateStoredVarVersion(storedVarVersion)) /* Load current storage directly, or migrate v22/v23 in-place to 0.1% BRAKE/SENSI */
           {
-            g_pref.getBytes("user_param", &g_storedVar, sizeof(g_storedVar)); /* Get the value of the stored user_param */
+            /* Zero-fill before reading: if the stored blob is shorter than
+             * sizeof(g_storedVar) (corrupt NVS entry, or a downgrade from a
+             * firmware version with a larger StoredVar_type), getBytes()
+             * only overwrites the bytes it actually read, leaving the rest
+             * as whatever was already in memory instead of safe zeros/empty
+             * strings (e.g. non-NUL-terminated car names). */
+            memset(&g_storedVar, 0, sizeof(g_storedVar));
+            size_t storedVarBytesRead = g_pref.getBytes("user_param", &g_storedVar, sizeof(g_storedVar)); /* Get the value of the stored user_param */
+            if (storedVarBytesRead != sizeof(g_storedVar)) {
+              Serial.printf("[BOOT] INIT: user_param blob is %u bytes, expected %u; zero-filled the rest\n",
+                            (unsigned)storedVarBytesRead, (unsigned)sizeof(g_storedVar));
+            }
             bool migratedToTenths = false;
             if (storedVarVersion != STORED_VAR_VERSION) {
               migrateStoredVarFromHalfPctToTenthPct(&g_storedVar);
@@ -850,6 +892,7 @@ void Task1code(void *pvParameters) {
               if (g_storedVar.soundBoot) {
                 calibSound();
               }
+              bootDebugLog("INIT: force_calib set, calling initDisplayAndEncoder");
               initDisplayAndEncoder();
               obdFill(&g_obd, OBD_WHITE, 1);
               break;
@@ -865,12 +908,14 @@ void Task1code(void *pvParameters) {
               if (g_storedVar.soundBoot) {
                 calibSound();             /* Play calibration sound */
               }
+              bootDebugLog("INIT: encoder button held, entering CALIBRATION path");
               initDisplayAndEncoder();  /* init and clear OLED and Encoder */
 
               /* Wait until button is released, then go to CALIBRATION state */
               while (digitalRead(ENCODER_BUTTON_PIN) == BUTTON_PRESSED)
               {
                 showScreenPreCalibration();
+                vTaskDelay(1);
               }
               
               obdFill(&g_obd, OBD_WHITE, 1); /* Clear OLED */
@@ -880,6 +925,7 @@ void Task1code(void *pvParameters) {
               /* Hold brake button at startup → run self-test */
               g_currState = WELCOME;
               g_carSel = g_storedVar.selectedCarNumber;
+              bootDebugLog("INIT: brake button held, entering self-test path");
               initDisplayAndEncoder();
               showSelfTest();
             }
@@ -887,6 +933,7 @@ void Task1code(void *pvParameters) {
             {
               g_currState = WELCOME;                    /* Go to WELCOME state */
               g_carSel = g_storedVar.selectedCarNumber; /* now it is safe to address the proper car */
+              bootDebugLog("INIT: normal startup path, calling initDisplayAndEncoder");
               initDisplayAndEncoder();  /* init and clear OLED and Encoder */
               if (g_startWiFiAfterOtaBoot) {
                 startTimedWiFiPortal(getWiFiTimedMinutes());
@@ -907,6 +954,7 @@ void Task1code(void *pvParameters) {
         - the sw version stored are not up to date --> stored var are initialized but might be outdated
 
         Calibration values are NOT stored, go to CALIBRATION state */
+        bootDebugLog("INIT: no valid stored vars found, clearing prefs and entering first-boot path");
         initDisplayAndEncoder();  /* init and clear OLED and Encoder */
                               
         g_pref.clear();           /* Clear all the keys in this namespace */
@@ -953,10 +1001,12 @@ void Task1code(void *pvParameters) {
         }
         g_currState = CALIBRATION;      /* Go to CALIBRATION state */
         obdFill(&g_obd, OBD_WHITE, 1); /* Clear OLED */
+        bootDebugLog("INIT: waiting for encoder click to acknowledge first-boot calibration screen");
         /* Press and release button to go to CALIBRATION state */
         while (!g_rotaryEncoder.isEncoderButtonClicked()) /* Loop until button is pressed */
         {
           showScreenNoEEPROM();
+          vTaskDelay(1);
         }
 
         break;
@@ -1289,13 +1339,31 @@ void showScreenPreCalibration()
 /**
  * Show the screen indicating that the stored variables are not present in the EEPROM
  */
-void showScreenNoEEPROM() 
+void showScreenNoEEPROM()
 {
   sprintf(msgStr, "ESPEED32 v%d.%d", SW_MAJOR_VERSION, SW_MINOR_VERSION);  //print SW version
   obdWriteString(&g_obd, 0, 0, 0, msgStr, FONT_8x8, OBD_WHITE, 1);
   obdWriteString(&g_obd, 0, (OLED_WIDTH / 2) - 64, 3 * HEIGHT8x8, (char *)"EEPROM NOT init!", FONT_8x8, OBD_BLACK, 1);
   obdWriteString(&g_obd, 0, (OLED_WIDTH / 2) - 48, 5 * HEIGHT8x8, (char *)"Press button", FONT_8x8, OBD_BLACK, 1);
   obdWriteString(&g_obd, 0, (OLED_WIDTH / 2) - 48, 6 * HEIGHT8x8, (char *)"to calibrate", FONT_8x8, OBD_BLACK, 1);
+}
+
+/**
+ * Show a one-time informational warning when the trigger sensor has stopped
+ * responding for a sustained period. Purely informational: does not stop
+ * the motor or override the trigger, since Task2 keeps driving the car from
+ * whatever the sensor last reported (or the last known-good angle).
+ */
+void showTriggerSensorFaultWarning()
+{
+  obdFill(&g_obd, OBD_WHITE, 1);
+  obdWriteString(&g_obd, 0, (OLED_WIDTH / 2) - 52, 1 * HEIGHT8x8, (char *)"SENSOR FAULT", FONT_8x8, OBD_BLACK, 1);
+  obdWriteString(&g_obd, 0, (OLED_WIDTH / 2) - 57, 3 * HEIGHT8x8, (char *)"Trigger sensor not", FONT_6x8, OBD_BLACK, 1);
+  obdWriteString(&g_obd, 0, (OLED_WIDTH / 2) - 54, 4 * HEIGHT8x8, (char *)"responding. Check", FONT_6x8, OBD_BLACK, 1);
+  obdWriteString(&g_obd, 0, (OLED_WIDTH / 2) - 57, 5 * HEIGHT8x8, (char *)"sensor connection.", FONT_6x8, OBD_BLACK, 1);
+  obdWriteString(&g_obd, 0, (OLED_WIDTH / 2) - 63, 7 * HEIGHT8x8, (char *)"Car drives normally.", FONT_6x8, OBD_BLACK, 1);
+  delay(3000);
+  obdFill(&g_obd, OBD_WHITE, 1);
 }
 
 
@@ -1433,7 +1501,6 @@ uint16_t addDeadBand(uint16_t inputVal, uint16_t minVal, uint16_t maxVal, uint16
   } 
   else 
   {
-    /* retVal = (THROTTLE_NORMALIZED * (inputVal - deadBand)) / (THROTTLE_NORMALIZED - 2 * deadBand); TODO: verify what this is suppose to do */
     retVal = map(inputVal, deadBand, maxVal - deadBand, minVal, maxVal);  /* Scale the inputValue (which ranges from (minVal + deadBand) to (maxVal - deadBand))
                                                                              so that it ranges from minVal to maxVal */
   }
@@ -1735,22 +1802,75 @@ uint16_t saturateParamValue(uint16_t paramValue, uint16_t minValue, uint16_t max
 }
 
 
+/* Packed so the byte layout has no compiler-inserted gaps between members,
+ * which keeps the memcmp() dirty-check below reliable. */
+#pragma pack(push, 1)
+struct EepromSnapshot_type {
+  StoredVar_type storedVar;
+  uint8_t statsEnabled;
+  uint16_t antiSpinStepMs;
+  uint16_t antiSpinStepPct;
+  uint8_t antiSpinDisplayMode;
+  uint16_t brakeStep;
+  uint16_t sensiStep;
+  uint8_t advancedMenuEnabled;
+  uint8_t encoderInvertEnabled;
+  uint8_t pwmFreqMaxProfile;
+  uint16_t adcVoltageRange_mV;
+  uint8_t extPot1Target;
+  uint8_t extPot2Target;
+};
+#pragma pack(pop)
+
 void saveEEPROM(StoredVar_type toSave) {
-  g_pref.begin("stored_var", false);                      /* Open the "stored" namespace in read/write mode */
   clampStoredVarCarPwmFreqsToProfile(&toSave, g_pwmFreqMaxProfile);
-  g_pref.putBytes("user_param", &toSave, sizeof(toSave)); /* Put the value of the stored user_param */
-  g_pref.putUChar(PREF_KEY_STATS_ENABLED, g_statsEnabled ? 1 : 0);
-  g_pref.putUShort(PREF_KEY_ANTIS_STEP, constrain(g_antiSpinStepMs, ANTISPIN_STEP_MIN, ANTISPIN_STEP_MAX));
-  g_pref.putUShort(PREF_KEY_ANTIS_STEP_PCT, constrain(g_antiSpinStepPct, ANTISPIN_STEP_PCT_MIN, ANTISPIN_STEP_PCT_MAX));
-  g_pref.putUChar(PREF_KEY_ANTIS_MODE, constrain(g_antiSpinDisplayMode, ANTISPIN_UI_MODE_MS, ANTISPIN_UI_MODE_TEXT));
-  g_pref.putUShort(PREF_KEY_BRAKE_STEP, constrain(g_brakeStep, BRAKE_STEP_MIN, BRAKE_STEP_MAX));
-  g_pref.putUShort(PREF_KEY_SENSI_STEP, constrain(g_sensiStep, SENSI_STEP_MIN, SENSI_STEP_MAX));
-  g_pref.putUChar(PREF_KEY_ADVANCED_MENU, g_advancedMenuEnabled ? 1 : 0);
-  g_pref.putUChar(PREF_KEY_ENC_INVERT, g_encoderInvertEnabled ? 1 : 0);
-  g_pref.putUChar(PREF_KEY_PWM_FREQ_MAX, getConfiguredPwmFreqMaxProfile());
-  g_pref.putUShort(PREF_KEY_ADC_RANGE, constrain(g_adcVoltageRange_mV, ADC_VOLTAGE_RANGE_MIN_MVOLTS, ADC_VOLTAGE_RANGE_MAX_MVOLTS));
-  g_pref.putUChar(PREF_KEY_EXT_POT1_TARGET, constrain(g_extPotTarget[0], EXT_POT_TARGET_MIN, EXT_POT_TARGET_MAX));
-  g_pref.putUChar(PREF_KEY_EXT_POT2_TARGET, constrain(g_extPotTarget[1], EXT_POT_TARGET_MIN, EXT_POT_TARGET_MAX));
-  g_pref.end();                                           /* Close the namespace */
+
+  EepromSnapshot_type snapshot = {
+    toSave,
+    (uint8_t)(g_statsEnabled ? 1 : 0),
+    (uint16_t)constrain(g_antiSpinStepMs, ANTISPIN_STEP_MIN, ANTISPIN_STEP_MAX),
+    (uint16_t)constrain(g_antiSpinStepPct, ANTISPIN_STEP_PCT_MIN, ANTISPIN_STEP_PCT_MAX),
+    (uint8_t)constrain(g_antiSpinDisplayMode, ANTISPIN_UI_MODE_MS, ANTISPIN_UI_MODE_TEXT),
+    (uint16_t)constrain(g_brakeStep, BRAKE_STEP_MIN, BRAKE_STEP_MAX),
+    (uint16_t)constrain(g_sensiStep, SENSI_STEP_MIN, SENSI_STEP_MAX),
+    (uint8_t)(g_advancedMenuEnabled ? 1 : 0),
+    (uint8_t)(g_encoderInvertEnabled ? 1 : 0),
+    (uint8_t)getConfiguredPwmFreqMaxProfile(),
+    (uint16_t)constrain(g_adcVoltageRange_mV, ADC_VOLTAGE_RANGE_MIN_MVOLTS, ADC_VOLTAGE_RANGE_MAX_MVOLTS),
+    (uint8_t)constrain(g_extPotTarget[0], EXT_POT_TARGET_MIN, EXT_POT_TARGET_MAX),
+    (uint8_t)constrain(g_extPotTarget[1], EXT_POT_TARGET_MIN, EXT_POT_TARGET_MAX)
+  };
+
+  /* Skip the "stored_var" flash write if nothing has changed since the last
+   * save: saveEEPROM() is called on almost every menu confirm (and even on
+   * a plain GRID/LIST view toggle), so this avoids needless NVS wear during
+   * trackside tuning sessions. saveWiFiNetworkSettings() is unaffected by
+   * this check and always runs, since WiFi credentials live outside this
+   * snapshot and are not otherwise persisted here. */
+  static EepromSnapshot_type s_lastSaved;
+  static bool s_hasLastSaved = false;
+  bool storedVarUnchanged = s_hasLastSaved && memcmp(&s_lastSaved, &snapshot, sizeof(snapshot)) == 0;
+
+  if (!storedVarUnchanged) {
+    s_lastSaved = snapshot;
+    s_hasLastSaved = true;
+
+    g_pref.begin("stored_var", false);                      /* Open the "stored" namespace in read/write mode */
+    g_pref.putBytes("user_param", &snapshot.storedVar, sizeof(snapshot.storedVar)); /* Put the value of the stored user_param */
+    g_pref.putUChar(PREF_KEY_STATS_ENABLED, snapshot.statsEnabled);
+    g_pref.putUShort(PREF_KEY_ANTIS_STEP, snapshot.antiSpinStepMs);
+    g_pref.putUShort(PREF_KEY_ANTIS_STEP_PCT, snapshot.antiSpinStepPct);
+    g_pref.putUChar(PREF_KEY_ANTIS_MODE, snapshot.antiSpinDisplayMode);
+    g_pref.putUShort(PREF_KEY_BRAKE_STEP, snapshot.brakeStep);
+    g_pref.putUShort(PREF_KEY_SENSI_STEP, snapshot.sensiStep);
+    g_pref.putUChar(PREF_KEY_ADVANCED_MENU, snapshot.advancedMenuEnabled);
+    g_pref.putUChar(PREF_KEY_ENC_INVERT, snapshot.encoderInvertEnabled);
+    g_pref.putUChar(PREF_KEY_PWM_FREQ_MAX, snapshot.pwmFreqMaxProfile);
+    g_pref.putUShort(PREF_KEY_ADC_RANGE, snapshot.adcVoltageRange_mV);
+    g_pref.putUChar(PREF_KEY_EXT_POT1_TARGET, snapshot.extPot1Target);
+    g_pref.putUChar(PREF_KEY_EXT_POT2_TARGET, snapshot.extPot2Target);
+    g_pref.end();                                           /* Close the namespace */
+  }
+
   saveWiFiNetworkSettings();
 }

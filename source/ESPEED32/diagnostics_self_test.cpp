@@ -10,6 +10,9 @@ extern Preferences g_pref;
 
 extern void resetEncoderForMainMenu();
 
+static constexpr uint16_t SELFTEST_IDLE_CURRENT_MAX_MA = 500;  /* [mA] Idle motor current pass/fail threshold */
+static constexpr uint16_t SELFTEST_VIN_MIN_MV = 2500;          /* [mV] Minimum supply voltage pass/fail threshold */
+
 /* Draw the step header: progress line + bold step name */
 static void selfTestStep(uint8_t step, uint8_t total, const char* name) {
   obdFill(&g_obd, OBD_WHITE, 1);
@@ -71,7 +74,7 @@ void showSelfTest() {
   obdWriteString(&g_obd, 0, 0,  7 * HEIGHT8x8, (char*)"enc >   (start)", FONT_6x8, OBD_BLACK, 1);
   selfTestWaitEnc();
 
-  /* ======== Step 1: Display (auto-pass) ======== */
+  /* ======== Step 1: Display ======== */
   /* Phase A: all pixels ON - verify no dead/stuck-off pixels */
   obdFill(&g_obd, OBD_BLACK, 1);
   obdWriteString(&g_obd, 0, 25, 3 * HEIGHT8x8, (char*)"All pixels ON", FONT_6x8, OBD_WHITE, 1);
@@ -81,8 +84,16 @@ void showSelfTest() {
   obdFill(&g_obd, OBD_WHITE, 1);
   obdWriteString(&g_obd, 0, 22, 3 * HEIGHT8x8, (char*)"All pixels OFF", FONT_6x8, OBD_BLACK, 1);
   obdWriteString(&g_obd, 0, 16, 6 * HEIGHT8x8, (char*)"1/9 Display", FONT_6x8, OBD_BLACK, 1);
-  delay(2000);
-  results[0] = true;  /* auto-pass: screen is visibly working */
+  delay(1000);
+  /* Require operator confirmation, same as every other step, so a dead/
+   * malfunctioning display can't silently report PASS. */
+  obdWriteString(&g_obd, 0, 0, 4 * HEIGHT8x8, (char*)"Both phases OK?", FONT_6x8, OBD_BLACK, 1);
+  obdWriteString(&g_obd, 0, 0, 5 * HEIGHT8x8, (char*)"Enc btn = yes", FONT_6x8, OBD_BLACK, 1);
+  obdWriteString(&g_obd, 0, 0, 6 * HEIGHT8x8, (char*)"Brk btn = no", FONT_6x8, OBD_BLACK, 1);
+  while (g_rotaryEncoder.isEncoderButtonClicked()) {}
+  results[0] = selfTestWaitEnc();
+  selfTestResult(results[0]);
+  delay(1000);
 
   /* ======== Step 2: Buzzer ======== */
   selfTestStep(2, TOTAL, "Buzzer");
@@ -193,12 +204,12 @@ void showSelfTest() {
   uint16_t idleCurrent_mA = hasCurrentSense ? HAL_ReadMotorCurrent() : 0;
 #if CURRENT_SENSE_PROFILE == CURRENT_SENSE_PROFILE_BTN99X0
   bool motorDiagOk = (HalfBridge_GetDiagnosis() == 0);  /* 0 = NO_ERROR */
-  results[7] = hasCurrentSense ? ((idleCurrent_mA < 500) && motorDiagOk) : motorDiagOk;
+  results[7] = hasCurrentSense ? ((idleCurrent_mA < SELFTEST_IDLE_CURRENT_MAX_MA) && motorDiagOk) : motorDiagOk;
 #elif CURRENT_SENSE_PROFILE == CURRENT_SENSE_PROFILE_BTS7960
-  results[7] = hasCurrentSense ? (idleCurrent_mA < 500) : true;
+  results[7] = hasCurrentSense ? (idleCurrent_mA < SELFTEST_IDLE_CURRENT_MAX_MA) : true;
 #else
   bool motorDiagOk = (HalfBridge_GetDiagnosis() == 0);  /* 0 = NO_ERROR */
-  results[7] = hasCurrentSense ? (idleCurrent_mA < 500) : motorDiagOk;
+  results[7] = hasCurrentSense ? (idleCurrent_mA < SELFTEST_IDLE_CURRENT_MAX_MA) : motorDiagOk;
 #endif
   if (hasCurrentSense) sprintf(line, "Idle: %d mA", idleCurrent_mA);
   else sprintf(line, "Idle: skipped");
@@ -209,11 +220,11 @@ void showSelfTest() {
   /* ======== Step 9: Voltage ======== */
   selfTestStep(9, TOTAL, "Voltage");
   uint16_t vin_mV = HAL_ReadVoltageDivider(AN_VIN_DIV, RVIFBL, RVIFBH);
-  results[8] = vin_mV > 2500;
+  results[8] = vin_mV > SELFTEST_VIN_MIN_MV;
   sprintf(line, "%d mV", vin_mV);
   obdWriteString(&g_obd, 0, 0, 3 * HEIGHT8x8, line, FONT_8x8, OBD_BLACK, 1);
-  obdWriteString(&g_obd, 0, 0, 5 * HEIGHT8x8,
-    results[8] ? (char*)"OK  (>2500mV)" : (char*)"LOW (<2500mV)", FONT_6x8, OBD_BLACK, 1);
+  sprintf(line, results[8] ? "OK  (>%dmV)" : "LOW (<%dmV)", SELFTEST_VIN_MIN_MV);
+  obdWriteString(&g_obd, 0, 0, 5 * HEIGHT8x8, line, FONT_6x8, OBD_BLACK, 1);
   selfTestResult(results[8], true);
   selfTestWaitEnc();
 

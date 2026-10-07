@@ -414,9 +414,8 @@ void showCopyCarSettings() {
  */
 void showSelectRenameCar() {
 
-  /* Trigger reading stops, so stop the motor */
-  /* Set trigRaw to max throttle if throttle is reversed, set to min throttle otherwise */
-  /* g_escVar.trigger_raw = THROTTLE_REV ? g_storedVar.maxTrigger_raw : g_storedVar.minTrigger_raw; */ /*TODO: decide what to do now that trigger reading is done on task 2 */
+  /* The trigger keeps driving the car through this menu, same as any other
+   * submenu; motor stop is reserved for calibration/self-test only. */
 
   uint16_t selectedOption = 0;
   /* Clear screen */

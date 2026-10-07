@@ -11,6 +11,7 @@ extern StoredVar_type g_storedVar;
 extern ESC_type g_escVar;
 extern uint16_t g_carSel;
 extern uint32_t g_lastEncoderInteraction;
+extern portMUX_TYPE g_lapStatsMux;
 
 extern uint16_t normalizeAndClamp(uint16_t raw, uint16_t minIn, uint16_t maxIn, uint16_t normalizedMax, bool isReversed);
 extern uint16_t addDeadBand(uint16_t inputVal, uint16_t minVal, uint16_t maxVal, uint16_t deadBand);
@@ -127,11 +128,13 @@ void Task2code(void *pvParameters) {
                 /* Valid dead spot crossing */
                 if (g_escVar.lapStartTime_ms > 0) {
                   uint32_t lapTime = nowMs - g_escVar.lapStartTime_ms;
+                  portENTER_CRITICAL(&g_lapStatsMux);
                   uint8_t idx = g_escVar.lapCount % LAP_MAX_COUNT;
                   g_escVar.lapTimes[idx] = lapTime;
                   if (g_escVar.lapCount == 0 || lapTime < g_escVar.bestLapTime_ms)
                     g_escVar.bestLapTime_ms = lapTime;
                   g_escVar.lapCount++;
+                  portEXIT_CRITICAL(&g_lapStatsMux);
                 }
                 g_escVar.lapStartTime_ms = nowMs;
                 lapRegisteredMs = nowMs;
