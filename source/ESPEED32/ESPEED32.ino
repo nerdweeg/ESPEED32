@@ -614,6 +614,45 @@ void startTimedWiFiPortal(uint16_t minutes) {
   }
 }
 
+/**
+ * @brief Measure how long the brake button is held at boot.
+ * @details Short hold (released before BOOT_PANIC_WIFI_HOLD_MS) keeps the self-test path.
+ *          Long hold selects the panic WiFi AP, for controllers where the encoder can't be turned.
+ * @return true when the hold reached BOOT_PANIC_WIFI_HOLD_MS (button released on return).
+ */
+static bool waitBootBrakeHoldForPanicWiFi() {
+  char buf[17];
+  uint32_t holdStart = millis();
+  uint32_t lastSecondsLeft = UINT32_MAX;
+
+  obdFill(&g_obd, OBD_WHITE, 1);
+  obdWriteString(&g_obd, 0, centerX8x8("Self-Test"), 0, (char*)"Self-Test", FONT_8x8, OBD_BLACK, 1);
+  obdWriteString(&g_obd, 0, 0, 2 * HEIGHT8x8, (char*)"Release: test", FONT_6x8, OBD_BLACK, 1);
+  obdWriteString(&g_obd, 0, 0, 3 * HEIGHT8x8, (char*)"Hold: WiFi AP", FONT_6x8, OBD_BLACK, 1);
+
+  while (digitalRead(BUTT_PIN) == BUTTON_PRESSED) {
+    uint32_t heldMs = millis() - holdStart;
+    if (heldMs >= BOOT_PANIC_WIFI_HOLD_MS) {
+      obdFill(&g_obd, OBD_WHITE, 1);
+      obdWriteString(&g_obd, 0, centerX8x8("WiFi AP"), 0, (char*)"WiFi AP", FONT_8x8, OBD_BLACK, 1);
+      obdWriteString(&g_obd, 0, 0, 3 * HEIGHT8x8, (char*)"Release button", FONT_6x8, OBD_BLACK, 1);
+      keySound();
+      while (digitalRead(BUTT_PIN) == BUTTON_PRESSED) vTaskDelay(1);
+      delay(BUTTON_DEBOUNCE_AFTER_LONG_MS);
+      return true;
+    }
+
+    uint32_t secondsLeft = (BOOT_PANIC_WIFI_HOLD_MS - heldMs + 999UL) / 1000UL;
+    if (secondsLeft != lastSecondsLeft) {
+      lastSecondsLeft = secondsLeft;
+      snprintf(buf, sizeof(buf), "WiFi AP in %lus ", (unsigned long)secondsLeft);
+      obdWriteString(&g_obd, 0, 0, 5 * HEIGHT8x8, buf, FONT_6x8, OBD_BLACK, 1);
+    }
+    vTaskDelay(10);
+  }
+  return false;
+}
+
 void stopTimedWiFiPortal() {
   if (isOtaInProgress()) {
     return;
@@ -922,12 +961,23 @@ void Task1code(void *pvParameters) {
             }
             else if (digitalRead(BUTT_PIN) == BUTTON_PRESSED)
             {
-              /* Hold brake button at startup → run self-test */
+              /* Hold brake button at startup → self-test, or panic WiFi AP on a long hold */
               g_currState = WELCOME;
               g_carSel = g_storedVar.selectedCarNumber;
               bootDebugLog("INIT: brake button held, entering self-test path");
               initDisplayAndEncoder();
-              showSelfTest();
+              if (waitBootBrakeHoldForPanicWiFi()) {
+                bootDebugLog("INIT: long brake hold, starting panic WiFi AP");
+                forceWiFiPortalApMode();
+                startTimedWiFiPortal(getWiFiTimedMinutes());
+                showWiFiPortalScreen();
+                g_startWiFiAfterOtaBoot = false;
+                if (g_storedVar.soundBoot) {
+                  onSound();
+                }
+              } else {
+                showSelfTest();
+              }
             }
             else  /* If button is NOT pressed at startup, go to RUNNING state */
             {

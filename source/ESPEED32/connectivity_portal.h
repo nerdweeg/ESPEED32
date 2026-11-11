@@ -41,6 +41,7 @@ uint16_t getConfiguredWiFiMode();
 void setConfiguredWiFiMode(uint16_t mode);
 uint16_t getActiveWiFiPortalMode();
 bool isWiFiPortalApFallbackActive();
+void forceWiFiPortalApMode();
 bool hasConfiguredWiFiClientCredentials();
 void getConfiguredWiFiClientSsid(char* out, size_t outLen);
 void getConfiguredWiFiClientPassword(char* out, size_t outLen);

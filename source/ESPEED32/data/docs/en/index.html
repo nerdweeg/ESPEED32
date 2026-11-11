@@ -209,6 +209,7 @@ details.doc-fold>:not(summary){margin-top:8px}
       <li>Trigger sensor family is selected when firmware is compiled. Default releases/builds use <code>TLE493D</code>; controllers built with <code>AS5600</code>, <code>AS5600L</code>, <code>MT6701</code>, or <code>ANALOG</code> must use a firmware build for that sensor family.</li>
       <li>Hold <code>encoder button</code> during power on: trigger calibration.</li>
       <li>Hold <code>brake button</code> during power on: Self-Test (9 steps).</li>
+      <li>Keep holding <code>brake button</code> for 5 s during power on: panic WiFi AP. The hotspot starts in AP mode even if WiFi is set to HOME, so the controller can be configured from a phone when the encoder can't be turned.</li>
     </ul>
     <h3>Calibration flow</h3>
     <ol>

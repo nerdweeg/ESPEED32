@@ -17,7 +17,7 @@
 
 /* Firmware Version */
 #define SW_MAJOR_VERSION 6
-#define SW_MINOR_VERSION 12
+#define SW_MINOR_VERSION 13
 #define SW_PATCH_VERSION 0
 
 /* Stored Variable Version */
@@ -280,6 +280,7 @@ static inline uint16_t clampPwmFreqRawToProfile(uint16_t freqRaw, uint16_t profi
 #define BUTTON_CLICK_MIN_MS           30  /* [ms] Minimum hold time to treat a press/release as a real click */
 #define BUTTON_SHORT_PRESS_DEBOUNCE_MS  200  /* [ms] Minimum time between button presses */
 #define BUTTON_LOCK_HOLD_MS            5000  /* [ms] Brake hold duration to toggle settings lock */
+#define BOOT_PANIC_WIFI_HOLD_MS        5000  /* [ms] Brake hold at boot to start the panic WiFi AP instead of self-test */
 
 /* Sound Configuration */
 #define SOUND_BOOT_DEFAULT  1  /* Boot sounds on by default (startup, calib, on, off) */

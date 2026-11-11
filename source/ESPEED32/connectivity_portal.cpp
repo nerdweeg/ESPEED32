@@ -49,6 +49,7 @@ static uint32_t g_wifiRestartAtMs = 0;
 static uint16_t g_wifiConfiguredMode = WIFI_CONFIG_AP;
 static uint8_t g_wifiActiveMode = WIFI_PORTAL_OFF;
 static bool g_wifiApFallbackActive = false;
+static bool g_wifiForceApMode = false;  /* Panic boot: ignore HOME mode until the portal is stopped */
 static wl_status_t g_wifiLastConnectStatus = WL_IDLE_STATUS;
 static char g_wifiClientSsid[WIFI_STA_SSID_MAX_LEN + 1] = "";
 static char g_wifiClientPassword[WIFI_STA_PASS_MAX_LEN + 1] = "";
@@ -4168,6 +4169,10 @@ bool isWiFiPortalApFallbackActive() {
   return g_wifiApFallbackActive;
 }
 
+void forceWiFiPortalApMode() {
+  g_wifiForceApMode = true;
+}
+
 bool hasConfiguredWiFiClientCredentials() {
   return hasWiFiClientCredentials();
 }
@@ -4338,6 +4343,7 @@ static void stopWiFiPortalNow() {
     startWiFiPortal();
   } else {
     g_wifiRestartAfterStopPending = false;
+    g_wifiForceApMode = false;
   }
 }
 
@@ -4463,12 +4469,12 @@ bool startWiFiPortal() {
   g_wifiConnectedSsid[0] = '\0';
 
   bool networkReady = false;
-  if (g_wifiConfiguredMode == WIFI_CONFIG_HOME && hasWiFiClientCredentials()) {
+  if (!g_wifiForceApMode && g_wifiConfiguredMode == WIFI_CONFIG_HOME && hasWiFiClientCredentials()) {
     networkReady = startWiFiHomeTransport();
   }
 
   if (!networkReady) {
-    g_wifiApFallbackActive = (g_wifiConfiguredMode == WIFI_CONFIG_HOME);
+    g_wifiApFallbackActive = (!g_wifiForceApMode && g_wifiConfiguredMode == WIFI_CONFIG_HOME);
     if (g_wifiApFallbackActive) {
       const char* reason = (g_wifiLastConnectStatus == WL_CONNECT_FAILED)
                              ? "Wrong password?"
