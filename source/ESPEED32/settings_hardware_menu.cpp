@@ -421,7 +421,7 @@ void showHardwareSettings() {
           hwMenuState = VALUE_SELECTION;
           tempPwmProfile = getConfiguredPwmFreqMaxProfile();
           g_rotaryEncoder.setAcceleration(SEL_ACCELERATION);
-          setUiEncoderBoundaries(PWM_FREQ_MAX_PROFILE_5K, PWM_FREQ_MAX_PROFILE_20K, false);
+          setUiEncoderBoundaries(PWM_FREQ_MAX_PROFILE_5K, PWM_FREQ_MAX_PROFILE_25K, false);
           resetUiEncoder(tempPwmProfile);
           needRedraw = true;
         } else if (sel == itemTest) {

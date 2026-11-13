@@ -90,7 +90,7 @@ uint16_t g_sensiStep = SENSI_STEP_DEFAULT;   /* Global encoder step when editing
 uint16_t g_advancedMenuEnabled = ADVANCED_MENU_ENABLED_DEFAULT; /* Main-menu visibility for FADE/PWM_F/BRAKE+: 0=hidden, 1=shown */
 uint16_t g_encoderInvertEnabled = ENCODER_INVERT_DEFAULT; /* Global encoder direction: 0=default, 1=inverted */
 uint16_t g_adcVoltageRange_mV = ACD_VOLTAGE_RANGE_DEFAULT_MVOLTS; /* Global ADC voltage scale used for VIN/current conversion */
-uint16_t g_pwmFreqMaxProfile = PWM_FREQ_MAX_PROFILE_DEFAULT; /* Global soft PWM ceiling: 5/10/20 kHz */
+uint16_t g_pwmFreqMaxProfile = PWM_FREQ_MAX_PROFILE_DEFAULT; /* Global soft PWM ceiling: 5/10/20/25 kHz */
 
 /* ESC Runtime Variables */
 ESC_type g_escVar {
