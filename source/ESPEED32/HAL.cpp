@@ -77,8 +77,8 @@ void HAL_InitHW() {
 #endif
 
   /* Configure motor control PWM channels */
-  ledcAttachChannel(HB_IN_PIN, PWM_FREQ_DEFAULT * 1000, THR_PWM_RES_BIT, THR_IN_PWM_CHAN);
-  ledcAttachChannel(HB_INH_PIN, PWM_FREQ_DEFAULT * 1000, THR_PWM_RES_BIT, THR_INH_PWM_CHAN);
+  ledcAttachChannel(HB_IN_PIN, PWM_FREQ_DEFAULT * 100, THR_PWM_RES_BIT, THR_IN_PWM_CHAN);
+  ledcAttachChannel(HB_INH_PIN, PWM_FREQ_DEFAULT * 100, THR_PWM_RES_BIT, THR_INH_PWM_CHAN);
 }
 
 /**

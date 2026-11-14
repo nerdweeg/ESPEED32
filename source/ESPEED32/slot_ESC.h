@@ -17,7 +17,7 @@
 
 /* Firmware Version */
 #define SW_MAJOR_VERSION 6
-#define SW_MINOR_VERSION 12
+#define SW_MINOR_VERSION 13
 #define SW_PATCH_VERSION 0
 
 /* Stored Variable Version */
@@ -100,7 +100,7 @@
 /* Parameter Limits */
 #define MIN_SPEED_MAX_VALUE       900   /* [0.1%] 90.0% max sensitivity */
 #define DRAG_MAX_VALUE            100   /* [%] Maximum drag brake */
-#define FREQ_MAX_VALUE           20000  /* [Hz] Absolute PWM frequency ceiling supported by firmware */
+#define FREQ_MAX_VALUE           25000  /* [Hz] Absolute PWM frequency ceiling supported by firmware */
 #define BRAKE_MAX_VALUE          1000   /* [0.1%] Maximum brake strength */
 #define THROTTLE_CURVE_SPEED_DIFF_MAX_VALUE  90   /* [%] Throttle curve max */
 #define THROTTLE_CURVE_SPEED_DIFF_MIN_VALUE  10   /* [%] Throttle curve min */
@@ -122,6 +122,7 @@
 #define PWM_FREQ_MAX_PROFILE_5K      0  /* Soft PWM ceiling = 5 kHz */
 #define PWM_FREQ_MAX_PROFILE_10K     1  /* Soft PWM ceiling = 10 kHz */
 #define PWM_FREQ_MAX_PROFILE_20K     2  /* Soft PWM ceiling = 20 kHz */
+#define PWM_FREQ_MAX_PROFILE_25K     3  /* Soft PWM ceiling = 25 kHz (more switching loss, driver runs warmer) */
 #define PWM_FREQ_MAX_PROFILE_DEFAULT PWM_FREQ_MAX_PROFILE_5K
 #define QUICK_BRAKE_THRESHOLD_MAX 50    /* [%] Maximum quick brake threshold */
 #define QUICK_BRAKE_STRENGTH_MAX  100   /* [%] Maximum quick brake strength */
@@ -228,6 +229,8 @@ static inline uint16_t pwmFreqMaxProfileToRaw(uint16_t profile) {
       return 100U;  /* 10.0 kHz in [100*Hz] units */
     case PWM_FREQ_MAX_PROFILE_20K:
       return 200U;  /* 20.0 kHz in [100*Hz] units */
+    case PWM_FREQ_MAX_PROFILE_25K:
+      return 250U;  /* 25.0 kHz in [100*Hz] units */
     case PWM_FREQ_MAX_PROFILE_5K:
     default:
       return 50U;   /* 5.0 kHz in [100*Hz] units */
@@ -240,6 +243,8 @@ static inline uint16_t pwmFreqMaxProfileToWholeKHz(uint16_t profile) {
       return 10U;
     case PWM_FREQ_MAX_PROFILE_20K:
       return 20U;
+    case PWM_FREQ_MAX_PROFILE_25K:
+      return 25U;
     case PWM_FREQ_MAX_PROFILE_5K:
     default:
       return 5U;
@@ -247,7 +252,7 @@ static inline uint16_t pwmFreqMaxProfileToWholeKHz(uint16_t profile) {
 }
 
 static inline uint16_t normalizePwmFreqMaxProfile(uint16_t profile) {
-  return (profile > PWM_FREQ_MAX_PROFILE_20K) ? PWM_FREQ_MAX_PROFILE_DEFAULT : profile;
+  return (profile > PWM_FREQ_MAX_PROFILE_25K) ? PWM_FREQ_MAX_PROFILE_DEFAULT : profile;
 }
 
 static inline uint16_t clampPwmFreqRawToProfile(uint16_t freqRaw, uint16_t profile) {
@@ -280,6 +285,7 @@ static inline uint16_t clampPwmFreqRawToProfile(uint16_t freqRaw, uint16_t profi
 #define BUTTON_CLICK_MIN_MS           30  /* [ms] Minimum hold time to treat a press/release as a real click */
 #define BUTTON_SHORT_PRESS_DEBOUNCE_MS  200  /* [ms] Minimum time between button presses */
 #define BUTTON_LOCK_HOLD_MS            5000  /* [ms] Brake hold duration to toggle settings lock */
+#define BOOT_PANIC_WIFI_HOLD_MS        5000  /* [ms] Brake hold at boot to start the panic WiFi AP instead of self-test */
 
 /* Sound Configuration */
 #define SOUND_BOOT_DEFAULT  1  /* Boot sounds on by default (startup, calib, on, off) */
