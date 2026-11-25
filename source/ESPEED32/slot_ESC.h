@@ -299,7 +299,7 @@ void applyAdcVoltageRangeMilliVolts(uint16_t range_mV);
 #define LOCK_MENU_ENABLED_DEFAULT  0  /* Hide LOCK menu item by default */
 #define LOCK_SHORTCUT_IDX_DEFAULT  5  /* Default shortcut: 5s (index = seconds) */
 #define LOCK_CONFIRM_DEFAULT       0  /* Hide fullscreen confirmation flash by default */
-#define GRID_CAR_SELECT_DEFAULT 1  /* Grid car select (RACESWP): 0=OFF, 1=ON */
+#define GRID_CAR_SELECT_DEFAULT 0  /* Grid car select (RACESWP): 0=OFF, 1=ON. Off so a mid-race encoder turn cannot swap car profile */
 #define STATS_ENABLED_DEFAULT    0  /* Hide STATS menu item by default */
 #define EXT_POT_COUNT            2  /* Two optional external ADC pots: GPIO39 and GPIO35 */
 #define EXT_POT_TARGET_OFF       0
