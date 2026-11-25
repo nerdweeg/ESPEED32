@@ -1619,7 +1619,7 @@ static String buildSchemaJson() {
                         "[{\"value\":0,\"label\":\"OFF\"},{\"value\":1,\"label\":\"ON\"}]");
   appendSchemaEnumField(json, first, "encoderInvert", "ENC INV",
                         "[{\"value\":0,\"label\":\"OFF\"},{\"value\":1,\"label\":\"ON\"}]");
-  appendSchemaEnumField(json, first, "pwmFreqMax", "PWM Max",
+  appendSchemaEnumField(json, first, "pwmFreqMax", "PWM_F Max",
                         "[{\"value\":5,\"label\":\"5 kHz\"},{\"value\":10,\"label\":\"10 kHz\"},{\"value\":20,\"label\":\"20 kHz\"},{\"value\":25,\"label\":\"25 kHz\"}]");
   appendSchemaIntField(json, first, "adcVoltageRangeMv", "VIN CAL ADC", ADC_VOLTAGE_RANGE_MIN_MVOLTS, ADC_VOLTAGE_RANGE_MAX_MVOLTS, 1, "mV");
   appendSchemaEnumField(json, first, "gridCarSelectEnabled", "Grid Car Select",

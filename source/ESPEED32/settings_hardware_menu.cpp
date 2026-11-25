@@ -24,27 +24,27 @@ extern void saveEEPROM(StoredVar_type toSave);
 extern void initMenuItems();
 
 static const char* HARDWARE_MENU_LABELS[9][HARDWARE_ITEMS_COUNT] = {
-  {"ENC.INVERT", "EKST.POT.", "TRIGGER", "PWM MAX", "TEST", "TILBAKE"},
-  {"ENC.INVERT", "EXT.POT.", "TRIGGER", "PWM MAX", "TEST", "BACK"},
-  {"ENC.INVERT", "EXT.POT.", "TRIGGER", "PWM MAX", "TEST", "BACK"},
-  {"ENC.INVERT", "EXT.POT.", "TRIGGER", "PWM MAX", "TEST", "BACK"},
-  {"ENC.INVERT", "POT.EXT.", "TRIGGER", "PWM MAX", "TEST", "ATRAS"},
-  {"ENC.INVERT", "EXT.POT.", "TRIGGER", "PWM MAX", "TEST", "ZURUCK"},
-  {"ENC.INVERT", "POT.EST.", "TRIGGER", "PWM MAX", "TEST", "INDIETRO"},
-  {"ENC.INVERT", "EXT.POT.", "TRIGGER", "PWM MAX", "TEST", "TERUG"},
-  {"ENC.INVERT", "POT.EXT.", "TRIGGER", "PWM MAX", "TESTE", "VOLTAR"}
+  {"ENC.INVERT", "EKST.POT.", "TRIGGER", "PWM_F MAX", "TEST", "TILBAKE"},
+  {"ENC.INVERT", "EXT.POT.", "TRIGGER", "PWM_F MAX", "TEST", "BACK"},
+  {"ENC.INVERT", "EXT.POT.", "TRIGGER", "PWM_F MAX", "TEST", "BACK"},
+  {"ENC.INVERT", "EXT.POT.", "TRIGGER", "PWM_F MAX", "TEST", "BACK"},
+  {"ENC.INVERT", "POT.EXT.", "TRIGGER", "PWM_F MAX", "TEST", "ATRAS"},
+  {"ENC.INVERT", "EXT.POT.", "TRIGGER", "PWM_F MAX", "TEST", "ZURUCK"},
+  {"ENC.INVERT", "POT.EST.", "TRIGGER", "PWM_F MAX", "TEST", "INDIETRO"},
+  {"ENC.INVERT", "EXT.POT.", "TRIGGER", "PWM_F MAX", "TEST", "TERUG"},
+  {"ENC.INVERT", "POT.EXT.", "TRIGGER", "PWM_F MAX", "TESTE", "VOLTAR"}
 };
 
 static const char* HARDWARE_MENU_LABELS_PASCAL[9][HARDWARE_ITEMS_COUNT] = {
-  {"Enc.Invert", "Ekst.Pot.", "Trigger", "Pwm Max", "Test", "Tilbake"},
-  {"Enc.Invert", "Ext.Pot.", "Trigger", "Pwm Max", "Test", "Back"},
-  {"Enc.Invert", "Ext.Pot.", "Trigger", "Pwm Max", "Test", "Back"},
-  {"Enc.Invert", "Ext.Pot.", "Trigger", "Pwm Max", "Test", "Back"},
-  {"Enc.Invert", "Pot.Ext.", "Trigger", "Pwm Max", "Test", "Atras"},
-  {"Enc.Invert", "Ext.Pot.", "Trigger", "Pwm Max", "Test", "Zuruck"},
-  {"Enc.Invert", "Pot.Est.", "Trigger", "Pwm Max", "Test", "Indietro"},
-  {"Enc.Invert", "Ext.Pot.", "Trigger", "Pwm Max", "Test", "Terug"},
-  {"Enc.Invert", "Pot.Ext.", "Trigger", "Pwm Max", "Teste", "Voltar"}
+  {"Enc.Invert", "Ekst.Pot.", "Trigger", "Pwm_F Max", "Test", "Tilbake"},
+  {"Enc.Invert", "Ext.Pot.", "Trigger", "Pwm_F Max", "Test", "Back"},
+  {"Enc.Invert", "Ext.Pot.", "Trigger", "Pwm_F Max", "Test", "Back"},
+  {"Enc.Invert", "Ext.Pot.", "Trigger", "Pwm_F Max", "Test", "Back"},
+  {"Enc.Invert", "Pot.Ext.", "Trigger", "Pwm_F Max", "Test", "Atras"},
+  {"Enc.Invert", "Ext.Pot.", "Trigger", "Pwm_F Max", "Test", "Zuruck"},
+  {"Enc.Invert", "Pot.Est.", "Trigger", "Pwm_F Max", "Test", "Indietro"},
+  {"Enc.Invert", "Ext.Pot.", "Trigger", "Pwm_F Max", "Test", "Terug"},
+  {"Enc.Invert", "Pot.Ext.", "Trigger", "Pwm_F Max", "Teste", "Voltar"}
 };
 
 static const char* SENSOR_MENU_LABELS[9][4] = {
@@ -389,7 +389,7 @@ void showHardwareSettings() {
     if (g_rotaryEncoder.isEncoderButtonClicked()) {
       lastInteraction = millis();
       if (hwMenuState == VALUE_SELECTION) {
-        /* Confirm PWM MAX edit */
+        /* Confirm PWM_F MAX edit */
         if (applyConfiguredPwmFreqMaxProfile(tempPwmProfile)) {
           initMenuItems();
           saveEEPROM(g_storedVar);
