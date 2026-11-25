@@ -281,6 +281,11 @@ static bool isBrakeEditTarget() {
   return g_encoderSelectedValuePtr == &g_storedVar.carParam[g_carSel].brake;
 }
 
+static bool isChokeEditTarget() {
+  return g_encoderSelectedValuePtr == &g_storedVar.carParam[g_carSel].maxSpeed &&
+         isLimitShownAsChoke(g_storedVar.language);
+}
+
 static bool isSensiEditTarget() {
   return g_encoderSelectedValuePtr == &g_storedVar.carParam[g_carSel].minSpeed;
 }
@@ -371,6 +376,14 @@ static uint16_t configureEncoderForSelectedValueEdit(uint16_t minRaw, uint16_t m
     return startEncoder;
   }
 
+  if (isChokeEditTarget()) {
+    /* Encoder counts CHOKE, so turning up chokes more (lowers LIMIT) */
+    uint16_t startChoke = limitPctToChokePct(constrain(*g_encoderSelectedValuePtr, minRaw, maxRaw));
+    setUiEncoderBoundaries(limitPctToChokePct(maxRaw), limitPctToChokePct(minRaw), false);
+    resetUiEncoder(startChoke);
+    return startChoke;
+  }
+
   uint16_t startValue = isAntiSpinEditTarget()
     ? antiSpinMsToUiValue(*g_encoderSelectedValuePtr, g_antiSpinDisplayMode)
     : *g_encoderSelectedValuePtr;
@@ -438,6 +451,8 @@ static void applyValueEditFromEncoder(uint16_t encoderValue) {
     int32_t newValue = (int32_t)g_sensiEditBaseValue + (delta * (int32_t)getSensiEditStepRaw());
     uint16_t maxSensiRaw = getSelectedSensiMaxRaw();
     *g_encoderSelectedValuePtr = (uint16_t)constrain(newValue, 0, maxSensiRaw);
+  } else if (isChokeEditTarget()) {
+    *g_encoderSelectedValuePtr = chokePctToLimitPct(encoderValue);
   } else {
     *g_encoderSelectedValuePtr = encoderValue;
   }

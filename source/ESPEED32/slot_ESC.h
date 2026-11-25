@@ -540,6 +540,20 @@ typedef struct {
   uint16_t lines;                 /* Number of visible lines */
 } Menu_type;
 
+/* CS/ACD call LIMIT "choke", which runs the opposite way: CHOKE = 100 - LIMIT.
+ * Storage always uses LIMIT; only the displayed/edited value is inverted. */
+static inline bool isLimitShownAsChoke(uint16_t lang) {
+  return (lang == LANG_CS) || (lang == LANG_ACD);
+}
+
+static inline uint16_t limitPctToChokePct(uint16_t limitPct) {
+  return (limitPct >= MAX_SPEED_DEFAULT) ? 0U : (uint16_t)(MAX_SPEED_DEFAULT - limitPct);
+}
+
+static inline uint16_t chokePctToLimitPct(uint16_t chokePct) {
+  return (chokePct >= MAX_SPEED_DEFAULT) ? 0U : (uint16_t)(MAX_SPEED_DEFAULT - chokePct);
+}
+
 /* 0.1% conversion helpers */
 static inline uint16_t pctX10ToWholePctRounded(uint16_t pctX10) {
   return (pctX10 + 5U) / 10U;

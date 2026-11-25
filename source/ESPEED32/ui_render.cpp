@@ -700,7 +700,12 @@ void printMainMenu(MenuState_enum currMenuState)
           }
           else {
             /* value is a generic pointer to void, so first cast to uint16_t pointer, then take the pointed value */
-            sprintf(msgStr, "%3d%s", *(uint16_t *)(g_mainMenu.item[menuIndex].value), g_mainMenu.item[menuIndex].unit);
+            uint16_t shownValue = *(uint16_t *)(g_mainMenu.item[menuIndex].value);
+            if (g_mainMenu.item[menuIndex].value == &g_storedVar.carParam[g_carSel].maxSpeed &&
+                isLimitShownAsChoke(g_storedVar.language)) {
+              shownValue = limitPctToChokePct(shownValue);  /* CS/ACD: show LIMIT as CHOKE */
+            }
+            sprintf(msgStr, "%3d%s", shownValue, g_mainMenu.item[menuIndex].unit);
           }
           /* Right-align: calculate text width and position from right edge */
           if (isBrakeRow) {

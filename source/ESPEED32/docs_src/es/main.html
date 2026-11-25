@@ -75,6 +75,7 @@
       <li><code>ENG</code>: nombres genericos (<code>BRAKE/SENSI/ANTIS/CURVE/FADE/LIMIT</code>).</li>
       <li><code>CS</code>: estilo CarSteen (<code>ATTACK/CHOKE2/PROFIL/CHOKE1</code>).</li>
       <li><code>ACD</code>: estilo ACD donde hay equivalencia directa (<code>SENSI</code> y <code>CHOKE</code> para LIMIT).</li>
+      <li><code>CHOKE1</code> (CS) y <code>CHOKE</code> (ACD) van al reves que <code>LIMIT</code>: <code>CHOKE = 100 - LIMIT</code>. <code>CHOKE 0</code> significa sin estrangulamiento (velocidad maxima) y un valor mayor estrangula mas. Se guarda como LIMIT, asi que cambiar de idioma mantiene la misma velocidad maxima.</li>
       <li><code>DISPLAY -&gt; CASE</code> decide si las etiquetas se muestran en <code>UPPER</code> o <code>Pascal</code>.</li>
       <li><code>DISPLAY -&gt; FONT SIZE</code> cambia la vista de listas y menus entre <code>LARGE</code> y <code>small</code>.</li>
       <li><code>PANTALLA -&gt; AVANZADO</code> decide si <code>FADE</code>, <code>PWM_F</code> y <code>FRENO+</code> se muestran en el menu principal. En <code>OFF</code> se ocultan esas filas para dejar un menu mas simple, pero los valores guardados del coche siguen activos.</li>

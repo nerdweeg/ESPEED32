@@ -77,6 +77,7 @@
       <li><code>ENG</code>: generic naming (<code>BRAKE/SENSI/ANTIS/CURVE/FADE/LIMIT</code>).</li>
       <li><code>CS</code>: CarSteen-style terms (<code>ATTACK/CHOKE2/PROFIL/CHOKE1</code>).</li>
       <li><code>ACD</code>: ACD-style terms where directly applicable (<code>SENSI</code> and <code>CHOKE</code> for limit). <code>ANTIS</code> remains anti-spin because the ACD manual does not define a separate Choke2 term.</li>
+      <li><code>CHOKE1</code> (CS) and <code>CHOKE</code> (ACD) run the opposite way to <code>LIMIT</code>: <code>CHOKE = 100 - LIMIT</code>. <code>CHOKE 0</code> means no choke (full speed), and a higher value chokes more. The setting is stored as LIMIT, so switching language keeps the same top speed.</li>
       <li><code>DISPLAY -&gt; CASE</code> chooses whether labels are shown in <code>UPPER</code> or <code>Pascal</code>.</li>
       <li><code>DISPLAY -&gt; FONT SIZE</code> changes list/menu text density between <code>LARGE</code> and <code>small</code>.</li>
       <li><code>DISPLAY -&gt; ADVANCED</code> toggles whether <code>FADE</code>, <code>PWM_F</code>, and <code>BRAKE+</code> are shown in the main menu. Turning it <code>OFF</code> hides those rows for a simpler menu, but the stored car values still stay active.</li>
