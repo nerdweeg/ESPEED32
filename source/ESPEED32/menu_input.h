@@ -19,4 +19,11 @@ struct BrakeButtonEdge {
 /** @brief Block (yielding) until the brake button is released. */
 void waitForBrakeButtonRelease();
 
+/**
+ * @brief Scroll a list frame so the selected row stays visible.
+ * @param selector Selected row, in the same base (0 or 1) as frameUpper/frameLower.
+ * @return true if the frame moved (callers usually clear the screen).
+ */
+bool scrollMenuFrame(uint16_t selector, uint8_t visibleLines, uint16_t& frameUpper, uint16_t& frameLower);
+
 #endif  /* MENU_INPUT_H_ */

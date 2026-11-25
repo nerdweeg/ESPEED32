@@ -223,13 +223,7 @@ void showSettingsMenu() {
 
     /* Frame scrolling */
     if (settingsMenuState == ITEM_SELECTION) {
-      if (settingsSelector > frameLower) {
-        frameLower = settingsSelector;
-        frameUpper = frameLower - visibleLines + 1;
-        obdFill(&g_obd, OBD_WHITE, 1);
-      } else if (settingsSelector < frameUpper) {
-        frameUpper = settingsSelector;
-        frameLower = frameUpper + visibleLines - 1;
+      if (scrollMenuFrame(settingsSelector, visibleLines, frameUpper, frameLower)) {
         obdFill(&g_obd, OBD_WHITE, 1);
       }
     }

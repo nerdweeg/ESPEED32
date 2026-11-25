@@ -20,3 +20,17 @@ void waitForBrakeButtonRelease() {
     vTaskDelay(5);
   }
 }
+
+bool scrollMenuFrame(uint16_t selector, uint8_t visibleLines, uint16_t& frameUpper, uint16_t& frameLower) {
+  if (selector > frameLower) {
+    frameLower = selector;
+    frameUpper = frameLower - visibleLines + 1;
+    return true;
+  }
+  if (selector < frameUpper) {
+    frameUpper = selector;
+    frameLower = frameUpper + visibleLines - 1;
+    return true;
+  }
+  return false;
+}

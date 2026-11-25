@@ -948,13 +948,7 @@ void showStepsSettings() {
 
     /* Frame scrolling (future-proof if STEPS_ITEMS_COUNT grows) */
     if (menuState == ITEM_SELECTION) {
-      if (sel > frameLower) {
-        frameLower = sel;
-        frameUpper = frameLower - visibleLines + 1;
-        obdFill(&g_obd, OBD_WHITE, 1);
-      } else if (sel < frameUpper) {
-        frameUpper = sel;
-        frameLower = frameUpper + visibleLines - 1;
+      if (scrollMenuFrame(sel, visibleLines, frameUpper, frameLower)) {
         obdFill(&g_obd, OBD_WHITE, 1);
       }
     }
