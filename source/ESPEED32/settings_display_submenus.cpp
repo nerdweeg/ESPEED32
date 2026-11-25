@@ -206,7 +206,7 @@ void showScreensaverSettings() {
   const uint8_t SS_ITEMS = 5;
   uint8_t lang = g_storedVar.language;
 
-  const char* ssNamesByLang[9][SS_ITEMS] = {
+  const char* ssNamesByLang[LANG_COUNT][SS_ITEMS] = {
     {"NA", "LINJE1", "LINJE2", "TID", "TILBAKE"},
     {"NOW", "LINE1", "LINE2", "TIME", "BACK"},
     {"NOW", "LINE1", "LINE2", "TIME", "BACK"},
@@ -215,10 +215,11 @@ void showScreensaverSettings() {
     {"JETZT", "ZEILE1", "ZEILE2", "ZEIT", "ZURUCK"},
     {"ORA", "RIGA1", "RIGA2", "TEMPO", "INDIETRO"},
     {"NU", "REGEL1", "REGEL2", "TIJD", "TERUG"},
-    {"AGORA", "LINHA1", "LINHA2", "TEMPO", "VOLTAR"}
+    {"AGORA", "LINHA1", "LINHA2", "TEMPO", "VOLTAR"},
+    {"NU", "RAD1", "RAD2", "TID", "TILLBAKA"}
   };
-  const char* editorTitleL1ByLang[9] = {"Linje 1", "Line 1", "Line 1", "Line 1", "Linea 1", "Zeile 1", "Riga 1", "Regel 1", "Linha 1"};
-  const char* editorTitleL2ByLang[9] = {"Linje 2", "Line 2", "Line 2", "Line 2", "Linea 2", "Zeile 2", "Riga 2", "Regel 2", "Linha 2"};
+  const char* editorTitleL1ByLang[LANG_COUNT] = {"Linje 1", "Line 1", "Line 1", "Line 1", "Linea 1", "Zeile 1", "Riga 1", "Regel 1", "Linha 1", "Rad 1"};
+  const char* editorTitleL2ByLang[LANG_COUNT] = {"Linje 2", "Line 2", "Line 2", "Line 2", "Linea 2", "Zeile 2", "Riga 2", "Regel 2", "Linha 2", "Rad 2"};
   const char** ssNames = ssNamesByLang[lang];
   const char* editorTitleL1 = editorTitleL1ByLang[lang];
   const char* editorTitleL2 = editorTitleL2ByLang[lang];
@@ -395,12 +396,12 @@ void showScreensaverSettings() {
 }
 
 void showAntiSpinSettings() {
-  const char* lblTypeUpper[9]    = {"REGTYPE",   "REG.TYPE", "REG.TYPE", "REG.TYPE", "TIPO REG", "REG.TYP",  "TIPO REG", "REG.TYPE", "TIPO REG"};
-  const char* lblTypePascal[9]   = {"Regtype",   "Reg.type", "Reg.type", "Reg.type", "Tipo reg", "Reg.typ",  "Tipo reg", "Reg.type", "Tipo reg"};
-  const char* lblStepMsUpper[9]  = {"STEG MS",   "STEP MS",  "STEP MS",  "STEP MS",  "PASO MS",  "SCHR MS",  "PASSO MS", "STAP MS",  "PASSO MS"};
-  const char* lblStepMsPascal[9] = {"Steg ms",   "Step ms",  "Step ms",  "Step ms",  "Paso ms",  "Schr ms",  "Passo ms", "Stap ms",  "Passo ms"};
-  const char* lblStepPctUpper[9] = {"STEG %",    "STEP %",   "STEP %",   "STEP %",   "PASO %",   "SCHR %",   "PASSO %",  "STAP %",   "PASSO %"};
-  const char* lblStepPctPascal[9]= {"Steg %",    "Step %",   "Step %",   "Step %",   "Paso %",   "Schr %",   "Passo %",  "Stap %",   "Passo %"};
+  const char* lblTypeUpper[LANG_COUNT]    = {"REGTYPE",   "REG.TYPE", "REG.TYPE", "REG.TYPE", "TIPO REG", "REG.TYP",  "TIPO REG", "REG.TYPE", "TIPO REG", "REG.TYP"};
+  const char* lblTypePascal[LANG_COUNT]   = {"Regtype",   "Reg.type", "Reg.type", "Reg.type", "Tipo reg", "Reg.typ",  "Tipo reg", "Reg.type", "Tipo reg", "Reg.typ"};
+  const char* lblStepMsUpper[LANG_COUNT]  = {"STEG MS",   "STEP MS",  "STEP MS",  "STEP MS",  "PASO MS",  "SCHR MS",  "PASSO MS", "STAP MS",  "PASSO MS", "STEG MS"};
+  const char* lblStepMsPascal[LANG_COUNT] = {"Steg ms",   "Step ms",  "Step ms",  "Step ms",  "Paso ms",  "Schr ms",  "Passo ms", "Stap ms",  "Passo ms", "Steg ms"};
+  const char* lblStepPctUpper[LANG_COUNT] = {"STEG %",    "STEP %",   "STEP %",   "STEP %",   "PASO %",   "SCHR %",   "PASSO %",  "STAP %",   "PASSO %", "STEG %"};
+  const char* lblStepPctPascal[LANG_COUNT]= {"Steg %",    "Step %",   "Step %",   "Step %",   "Paso %",   "Schr %",   "Passo %",  "Stap %",   "Passo %", "Steg %"};
   const char* const* lblType     = (g_storedVar.textCase == TEXT_CASE_PASCAL) ? lblTypePascal : lblTypeUpper;
   const char* const* lblStepMs   = (g_storedVar.textCase == TEXT_CASE_PASCAL) ? lblStepMsPascal : lblStepMsUpper;
   const char* const* lblStepPct  = (g_storedVar.textCase == TEXT_CASE_PASCAL) ? lblStepPctPascal : lblStepPctUpper;
@@ -650,7 +651,7 @@ void showStatusSettings() {
   uint8_t lang = g_storedVar.language;
 
   /* Row labels */
-  const char* rowNamesByLang[9][ST_ITEMS] = {
+  const char* rowNamesByLang[LANG_COUNT][ST_ITEMS] = {
     {"FELT 1", "FELT 2", "FELT 3", "FELT 4", "TILBAKE"},
     {"SLOT 1", "SLOT 2", "SLOT 3", "SLOT 4", "BACK"},
     {"SLOT 1", "SLOT 2", "SLOT 3", "SLOT 4", "BACK"},
@@ -659,12 +660,13 @@ void showStatusSettings() {
     {"SLOT 1", "SLOT 2", "SLOT 3", "SLOT 4", "ZURUCK"},
     {"SLOT 1", "SLOT 2", "SLOT 3", "SLOT 4", "INDIETRO"},
     {"SLOT 1", "SLOT 2", "SLOT 3", "SLOT 4", "TERUG"},
-    {"SLOT 1", "SLOT 2", "SLOT 3", "SLOT 4", "VOLTAR"}
+    {"SLOT 1", "SLOT 2", "SLOT 3", "SLOT 4", "VOLTAR"},
+    {"FALT 1", "FALT 2", "FALT 3", "FALT 4", "TILLBAKA"}
   };
   const char** rowNames = rowNamesByLang[lang];
 
   /* Content type labels shown right-justified in menu. */
-  const char* slotLabelsByLang[9][ST_SLOT_MAX + 1] = {
+  const char* slotLabelsByLang[LANG_COUNT][ST_SLOT_MAX + 1] = {
     {"---", "OUT%", "GASS", "BIL", "AMPE", "VOLT", "AMPE", "BREMS", "VBAT", "ID"},
     {"---", "OUT%", "THRO", "CAR", "CURR", "VOLT", "CURR", "BRAKE", "VBAT", "ID"},
     {"---", "OUT%", "THRO", "CAR", "CURR", "VOLT", "CURR", "BRAKE", "VBAT", "ID"},
@@ -673,7 +675,8 @@ void showStatusSettings() {
     {"---", "OUT%", "GAS", "AUTO", "AMP", "VOLT", "AMP", "BREMS", "VBAT", "ID"},
     {"---", "OUT%", "GAS", "AUTO", "AMP", "VOLT", "AMP", "FRENO", "VBAT", "ID"},
     {"---", "OUT%", "GAS", "AUTO", "AMP", "VOLT", "AMP", "REM", "VBAT", "ID"},
-    {"---", "OUT%", "GAS", "AUTO", "CORR", "VOLT", "CORR", "FREIO", "VBAT", "ID"}
+    {"---", "OUT%", "GAS", "AUTO", "CORR", "VOLT", "CORR", "FREIO", "VBAT", "ID"},
+    {"---", "OUT%", "GAS", "BIL", "AMP", "VOLT", "AMP", "BROMS", "VBAT", "ID"}
   };
   const char** slotLabels = slotLabelsByLang[lang];
 

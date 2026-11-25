@@ -73,7 +73,9 @@
 #define LANG_ITA            6     /* Italian language */
 #define LANG_NLD            7     /* Dutch language */
 #define LANG_POR            8     /* Portuguese language */
-#define LANG_MAX            LANG_POR
+#define LANG_SWE            9     /* Swedish language */
+#define LANG_MAX            LANG_SWE
+#define LANG_COUNT          (LANG_MAX + 1)  /* Rows in every language-indexed string table */
 #define LANG_DEFAULT        LANG_ENG
 
 /* Default Parameter Values */

@@ -11,7 +11,7 @@
 #include "ui_render.h"
 #include "menu_input.h"
 
-static const char* HARDWARE_MENU_LABELS[9][HARDWARE_ITEMS_COUNT] = {
+static const char* HARDWARE_MENU_LABELS[LANG_COUNT][HARDWARE_ITEMS_COUNT] = {
   {"ENC.INVERT", "EKST.POT.", "TRIGGER", "PWM_F MAX", "TEST", "TILBAKE"},
   {"ENC.INVERT", "EXT.POT.", "TRIGGER", "PWM_F MAX", "TEST", "BACK"},
   {"ENC.INVERT", "EXT.POT.", "TRIGGER", "PWM_F MAX", "TEST", "BACK"},
@@ -20,10 +20,11 @@ static const char* HARDWARE_MENU_LABELS[9][HARDWARE_ITEMS_COUNT] = {
   {"ENC.INVERT", "EXT.POT.", "TRIGGER", "PWM_F MAX", "TEST", "ZURUCK"},
   {"ENC.INVERT", "POT.EST.", "TRIGGER", "PWM_F MAX", "TEST", "INDIETRO"},
   {"ENC.INVERT", "EXT.POT.", "TRIGGER", "PWM_F MAX", "TEST", "TERUG"},
-  {"ENC.INVERT", "POT.EXT.", "TRIGGER", "PWM_F MAX", "TESTE", "VOLTAR"}
+  {"ENC.INVERT", "POT.EXT.", "TRIGGER", "PWM_F MAX", "TESTE", "VOLTAR"},
+  {"ENC.INVERT", "EXT.POT.", "TRIGGER", "PWM_F MAX", "TEST", "TILLBAKA"}
 };
 
-static const char* HARDWARE_MENU_LABELS_PASCAL[9][HARDWARE_ITEMS_COUNT] = {
+static const char* HARDWARE_MENU_LABELS_PASCAL[LANG_COUNT][HARDWARE_ITEMS_COUNT] = {
   {"Enc.Invert", "Ekst.Pot.", "Trigger", "Pwm_F Max", "Test", "Tilbake"},
   {"Enc.Invert", "Ext.Pot.", "Trigger", "Pwm_F Max", "Test", "Back"},
   {"Enc.Invert", "Ext.Pot.", "Trigger", "Pwm_F Max", "Test", "Back"},
@@ -32,10 +33,11 @@ static const char* HARDWARE_MENU_LABELS_PASCAL[9][HARDWARE_ITEMS_COUNT] = {
   {"Enc.Invert", "Ext.Pot.", "Trigger", "Pwm_F Max", "Test", "Zuruck"},
   {"Enc.Invert", "Pot.Est.", "Trigger", "Pwm_F Max", "Test", "Indietro"},
   {"Enc.Invert", "Ext.Pot.", "Trigger", "Pwm_F Max", "Test", "Terug"},
-  {"Enc.Invert", "Pot.Ext.", "Trigger", "Pwm_F Max", "Teste", "Voltar"}
+  {"Enc.Invert", "Pot.Ext.", "Trigger", "Pwm_F Max", "Teste", "Voltar"},
+  {"Enc.Invert", "Ext.Pot.", "Trigger", "Pwm_F Max", "Test", "Tillbaka"}
 };
 
-static const char* SENSOR_MENU_LABELS[9][4] = {
+static const char* SENSOR_MENU_LABELS[LANG_COUNT][4] = {
   {"FAMILIE", "AKTIV", "TYPE", "TILBAKE"},
   {"FAMILY", "ACTIVE", "TYPE", "BACK"},
   {"FAMILY", "ACTIVE", "TYPE", "BACK"},
@@ -44,10 +46,11 @@ static const char* SENSOR_MENU_LABELS[9][4] = {
   {"FAMILIE", "AKTIV", "TYPE", "ZURUCK"},
   {"FAMIGLIA", "ATTIVO", "TYPE", "INDIETRO"},
   {"FAMILIE", "ACTIEF", "TYPE", "TERUG"},
-  {"FAMILIA", "ATIVO", "TYPE", "VOLTAR"}
+  {"FAMILIA", "ATIVO", "TYPE", "VOLTAR"},
+  {"FAMILJ", "AKTIV", "TYP", "TILLBAKA"}
 };
 
-static const char* SENSOR_MENU_LABELS_PASCAL[9][4] = {
+static const char* SENSOR_MENU_LABELS_PASCAL[LANG_COUNT][4] = {
   {"Familie", "Aktiv", "Type", "Tilbake"},
   {"Family", "Active", "Type", "Back"},
   {"Family", "Active", "Type", "Back"},
@@ -56,7 +59,8 @@ static const char* SENSOR_MENU_LABELS_PASCAL[9][4] = {
   {"Familie", "Aktiv", "Type", "Zuruck"},
   {"Famiglia", "Attivo", "Type", "Indietro"},
   {"Familie", "Actief", "Type", "Terug"},
-  {"Familia", "Ativo", "Type", "Voltar"}
+  {"Familia", "Ativo", "Type", "Voltar"},
+  {"Familj", "Aktiv", "Typ", "Tillbaka"}
 };
 
 static const char* getHardwareMenuLabel(uint8_t lang, uint8_t item) {
