@@ -236,9 +236,9 @@ details.doc-fold>:not(summary){margin-top:8px}
       <li><code>DISPLAY -&gt; LANGUAGE</code> waehlt zwischen lokalisierten Labels und den Namensprofilen ENG/CS/ACD.</li>
       <li><code>NOR/ESP/DEU/ITA/NLD/POR</code>: lokalisierte UI mit den Standardnamen <code>BRAKE/SENSI/ANTIS/CURVE/FADE/LIMIT</code>.</li>
       <li><code>ENG</code>: generische Namen (<code>BRAKE/SENSI/ANTIS/CURVE/FADE/LIMIT</code>).</li>
-      <li><code>CS</code>: CarSteen-Stil (<code>ATTACK/CHOKE2/PROFIL/CHOKE1</code>).</li>
+      <li><code>CS</code>: CarSteen-Stil (<code>ATTCK/CHOK2/PROFL/CHOK1</code>).</li>
       <li><code>ACD</code>: ACD-Stil, wo es direkte Entsprechungen gibt (<code>SENSI</code> und <code>CHOKE</code> fuer LIMIT).</li>
-      <li><code>CHOKE1</code> (CS) und <code>CHOKE</code> (ACD) laufen umgekehrt zu <code>LIMIT</code>: <code>CHOKE = 100 - LIMIT</code>. <code>CHOKE 0</code> bedeutet keine Drosselung (volle Geschwindigkeit), ein hoeherer Wert drosselt mehr. Gespeichert wird LIMIT, ein Sprachwechsel aendert die Hoechstgeschwindigkeit also nicht.</li>
+      <li><code>CHOK1</code> (CS) und <code>CHOKE</code> (ACD) laufen umgekehrt zu <code>LIMIT</code>: <code>CHOKE = 100 - LIMIT</code>. <code>CHOKE 0</code> bedeutet keine Drosselung (volle Geschwindigkeit), ein hoeherer Wert drosselt mehr. Gespeichert wird LIMIT, ein Sprachwechsel aendert die Hoechstgeschwindigkeit also nicht.</li>
       <li><code>DISPLAY -&gt; CASE</code> waehlt, ob Labels in <code>UPPER</code> oder <code>Pascal</code> angezeigt werden.</li>
       <li><code>DISPLAY -&gt; FONT SIZE</code> stellt die Listen- und Menueansicht auf <code>LARGE</code> oder <code>small</code>.</li>
       <li><code>ANZEIGE -&gt; ERWEITERT</code> legt fest, ob <code>FADE</code>, <code>PWM_F</code> und <code>BREMSE+</code> im Hauptmenue sichtbar sind. Auf <code>AUS</code> werden diese Zeilen fuer ein einfacheres Menue ausgeblendet, die gespeicherten Fahrzeugwerte bleiben aber aktiv.</li>
@@ -467,7 +467,7 @@ details.doc-fold>:not(summary){margin-top:8px}
     <h3>HARDWARE-Untermenue</h3>
     <ul>
       <li><code>ENC INV</code>: Encoder-Richtung global umkehren, falls sich das Menue verkehrt anfuehlt.</li>
-      <li><code>EXT POT</code>: <code>POT 1</code> und <code>POT 2</code> als Live-Override fuer <code>AUS</code>, <code>BREMSE</code> oder <code>SENSI</code> zuweisen.</li>
+      <li><code>EXT POT</code>: <code>POT 1</code> und <code>POT 2</code> als Live-Override fuer <code>AUS</code>, <code>BREMS</code> oder <code>SENSI</code> zuweisen.</li>
       <li><code>TRIGGER</code>: zeigt Sensorfamilie und aktiven Typ. In <code>TLE493D</code>-Builds laesst sich <code>TYPE</code> auch zwischen <code>AUTO</code>, <code>W2B6</code>, <code>W2B6_A0</code> und <code>P3B6</code> umschalten.</li>
       <li><code>PWM MAX</code>: globales Maximum fuer <code>PWM_F</code>. Waehle 5, 10, 20 oder 25 kHz. <code>PWM_F</code> laesst sich dann in 0.1-kHz-Schritten bis zu dieser Grenze einstellen. Wenn du ihn senkst, werden alle Fahrzeugprofile auf diese Obergrenze begrenzt. Nachteil hoher PWM (ueber ca. 20 kHz): Der Motortreiber schaltet oefter, dadurch steigen die Schaltverluste und der Treiber wird waermer. Die Schaltflanken nehmen ausserdem einen groesseren Teil jeder Periode ein, sodass das Ansprechen bei sehr wenig und sehr viel Gas weniger linear wird. Nimm die niedrigste Frequenz, die sich gut anfuehlt, und pruefe die Treibertemperatur ueber 20 kHz.</li>
       <li><code>TEST</code>: startet den 9-Schritt-Selbsttest fuer OLED, Taster, Trigger und Ausgaenge.</li>
