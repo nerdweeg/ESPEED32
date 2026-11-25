@@ -6,6 +6,7 @@
 #include "app_init.h"
 #include "power_ui.h"
 #include "ui_render.h"
+#include "menu_input.h"
 
 static void formatConfiguredMenuLabel(const char* source, char* buffer, size_t bufferSize) {
   if (buffer == nullptr || bufferSize == 0) return;
@@ -271,28 +272,21 @@ void showScreensaverSettings() {
     }
 
     /* Brake button = cancel time edit / exit submenu */
-    static bool brakePressedSS = false;
-    static uint32_t lastBrakeSS = 0;
-    if (digitalRead(BUTT_PIN) == BUTTON_PRESSED) {
-      if (!brakePressedSS && millis() - lastBrakeSS > BUTTON_SHORT_PRESS_DEBOUNCE_MS) {
-        brakePressedSS = true;
-        lastBrakeSS = millis();
-        lastInteraction = millis();
-        if (inTimeEdit) {
-          g_storedVar.screensaverTimeout = origTimeout;  /* Cancel - restore */
-          inTimeEdit = false;
-          g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
-          setUiEncoderBoundaries(1, SS_ITEMS, false);
-          resetUiEncoder(4);  /* Return to TIME item */
-          obdFill(&g_obd, OBD_WHITE, 1);
-          prevSel = 0xFF;
-        } else {
-          while (digitalRead(BUTT_PIN) == BUTTON_PRESSED) { vTaskDelay(5); }
-          break;  /* Exit to settings menu */
-        }
+    static BrakeButtonEdge brakePressedSS;
+    if (brakePressedSS.pressed()) {
+      lastInteraction = millis();
+      if (inTimeEdit) {
+        g_storedVar.screensaverTimeout = origTimeout;  /* Cancel - restore */
+        inTimeEdit = false;
+        g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
+        setUiEncoderBoundaries(1, SS_ITEMS, false);
+        resetUiEncoder(4);  /* Return to TIME item */
+        obdFill(&g_obd, OBD_WHITE, 1);
+        prevSel = 0xFF;
+      } else {
+        waitForBrakeButtonRelease();
+        break;  /* Exit to settings menu */
       }
-    } else {
-      brakePressedSS = false;
     }
 
     /* Encoder */
@@ -575,7 +569,7 @@ void showAntiSpinSettings() {
           resetBrowseEncoder();
           needRedraw = true;
         } else {
-          while (digitalRead(BUTT_PIN) == BUTTON_PRESSED) { vTaskDelay(5); }
+          waitForBrakeButtonRelease();
           break;
         }
       }
@@ -726,30 +720,23 @@ void showStatusSettings() {
     }
 
     /* Brake button */
-    static bool brakeInStatus = false;
-    static uint32_t lastBrakeStatus = 0;
-    if (digitalRead(BUTT_PIN) == BUTTON_PRESSED) {
-      if (!brakeInStatus && millis() - lastBrakeStatus > BUTTON_SHORT_PRESS_DEBOUNCE_MS) {
-        brakeInStatus = true;
-        lastBrakeStatus = millis();
-        if (state == VALUE_SELECTION) {
-          /* Cancel: restore original value */
-          g_storedVar.statusSlot[sel - 1] = origValue;
-          state = ITEM_SELECTION;
-          g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
-          setUiEncoderBoundaries(1, ST_ITEMS, false);
-          resetUiEncoder(sel);
-          obdFill(&g_obd, OBD_WHITE, 1);
-          prevSel     = 0xFF;
-          forceRedraw = true;
-        } else {
-          /* Wait for release so brake does not propagate to showSettingsMenu */
-          while (digitalRead(BUTT_PIN) == BUTTON_PRESSED) { vTaskDelay(5); }
-          break;
-        }
+    static BrakeButtonEdge brakeInStatus;
+    if (brakeInStatus.pressed()) {
+      if (state == VALUE_SELECTION) {
+        /* Cancel: restore original value */
+        g_storedVar.statusSlot[sel - 1] = origValue;
+        state = ITEM_SELECTION;
+        g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
+        setUiEncoderBoundaries(1, ST_ITEMS, false);
+        resetUiEncoder(sel);
+        obdFill(&g_obd, OBD_WHITE, 1);
+        prevSel     = 0xFF;
+        forceRedraw = true;
+      } else {
+        /* Wait for release so brake does not propagate to showSettingsMenu */
+        waitForBrakeButtonRelease();
+        break;
       }
-    } else {
-      brakeInStatus = false;
     }
 
     /* Encoder scroll */
@@ -799,7 +786,7 @@ void showStatusSettings() {
       if (state == ITEM_SELECTION) {
         if (sel == ST_ITEMS) {
           /* BACK */
-          while (digitalRead(BUTT_PIN) == BUTTON_PRESSED) { vTaskDelay(5); }
+          waitForBrakeButtonRelease();
           break;
         }
         /* Enter value selection for this slot */
@@ -943,27 +930,20 @@ void showStepsSettings() {
     }
 
     /* Brake button: cancel edit or back */
-    static bool brakeBtnInSteps = false;
-    static uint32_t lastBrakeBtnStepsTime = 0;
-    if (digitalRead(BUTT_PIN) == BUTTON_PRESSED) {
-      if (!brakeBtnInSteps && millis() - lastBrakeBtnStepsTime > BUTTON_SHORT_PRESS_DEBOUNCE_MS) {
-        brakeBtnInSteps = true;
-        lastBrakeBtnStepsTime = millis();
-        lastInteraction = millis();
-        if (menuState == VALUE_SELECTION) {
-          if (valuePtr != NULL) { *valuePtr = originalValue; }
-          menuState = ITEM_SELECTION;
-          g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
-          setUiEncoderBoundaries(1, STEPS_ITEMS_COUNT, false);
-          resetUiEncoder(sel);
-          obdFill(&g_obd, OBD_WHITE, 1);
-        } else {
-          while (digitalRead(BUTT_PIN) == BUTTON_PRESSED) { vTaskDelay(5); }
-          break;
-        }
+    static BrakeButtonEdge brakeBtnInSteps;
+    if (brakeBtnInSteps.pressed()) {
+      lastInteraction = millis();
+      if (menuState == VALUE_SELECTION) {
+        if (valuePtr != NULL) { *valuePtr = originalValue; }
+        menuState = ITEM_SELECTION;
+        g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
+        setUiEncoderBoundaries(1, STEPS_ITEMS_COUNT, false);
+        resetUiEncoder(sel);
+        obdFill(&g_obd, OBD_WHITE, 1);
+      } else {
+        waitForBrakeButtonRelease();
+        break;
       }
-    } else {
-      brakeBtnInSteps = false;
     }
 
     /* Frame scrolling (future-proof if STEPS_ITEMS_COUNT grows) */

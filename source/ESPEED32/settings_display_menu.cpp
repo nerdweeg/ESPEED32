@@ -8,6 +8,7 @@
 #include "app_init.h"
 #include "power_ui.h"
 #include "ui_render.h"
+#include "menu_input.h"
 
 /**
  * Display settings submenu: VIEW, LANG, CASE, FSIZE, ADVANCED, STEPS, STATUS, BACK.
@@ -195,28 +196,21 @@ void showDisplaySettings() {
     }
 
     /* Brake button = cancel edit or back */
-    static bool brakeBtnInDisplay = false;
-    static uint32_t lastBrakeBtnDisplayTime = 0;
-    if (digitalRead(BUTT_PIN) == BUTTON_PRESSED) {
-      if (!brakeBtnInDisplay && millis() - lastBrakeBtnDisplayTime > BUTTON_SHORT_PRESS_DEBOUNCE_MS) {
-        brakeBtnInDisplay = true;
-        lastBrakeBtnDisplayTime = millis();
-        lastInteraction = millis();
-        if (menuState == VALUE_SELECTION) {
-          if (isEditingLanguage) { tempLanguage = originalValue; g_storedVar.language = originalValue; isEditingLanguage = false; }
-          else if (valuePtr != NULL) { *valuePtr = originalValue; }
-          menuState = ITEM_SELECTION;
-          g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
-          setUiEncoderBoundaries(1, DISPLAY_ITEMS_COUNT, false);
-          resetUiEncoder(sel);
-          obdFill(&g_obd, OBD_WHITE, 1);
-        } else {
-          while (digitalRead(BUTT_PIN) == BUTTON_PRESSED) { vTaskDelay(5); }
-          break;
-        }
+    static BrakeButtonEdge brakeBtnInDisplay;
+    if (brakeBtnInDisplay.pressed()) {
+      lastInteraction = millis();
+      if (menuState == VALUE_SELECTION) {
+        if (isEditingLanguage) { tempLanguage = originalValue; g_storedVar.language = originalValue; isEditingLanguage = false; }
+        else if (valuePtr != NULL) { *valuePtr = originalValue; }
+        menuState = ITEM_SELECTION;
+        g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
+        setUiEncoderBoundaries(1, DISPLAY_ITEMS_COUNT, false);
+        resetUiEncoder(sel);
+        obdFill(&g_obd, OBD_WHITE, 1);
+      } else {
+        waitForBrakeButtonRelease();
+        break;
       }
-    } else {
-      brakeBtnInDisplay = false;
     }
 
     /* Frame scrolling */

@@ -8,6 +8,7 @@
 #include "app_globals.h"
 #include "power_ui.h"
 #include "ui_render.h"
+#include "menu_input.h"
 
 static void showTelemetryLoggingStartFailed() {
   obdFill(&g_obd, OBD_WHITE, 1);
@@ -127,17 +128,10 @@ void showSoundSettings() {
     }
 
     /* Brake button = back */
-    static bool brakeBtnInSound = false;
-    static uint32_t lastBrakeBtnSoundTime = 0;
-    if (digitalRead(BUTT_PIN) == BUTTON_PRESSED) {
-      if (!brakeBtnInSound && millis() - lastBrakeBtnSoundTime > BUTTON_SHORT_PRESS_DEBOUNCE_MS) {
-        brakeBtnInSound = true;
-        lastBrakeBtnSoundTime = millis();
-        while (digitalRead(BUTT_PIN) == BUTTON_PRESSED) { vTaskDelay(5); }
-        break;
-      }
-    } else {
-      brakeBtnInSound = false;
+    static BrakeButtonEdge brakeBtnInSound;
+    if (brakeBtnInSound.pressed()) {
+      waitForBrakeButtonRelease();
+      break;
     }
 
     /* Long press = escape to main for race mode toggle */
@@ -383,7 +377,7 @@ void showWiFiSettings() {
           resetUiEncoder(itemTimer);
           needRedraw = true;
         } else {
-          while (digitalRead(BUTT_PIN) == BUTTON_PRESSED) { vTaskDelay(5); }
+          waitForBrakeButtonRelease();
           break;
         }
       }
@@ -567,7 +561,7 @@ void showLoggingSettings() {
           resetUiEncoder(ITEM_TIMER);
           needRedraw = true;
         } else {
-          while (digitalRead(BUTT_PIN) == BUTTON_PRESSED) { vTaskDelay(5); }
+          waitForBrakeButtonRelease();
           break;
         }
       }

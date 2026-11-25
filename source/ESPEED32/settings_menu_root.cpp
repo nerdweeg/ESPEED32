@@ -14,6 +14,7 @@
 #include "app_globals.h"
 #include "app_init.h"
 #include "power_ui.h"
+#include "menu_input.h"
 
 void showSettingsMenu() {
   initSettingsMenuItems();
@@ -191,28 +192,21 @@ void showSettingsMenu() {
     }
 
     /* Brake button = cancel edit or exit */
-    static bool brakeBtnInSettings = false;
-    static uint32_t lastBrakeBtnSettingsTime = 0;
-    if (digitalRead(BUTT_PIN) == BUTTON_PRESSED) {
-      if (!brakeBtnInSettings && millis() - lastBrakeBtnSettingsTime > BUTTON_SHORT_PRESS_DEBOUNCE_MS) {
-        brakeBtnInSettings = true;
-        lastBrakeBtnSettingsTime = millis();
-        lastSettingsInteraction = millis();
-        if (settingsMenuState == VALUE_SELECTION) {
-          if (settingsValuePtr != NULL) {
-            *settingsValuePtr = originalSettingsValue;
-          }
-          settingsMenuState = ITEM_SELECTION;
-          g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
-          setUiEncoderBoundaries(1, SETTINGS_ITEMS_COUNT, false);
-          resetUiEncoder(settingsSelector);
-          obdFill(&g_obd, OBD_WHITE, 1);
-        } else {
-          break;
+    static BrakeButtonEdge brakeBtnInSettings;
+    if (brakeBtnInSettings.pressed()) {
+      lastSettingsInteraction = millis();
+      if (settingsMenuState == VALUE_SELECTION) {
+        if (settingsValuePtr != NULL) {
+          *settingsValuePtr = originalSettingsValue;
         }
+        settingsMenuState = ITEM_SELECTION;
+        g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
+        setUiEncoderBoundaries(1, SETTINGS_ITEMS_COUNT, false);
+        resetUiEncoder(settingsSelector);
+        obdFill(&g_obd, OBD_WHITE, 1);
+      } else {
+        break;
       }
-    } else {
-      brakeBtnInSettings = false;
     }
 
     /* Long press encoder button = escape to main + race mode toggle */

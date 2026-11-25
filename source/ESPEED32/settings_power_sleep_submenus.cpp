@@ -5,6 +5,7 @@
 #include "app_globals.h"
 #include "power_ui.h"
 #include "ui_render.h"
+#include "menu_input.h"
 
 static void formatConfiguredMenuLabel(const char* source, char* buffer, size_t bufferSize) {
   if (buffer == nullptr || bufferSize == 0) return;
@@ -152,7 +153,7 @@ void showSleepSettings() {
         needRedraw = true;
         delay(200);
       } else {
-        while (digitalRead(BUTT_PIN) == BUTTON_PRESSED) { vTaskDelay(5); }
+        waitForBrakeButtonRelease();
         break;
       }
     }
@@ -300,7 +301,7 @@ void showDeepSleepSettings() {
         needRedraw = true;
         delay(200);
       } else {
-        while (digitalRead(BUTT_PIN) == BUTTON_PRESSED) { vTaskDelay(5); }
+        waitForBrakeButtonRelease();
         break;
       }
     }

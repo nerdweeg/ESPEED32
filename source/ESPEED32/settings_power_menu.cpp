@@ -7,6 +7,7 @@
 #include "app_globals.h"
 #include "power_ui.h"
 #include "ui_render.h"
+#include "menu_input.h"
 
 static void formatVoltageString(char* buffer, size_t bufferSize, uint16_t millivolts) {
   snprintf(buffer, bufferSize, "%2u.%02uV", millivolts / 1000U, (millivolts % 1000U) / 10U);
@@ -103,17 +104,10 @@ static void showVinCalibrationScreen() {
       }
     }
 
-    static bool brakeBtnInVinCal = false;
-    static uint32_t lastBrakeBtnVinCalTime = 0;
-    if (digitalRead(BUTT_PIN) == BUTTON_PRESSED) {
-      if (!brakeBtnInVinCal && millis() - lastBrakeBtnVinCalTime > BUTTON_SHORT_PRESS_DEBOUNCE_MS) {
-        brakeBtnInVinCal = true;
-        lastBrakeBtnVinCalTime = millis();
-        while (digitalRead(BUTT_PIN) == BUTTON_PRESSED) { vTaskDelay(5); }
-        break;
-      }
-    } else {
-      brakeBtnInVinCal = false;
+    static BrakeButtonEdge brakeBtnInVinCal;
+    if (brakeBtnInVinCal.pressed()) {
+      waitForBrakeButtonRelease();
+      break;
     }
 
     if (needRedraw) {
@@ -274,27 +268,20 @@ void showPowerSettings() {
     }
 
     /* Brake button = cancel edit or back */
-    static bool brakeBtnInPower = false;
-    static uint32_t lastBrakeBtnPowerTime = 0;
-    if (digitalRead(BUTT_PIN) == BUTTON_PRESSED) {
-      if (!brakeBtnInPower && millis() - lastBrakeBtnPowerTime > BUTTON_SHORT_PRESS_DEBOUNCE_MS) {
-        brakeBtnInPower = true;
-        lastBrakeBtnPowerTime = millis();
-        if (editing) {
-          g_storedVar.startupDelay = origDelay;
-          tmpDelay = origDelay;
-          editing = false;
-          g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
-          setUiEncoderBoundaries(0, NUM - 1, false);
-          resetUiEncoder(3);
-          needRedraw = true;
-        } else {
-          while (digitalRead(BUTT_PIN) == BUTTON_PRESSED) { vTaskDelay(5); }
-          break;
-        }
+    static BrakeButtonEdge brakeBtnInPower;
+    if (brakeBtnInPower.pressed()) {
+      if (editing) {
+        g_storedVar.startupDelay = origDelay;
+        tmpDelay = origDelay;
+        editing = false;
+        g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
+        setUiEncoderBoundaries(0, NUM - 1, false);
+        resetUiEncoder(3);
+        needRedraw = true;
+      } else {
+        waitForBrakeButtonRelease();
+        break;
       }
-    } else {
-      brakeBtnInPower = false;
     }
 
     /* Draw menu */

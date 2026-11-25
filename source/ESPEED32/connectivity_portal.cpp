@@ -15,6 +15,7 @@
 #include <ctype.h>
 #include "app_globals.h"
 #include "app_init.h"
+#include "menu_input.h"
 
 /* External references from main .ino */
 
@@ -4806,7 +4807,7 @@ void showUSBPortalScreen() {
       if (!brakeBtnInUsb && millis() - lastBrakeBtnUsbTime > BUTTON_SHORT_PRESS_DEBOUNCE_MS) {
         brakeBtnInUsb = true;
         lastBrakeBtnUsbTime = millis();
-        while (digitalRead(BUTT_PIN) == BUTTON_PRESSED) { vTaskDelay(5); }
+        waitForBrakeButtonRelease();
         break;
       }
     } else {

@@ -8,6 +8,7 @@
 #include "app_init.h"
 #include "power_ui.h"
 #include "ui_render.h"
+#include "menu_input.h"
 
 static const char* getResetCancelText(uint16_t lang) {
   switch (lang) {
@@ -371,7 +372,7 @@ void showResetSubmenu() {
       if (!brakeInReset && millis() - lastBrakeReset > BUTTON_SHORT_PRESS_DEBOUNCE_MS) {
         brakeInReset = true;
         lastBrakeReset = millis();
-        while (digitalRead(BUTT_PIN) == BUTTON_PRESSED) { vTaskDelay(5); }
+        waitForBrakeButtonRelease();
         break;
       }
     } else {

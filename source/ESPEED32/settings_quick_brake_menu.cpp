@@ -5,6 +5,7 @@
 #include "app_globals.h"
 #include "power_ui.h"
 #include "ui_render.h"
+#include "menu_input.h"
 
 enum AdvancedBrakeRowType : uint8_t {
   AB_ROW_BUTTON = 0,
@@ -174,7 +175,7 @@ void showAdvancedBrakeMenu() {
           prevSel     = 0xFF;
           forceRedraw = true;
         } else {
-          while (digitalRead(BUTT_PIN) == BUTTON_PRESSED) { vTaskDelay(5); }
+          waitForBrakeButtonRelease();
           break;
         }
       }
@@ -206,7 +207,7 @@ void showAdvancedBrakeMenu() {
         AdvancedBrakeRowType rowType = getAdvancedBrakeRowType(currentMode(), sel);
         if (rowType == AB_ROW_BACK) {
           /* BACK */
-          while (digitalRead(BUTT_PIN) == BUTTON_PRESSED) { vTaskDelay(5); }
+          waitForBrakeButtonRelease();
           break;
         }
         /* Enter value edit */

@@ -5,6 +5,7 @@
 #include "app_globals.h"
 #include "power_ui.h"
 #include "ui_render.h"
+#include "menu_input.h"
 
 /**
  * Lock settings submenu.
@@ -128,7 +129,7 @@ void showLockSettings() {
           sel = ITEM_SHORT;
           needRedraw = true;
         } else {
-          while (digitalRead(BUTT_PIN) == BUTTON_PRESSED) { vTaskDelay(5); }
+          waitForBrakeButtonRelease();
           break;
         }
       }

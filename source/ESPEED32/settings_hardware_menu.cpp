@@ -9,6 +9,7 @@
 #include "app_init.h"
 #include "power_ui.h"
 #include "ui_render.h"
+#include "menu_input.h"
 
 static const char* HARDWARE_MENU_LABELS[9][HARDWARE_ITEMS_COUNT] = {
   {"ENC.INVERT", "EKST.POT.", "TRIGGER", "PWM_F MAX", "TEST", "TILBAKE"},
@@ -232,27 +233,20 @@ static void showTriggerSensorSettings() {
       delay(200);
     }
 
-    static bool brakeBtnInMenu = false;
-    static uint32_t lastBrakeBtnTime = 0;
-    if (digitalRead(BUTT_PIN) == BUTTON_PRESSED) {
-      if (!brakeBtnInMenu && millis() - lastBrakeBtnTime > BUTTON_SHORT_PRESS_DEBOUNCE_MS) {
-        brakeBtnInMenu = true;
-        lastBrakeBtnTime = millis();
-        if (trigMenuState == VALUE_SELECTION) {
-          /* Cancel */
-          trigMenuState = ITEM_SELECTION;
-          g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
-          setUiEncoderBoundaries(0, numItems - 1, false);
-          resetUiEncoder(sel);
-          obdFill(&g_obd, OBD_WHITE, 1);
-          needRedraw = true;
-        } else {
-          while (digitalRead(BUTT_PIN) == BUTTON_PRESSED) { vTaskDelay(5); }
-          break;
-        }
+    static BrakeButtonEdge brakeBtnInMenu;
+    if (brakeBtnInMenu.pressed()) {
+      if (trigMenuState == VALUE_SELECTION) {
+        /* Cancel */
+        trigMenuState = ITEM_SELECTION;
+        g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
+        setUiEncoderBoundaries(0, numItems - 1, false);
+        resetUiEncoder(sel);
+        obdFill(&g_obd, OBD_WHITE, 1);
+        needRedraw = true;
+      } else {
+        waitForBrakeButtonRelease();
+        break;
       }
-    } else {
-      brakeBtnInMenu = false;
     }
 
     if (checkRaceModeEscape()) { requestEscapeToMain(); break; }
@@ -421,27 +415,20 @@ void showHardwareSettings() {
       delay(200);
     }
 
-    static bool brakeBtnInMenu = false;
-    static uint32_t lastBrakeBtnTime = 0;
-    if (digitalRead(BUTT_PIN) == BUTTON_PRESSED) {
-      if (!brakeBtnInMenu && millis() - lastBrakeBtnTime > BUTTON_SHORT_PRESS_DEBOUNCE_MS) {
-        brakeBtnInMenu = true;
-        lastBrakeBtnTime = millis();
-        if (hwMenuState == VALUE_SELECTION) {
-          /* Cancel - discard edit */
-          hwMenuState = ITEM_SELECTION;
-          g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
-          setUiEncoderBoundaries(0, HARDWARE_ITEMS_COUNT - 1, false);
-          resetUiEncoder(sel);
-          obdFill(&g_obd, OBD_WHITE, 1);
-          needRedraw = true;
-        } else {
-          while (digitalRead(BUTT_PIN) == BUTTON_PRESSED) { vTaskDelay(5); }
-          break;
-        }
+    static BrakeButtonEdge brakeBtnInMenu;
+    if (brakeBtnInMenu.pressed()) {
+      if (hwMenuState == VALUE_SELECTION) {
+        /* Cancel - discard edit */
+        hwMenuState = ITEM_SELECTION;
+        g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
+        setUiEncoderBoundaries(0, HARDWARE_ITEMS_COUNT - 1, false);
+        resetUiEncoder(sel);
+        obdFill(&g_obd, OBD_WHITE, 1);
+        needRedraw = true;
+      } else {
+        waitForBrakeButtonRelease();
+        break;
       }
-    } else {
-      brakeBtnInMenu = false;
     }
 
     if (checkRaceModeEscape()) { requestEscapeToMain(); break; }

@@ -8,6 +8,7 @@
 #include "app_init.h"
 #include "power_ui.h"
 #include "ui_render.h"
+#include "menu_input.h"
 
 void showCarSelection() {
   /* "Frame" indicates which items are currently displayed.
@@ -448,27 +449,20 @@ void showSelectRenameCar() {
     }
 
     /* Check for brake button press - acts as "back" in CAR menu */
-    static bool brakeBtnInCarMenu = false;
-    static uint32_t lastBrakeBtnCarMenuTime = 0;
-    if (digitalRead(BUTT_PIN) == BUTTON_PRESSED) {
-      if (!brakeBtnInCarMenu && millis() - lastBrakeBtnCarMenuTime > BUTTON_SHORT_PRESS_DEBOUNCE_MS) {
-        brakeBtnInCarMenu = true;
-        lastBrakeBtnCarMenuTime = millis();
-        lastInteraction = millis();
+    static BrakeButtonEdge brakeBtnInCarMenu;
+    if (brakeBtnInCarMenu.pressed()) {
+      lastInteraction = millis();
 
-        if (isEditingRaceswp) {
-          /* Cancel RACESWP editing */
-          isEditingRaceswp = false;
-          g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
-          setUiEncoderBoundaries(0, 5, false);
-          resetUiEncoder(selectedOption);
-        } else {
-          /* Exit CAR menu completely */
-          goto exitCarMenu;
-        }
+      if (isEditingRaceswp) {
+        /* Cancel RACESWP editing */
+        isEditingRaceswp = false;
+        g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
+        setUiEncoderBoundaries(0, 5, false);
+        resetUiEncoder(selectedOption);
+      } else {
+        /* Exit CAR menu completely */
+        goto exitCarMenu;
       }
-    } else {
-      brakeBtnInCarMenu = false;
     }
 
     /* Get encoder value if changed */
@@ -939,18 +933,11 @@ void showCurveSelection()
   while (!g_rotaryEncoder.isEncoderButtonClicked() && !curveCanceled)
   {
     /* Check for brake button press - acts as "cancel" in curve screen */
-    static bool brakeBtnInCurve = false;
-    static uint32_t lastBrakeBtnCurveTime = 0;
-    if (digitalRead(BUTT_PIN) == BUTTON_PRESSED) {
-      if (!brakeBtnInCurve && millis() - lastBrakeBtnCurveTime > BUTTON_SHORT_PRESS_DEBOUNCE_MS) {
-        brakeBtnInCurve = true;
-        lastBrakeBtnCurveTime = millis();
-        /* Cancel changes - restore original value */
-        g_storedVar.carParam[g_carSel].throttleCurveVertex.curveSpeedDiff = originalCurveValue;
-        curveCanceled = true;
-      }
-    } else {
-      brakeBtnInCurve = false;
+    static BrakeButtonEdge brakeBtnInCurve;
+    if (brakeBtnInCurve.pressed()) {
+      /* Cancel changes - restore original value */
+      g_storedVar.carParam[g_carSel].throttleCurveVertex.curveSpeedDiff = originalCurveValue;
+      curveCanceled = true;
     }
 
     /* Write the trigger value only if it changed */
@@ -1020,17 +1007,10 @@ void showFadeSelection()
 
   while (!g_rotaryEncoder.isEncoderButtonClicked() && !fadeCanceled)
   {
-    static bool brakeBtnInFade = false;
-    static uint32_t lastBrakeBtnFadeTime = 0;
-    if (digitalRead(BUTT_PIN) == BUTTON_PRESSED) {
-      if (!brakeBtnInFade && millis() - lastBrakeBtnFadeTime > BUTTON_SHORT_PRESS_DEBOUNCE_MS) {
-        brakeBtnInFade = true;
-        lastBrakeBtnFadeTime = millis();
-        g_storedVar.carParam[g_carSel].fade = originalFadeValue;
-        fadeCanceled = true;
-      }
-    } else {
-      brakeBtnInFade = false;
+    static BrakeButtonEdge brakeBtnInFade;
+    if (brakeBtnInFade.pressed()) {
+      g_storedVar.carParam[g_carSel].fade = originalFadeValue;
+      fadeCanceled = true;
     }
 
     if (g_escVar.outputSpeed_pct != prevTrigger)
