@@ -1844,30 +1844,6 @@ uint16_t normalizeAndClamp(uint16_t raw, uint16_t minIn, uint16_t maxIn, uint16_
   return retVal;
 }
 
-/**
- * Saturate an input value between a upper and lower bound
- * 
- * @param paramValue The input value to be saturated
- * @param minValue The lower bound
- * @param maxValue The upper bound
- * @return The saturated input value.
- */
-uint16_t saturateParamValue(uint16_t paramValue, uint16_t minValue, uint16_t maxValue) 
-{
-  uint16_t retValue = paramValue;
-
-  if (paramValue > maxValue) 
-  {
-    retValue = maxValue;
-  } else if (paramValue < minValue) 
-  {
-    retValue = minValue;
-  }
-
-  return retValue;
-}
-
-
 /* Packed so the byte layout has no compiler-inserted gaps between members,
  * which keeps the memcmp() dirty-check below reliable. */
 #pragma pack(push, 1)
