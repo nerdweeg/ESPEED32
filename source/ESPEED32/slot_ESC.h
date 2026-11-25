@@ -355,10 +355,11 @@ void applyAdcVoltageRangeMilliVolts(uint16_t range_mV);
 #define STATUS_CURRENT_MA  6   /* Legacy stored value; normalized to STATUS_CURRENT */
 #define STATUS_ACTIVE_BRAKE 7   /* Active brake type/value (5 chars, e.g. "Q060%") */
 #define STATUS_BATTERY  8   /* Battery voltage (5 chars, e.g. "4.1VB") */
+#define STATUS_DEVICE_ID 9  /* Device ID: last 4 hex digits of the MAC, as in the WiFi SSID (5 chars, e.g. "#A3B4") */
 
 static inline uint16_t normalizeStatusSlotValue(uint16_t slotValue) {
   if (slotValue == STATUS_CURRENT_MA) return STATUS_CURRENT;
-  return (slotValue <= STATUS_BATTERY) ? slotValue : STATUS_BLANK;
+  return (slotValue <= STATUS_DEVICE_ID) ? slotValue : STATUS_BLANK;
 }
 /* Default slot assignments: OUTPUT | THROTTLE | CAR | VOLTAGE */
 #define STATUS_SLOT0_DEFAULT STATUS_OUTPUT

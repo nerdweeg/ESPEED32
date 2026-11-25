@@ -238,6 +238,12 @@ void displayStatusLine() {
       case STATUS_ACTIVE_BRAKE:
         formatActiveBrakeStatus(buf, sizeof(buf), g_escVar.activeBrakeKind, g_escVar.activeBrake_pct);
         break;
+      case STATUS_DEVICE_ID: {
+        char deviceId[5];
+        getDeviceIdSuffix(deviceId, sizeof(deviceId));
+        snprintf(buf, 6, "#%-4s", deviceId);
+        break;
+      }
       default:  /* STATUS_BLANK */
         strcpy(buf, "     ");
         break;

@@ -62,7 +62,8 @@ static const uint8_t STATUS_SLOT_SELECTABLE_VALUES[] = {
   STATUS_CURRENT,
   STATUS_VOLTAGE,
   STATUS_BATTERY,
-  STATUS_ACTIVE_BRAKE
+  STATUS_ACTIVE_BRAKE,
+  STATUS_DEVICE_ID
 };
 
 static uint8_t getStatusSlotOptionIndex(uint16_t slotValue) {
@@ -670,7 +671,7 @@ void showStatusSettings() {
   /* ST_ITEMS: 4 slots + BACK */
   const uint8_t ST_ITEMS = STATUS_SLOTS + 1;
   /* Highest normalized slot id used for labels/lookups; legacy STATUS_CURRENT_MA is normalized away. */
-  const uint8_t ST_SLOT_MAX = STATUS_BATTERY;
+  const uint8_t ST_SLOT_MAX = STATUS_DEVICE_ID;
   const uint8_t ST_SLOT_OPTION_MAX = (uint8_t)((sizeof(STATUS_SLOT_SELECTABLE_VALUES) / sizeof(STATUS_SLOT_SELECTABLE_VALUES[0])) - 1U);
   const uint8_t ST_LABEL_CHARS = 5;
   const uint8_t ST_LABEL_PIXELS = ST_LABEL_CHARS * 6;
@@ -693,15 +694,15 @@ void showStatusSettings() {
 
   /* Content type labels shown right-justified in menu. */
   const char* slotLabelsByLang[9][ST_SLOT_MAX + 1] = {
-    {"---", "OUT%", "GASS", "BIL", "AMPE", "VOLT", "AMPE", "BREMS", "VBAT"},
-    {"---", "OUT%", "THRO", "CAR", "CURR", "VOLT", "CURR", "BRAKE", "VBAT"},
-    {"---", "OUT%", "THRO", "CAR", "CURR", "VOLT", "CURR", "BRAKE", "VBAT"},
-    {"---", "OUT%", "THRO", "CAR", "CURR", "VOLT", "CURR", "BRAKE", "VBAT"},
-    {"---", "OUT%", "GAS", "AUTO", "AMP", "VOLT", "AMP", "FRENO", "VBAT"},
-    {"---", "OUT%", "GAS", "AUTO", "AMP", "VOLT", "AMP", "BREMS", "VBAT"},
-    {"---", "OUT%", "GAS", "AUTO", "AMP", "VOLT", "AMP", "FRENO", "VBAT"},
-    {"---", "OUT%", "GAS", "AUTO", "AMP", "VOLT", "AMP", "REM", "VBAT"},
-    {"---", "OUT%", "GAS", "AUTO", "CORR", "VOLT", "CORR", "FREIO", "VBAT"}
+    {"---", "OUT%", "GASS", "BIL", "AMPE", "VOLT", "AMPE", "BREMS", "VBAT", "ID"},
+    {"---", "OUT%", "THRO", "CAR", "CURR", "VOLT", "CURR", "BRAKE", "VBAT", "ID"},
+    {"---", "OUT%", "THRO", "CAR", "CURR", "VOLT", "CURR", "BRAKE", "VBAT", "ID"},
+    {"---", "OUT%", "THRO", "CAR", "CURR", "VOLT", "CURR", "BRAKE", "VBAT", "ID"},
+    {"---", "OUT%", "GAS", "AUTO", "AMP", "VOLT", "AMP", "FRENO", "VBAT", "ID"},
+    {"---", "OUT%", "GAS", "AUTO", "AMP", "VOLT", "AMP", "BREMS", "VBAT", "ID"},
+    {"---", "OUT%", "GAS", "AUTO", "AMP", "VOLT", "AMP", "FRENO", "VBAT", "ID"},
+    {"---", "OUT%", "GAS", "AUTO", "AMP", "VOLT", "AMP", "REM", "VBAT", "ID"},
+    {"---", "OUT%", "GAS", "AUTO", "CORR", "VOLT", "CORR", "FREIO", "VBAT", "ID"}
   };
   const char** slotLabels = slotLabelsByLang[lang];
 
