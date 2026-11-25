@@ -238,6 +238,15 @@ void showSettingsMenu() {
     /* Long press encoder button = escape to main + race mode toggle */
     if (checkRaceModeEscape()) { requestEscapeToMain(); break; }
 
+    /* Font size can change in a child menu (DISPLAY): re-fit the frame to the new line count */
+    uint8_t currentVisibleLines = getMenuLines();
+    if (currentVisibleLines != visibleLines) {
+      visibleLines = currentVisibleLines;
+      frameUpper = 1;
+      frameLower = visibleLines;
+      obdFill(&g_obd, OBD_WHITE, 1);
+    }
+
     /* Frame scrolling */
     if (settingsMenuState == ITEM_SELECTION) {
       if (settingsSelector > frameLower) {
