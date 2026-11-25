@@ -13,23 +13,10 @@
 #include <mbedtls/base64.h>
 #include <mbedtls/gcm.h>
 #include <ctype.h>
+#include "app_globals.h"
+#include "app_init.h"
 
 /* External references from main .ino */
-extern StoredVar_type g_storedVar;
-extern ESC_type g_escVar;
-extern uint16_t g_antiSpinStepMs;
-extern uint16_t g_antiSpinStepPct;
-extern uint16_t g_antiSpinDisplayMode;
-extern uint16_t g_brakeStep;
-extern uint16_t g_sensiStep;
-extern uint16_t g_advancedMenuEnabled;
-extern uint16_t g_encoderInvertEnabled;
-extern uint16_t g_carSel;
-extern OBDISP g_obd;
-extern AiEsp32RotaryEncoder g_rotaryEncoder;
-extern void saveEEPROM(StoredVar_type toSave);
-extern void applyAdvancedMenuSetting(uint16_t enabled);
-extern void initMenuItems();
 
 /* Web server instance (heap-allocated only when active) */
 static WebServer* g_wifiServer = nullptr;
@@ -783,7 +770,6 @@ a{color:#7ed6ff}
 </html>
 )rawliteral";
 
-
 /**
  * @brief Build JSON backup string from the provided configuration snapshot.
  */
@@ -901,7 +887,6 @@ static String buildJsonBackup() {
                                    g_uiAuthPassword);
 }
 
-
 /**
  * @brief Parse an integer value from JSON by key name
  */
@@ -970,7 +955,6 @@ static bool parseJsonTenthPercent(const String& json, const char* key, uint16_t 
   *outRaw = raw;
   return true;
 }
-
 
 /**
  * @brief Parse a string value from JSON by key name
@@ -1046,7 +1030,6 @@ static bool parseJsonReleaseModeAlias(const String& json, const char* primaryKey
   return parseJsonReleaseMode(json, legacyKey, outMode);
 }
 
-
 /**
  * @brief Validate integer is within range
  */
@@ -1076,7 +1059,6 @@ static bool parsePwmFreqMaxProfileValue(int32_t valueKHz, uint16_t* outProfile) 
       return false;
   }
 }
-
 
 /**
  * @brief Parse and validate uploaded JSON, populate temporary StoredVar
@@ -2087,7 +2069,6 @@ static bool parseAndApplyWebPatch(const String& json, String* errorMsg, uint8_t*
   if (appliedCarIndex != nullptr) *appliedCarIndex = carIndex;
   return true;
 }
-
 
 /* OTA progress tracking */
 static size_t g_otaTotal = 0;
@@ -3467,7 +3448,6 @@ static void handleRestore() {
   g_uploadBuffer = "";
 }
 
-
 /**
  * @brief Handle OTA upload - streams firmware (.bin) or SPIFFS image (.bin) directly to flash
  */
@@ -4559,7 +4539,6 @@ void stopWiFiPortal() {
   stopWiFiPortalNow();
 }
 
-
 /**
  * @brief Shared dismissable 2-line message screen.
  */
@@ -4800,7 +4779,6 @@ void showWiFiHomeSetupScreen() {
 
   obdFill(&g_obd, OBD_WHITE, 1);
 }
-
 
 /**
  * @brief USB backup/restore screen - called from settings menu (USB item).

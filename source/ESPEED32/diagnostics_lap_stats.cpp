@@ -3,21 +3,8 @@
 #include "HAL.h"
 #include "slot_ESC.h"
 #include "ui_render.h"
-
-extern StoredVar_type g_storedVar;
-extern ESC_type g_escVar;
-extern portMUX_TYPE g_lapStatsMux;
-extern OBDISP g_obd;
-extern AiEsp32RotaryEncoder g_rotaryEncoder;
-extern char msgStr[50];
-
-extern bool consumeScreensaverWakeInput(bool wakeTriggered);
-extern bool refreshIdleInteractionFromControls(uint32_t* lastInteraction, bool* screensaverActive, uint16_t* lastEncoderPos);
-extern bool serviceIdlePowerTransitions(uint32_t* lastInteraction, bool* screensaverActive);
-extern bool checkRaceModeEscape();
-extern void requestEscapeToMain();
-extern uint8_t getMainMenuSelector();
-extern uint8_t getMainMenuItemsCount();
+#include "app_globals.h"
+#include "power_ui.h"
 
 /**
  * Show the Lap Stats screen

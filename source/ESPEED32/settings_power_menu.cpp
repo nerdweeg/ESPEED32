@@ -4,22 +4,9 @@
 #include "ui_text_access.h"
 #include "settings_display_submenus.h"
 #include "settings_power_sleep_submenus.h"
-
-extern StoredVar_type g_storedVar;
-extern ESC_type g_escVar;
-extern OBDISP g_obd;
-extern AiEsp32RotaryEncoder g_rotaryEncoder;
-
-extern bool consumeScreensaverWakeInput(bool wakeTriggered);
-extern bool refreshIdleInteractionFromControls(uint32_t* lastInteraction, bool* screensaverActive, uint16_t* lastEncoderPos);
-extern bool serviceIdlePowerTransitions(uint32_t* lastInteraction, bool* screensaverActive);
-extern bool checkRaceModeEscape();
-extern void requestEscapeToMain();
-extern bool isEscapeToMainRequested();
-extern void setLastEncoderInteraction(uint32_t interactionMs);
-
-extern void showScreensaver();
-extern void saveEEPROM(StoredVar_type toSave);
+#include "app_globals.h"
+#include "power_ui.h"
+#include "ui_render.h"
 
 static void formatVoltageString(char* buffer, size_t bufferSize, uint16_t millivolts) {
   snprintf(buffer, bufferSize, "%2u.%02uV", millivolts / 1000U, (millivolts % 1000U) / 10U);

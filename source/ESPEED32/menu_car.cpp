@@ -4,28 +4,10 @@
 #include "ui_strings.h"
 #include "ui_text_access.h"
 #include "settings_reset_menu.h"
-
-extern StoredVar_type g_storedVar;
-extern ESC_type g_escVar;
-extern OBDISP g_obd;
-extern uint16_t g_carSel;
-extern Menu_type g_carMenu;
-extern AiEsp32RotaryEncoder g_rotaryEncoder;
-extern char msgStr[50];
-extern bool g_isEditingCarSelection;
-
-extern bool consumeScreensaverWakeInput(bool wakeTriggered);
-extern bool refreshIdleInteractionFromControls(uint32_t* lastInteraction, bool* screensaverActive, uint16_t* lastEncoderPos);
-extern bool serviceIdlePowerTransitions(uint32_t* lastInteraction, bool* screensaverActive);
-extern bool checkRaceModeEscape();
-extern void requestEscapeToMain();
-extern bool isEscapeToMainRequested();
-extern uint8_t getMainMenuSelector();
-extern uint8_t getMainMenuItemsCount();
-
-extern void showScreensaver();
-extern void initMenuItems();
-extern void saveEEPROM(StoredVar_type toSave);
+#include "app_globals.h"
+#include "app_init.h"
+#include "power_ui.h"
+#include "ui_render.h"
 
 void showCarSelection() {
   /* "Frame" indicates which items are currently displayed.
@@ -137,7 +119,6 @@ void showCarSelection() {
   /* Reset encoder and clear is done in caller routine */
   return;
 }
-
 
 /**
  * Show the Copy Car Settings screen. Allows copying all parameters from one car to another.
@@ -407,7 +388,6 @@ void showCopyCarSettings() {
 
   return;
 }
-
 
 /**
  * Show the options to Select or Rename the Car, called upon selecting the CAR item in the main menu
@@ -691,7 +671,6 @@ exitCarMenu:
   return;
 }
 
-
 /**
  * Show the Rename car screen. Called by selecting RENAME option on the showSelectRenameCar screen.
  */
@@ -861,7 +840,6 @@ void showRenameCar() {
     if (checkRaceModeEscape()) { requestEscapeToMain(); return; }
   }
 }
-
 
 /**
  * Helpers for drawing the throttle-response graph used by CURVE and FADE.

@@ -2,10 +2,7 @@
 #include <Arduino.h>
 #include "slot_ESC.h"
 #include "HAL.h"
-
-extern StoredVar_type g_storedVar;
-extern ESC_type g_escVar;
-extern uint16_t g_carSel;
+#include "app_globals.h"
 
 uint16_t g_extPotTarget[EXT_POT_COUNT] = {
   EXT_POT1_TARGET_DEFAULT,

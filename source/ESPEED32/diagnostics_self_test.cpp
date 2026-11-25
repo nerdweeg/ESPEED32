@@ -3,12 +3,7 @@
 #include "HAL.h"
 #include "slot_ESC.h"
 #include "connectivity_portal.h"
-
-extern OBDISP g_obd;
-extern AiEsp32RotaryEncoder g_rotaryEncoder;
-extern Preferences g_pref;
-
-extern void resetEncoderForMainMenu();
+#include "app_globals.h"
 
 static constexpr uint16_t SELFTEST_IDLE_CURRENT_MAX_MA = 500;  /* [mA] Idle motor current pass/fail threshold */
 static constexpr uint16_t SELFTEST_VIN_MIN_MV = 2500;          /* [mV] Minimum supply voltage pass/fail threshold */

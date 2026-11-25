@@ -4,35 +4,10 @@
 #include "ui_text_access.h"
 #include "connectivity_portal.h"
 #include "telemetry_logging.h"
-
-extern StoredVar_type g_storedVar;
-extern ESC_type g_escVar;
-extern OBDISP g_obd;
-extern AiEsp32RotaryEncoder g_rotaryEncoder;
-extern char msgStr[50];
-extern uint16_t g_antiSpinStepMs;
-extern uint16_t g_encoderInvertEnabled;
-extern uint16_t g_adcVoltageRange_mV;
-extern uint16_t g_carSel;
-
-extern bool consumeScreensaverWakeInput(bool wakeTriggered);
-extern bool refreshIdleInteractionFromControls(uint32_t* lastInteraction, bool* screensaverActive, uint16_t* lastEncoderPos);
-extern bool serviceIdlePowerTransitions(uint32_t* lastInteraction, bool* screensaverActive);
-extern bool checkRaceModeEscape();
-extern void requestEscapeToMain();
-
-extern void showScreensaver();
-extern void saveEEPROM(StoredVar_type toSave);
-
-extern void serviceTimedWiFiPortal();
-extern void startTimedWiFiPortal(uint16_t minutes);
-extern void stopTimedWiFiPortal();
-extern uint16_t getWiFiTimedMinutes();
-extern void setWiFiTimedMinutes(uint16_t minutes);
-extern void startTimedTelemetryLogging(uint16_t minutes);
-extern void stopTimedTelemetryLogging();
-extern uint16_t getTelemetryTimedMinutes();
-extern void setTelemetryTimedMinutes(uint16_t minutes);
+#include "HAL.h"
+#include "app_globals.h"
+#include "power_ui.h"
+#include "ui_render.h"
 
 static void showTelemetryLoggingStartFailed() {
   obdFill(&g_obd, OBD_WHITE, 1);

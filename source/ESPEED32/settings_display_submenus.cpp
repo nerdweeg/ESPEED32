@@ -2,29 +2,10 @@
 #include <Arduino.h>
 #include "slot_ESC.h"
 #include "ui_text_access.h"
-
-extern StoredVar_type g_storedVar;
-extern ESC_type g_escVar;
-extern OBDISP g_obd;
-extern char msgStr[50];
-extern AiEsp32RotaryEncoder g_rotaryEncoder;
-extern Menu_type g_settingsMenu;
-extern uint16_t g_antiSpinStepMs;
-extern uint16_t g_antiSpinStepPct;
-extern uint16_t g_antiSpinDisplayMode;
-
-extern bool consumeScreensaverWakeInput(bool wakeTriggered);
-extern bool refreshIdleInteractionFromControls(uint32_t* lastInteraction, bool* screensaverActive, uint16_t* lastEncoderPos);
-extern bool serviceIdlePowerTransitions(uint32_t* lastInteraction, bool* screensaverActive);
-extern bool checkRaceModeEscape();
-extern void requestEscapeToMain();
-extern bool isEscapeToMainRequested();
-
-extern void showScreensaver();
-extern void displayStatusLine();
-extern void saveEEPROM(StoredVar_type toSave);
-extern void initStepsMenuItems();
-extern uint16_t g_carSel;
+#include "app_globals.h"
+#include "app_init.h"
+#include "power_ui.h"
+#include "ui_render.h"
 
 static void formatConfiguredMenuLabel(const char* source, char* buffer, size_t bufferSize) {
   if (buffer == nullptr || bufferSize == 0) return;
@@ -79,7 +60,6 @@ static uint16_t getStatusSlotValueFromOptionIndex(uint16_t optionIndex) {
   if (optionIndex >= optionCount) return STATUS_BLANK;
   return STATUS_SLOT_SELECTABLE_VALUES[optionIndex];
 }
-
 
 /**
  * Character-by-character text editor for screensaver lines.
@@ -214,7 +194,6 @@ static void editScreensaverText(char* text, const char* title) {
     delay(10);
   }
 }
-
 
 /**
  * Screensaver settings submenu.
@@ -420,7 +399,6 @@ void showScreensaverSettings() {
   saveEEPROM(g_storedVar);
   obdFill(&g_obd, OBD_WHITE, 1);
 }
-
 
 void showAntiSpinSettings() {
   const char* lblTypeUpper[9]    = {"REGTYPE",   "REG.TYPE", "REG.TYPE", "REG.TYPE", "TIPO REG", "REG.TYP",  "TIPO REG", "REG.TYPE", "TIPO REG"};
@@ -659,7 +637,6 @@ void showAntiSpinSettings() {
 
   obdFill(&g_obd, OBD_WHITE, 1);
 }
-
 
 /**
  * Status line slot settings submenu.

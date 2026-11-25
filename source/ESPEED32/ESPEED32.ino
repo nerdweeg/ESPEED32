@@ -2,6 +2,7 @@
 /*                                                   Includes                                                        */
 /*********************************************************************************************************************/
 #include "slot_ESC.h"
+#include "app_globals.h"
 #include <esp_ota_ops.h>
 #include "HAL.h"
 #include "ui_strings.h"

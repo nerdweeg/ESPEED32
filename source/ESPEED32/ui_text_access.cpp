@@ -1,8 +1,7 @@
 #include "ui_text_access.h"
 #include "slot_ESC.h"
 #include "ui_strings.h"
-
-extern StoredVar_type g_storedVar;
+#include "app_globals.h"
 
 const char* getMenuName(uint8_t lang, uint8_t item) {
   return (g_storedVar.textCase == TEXT_CASE_PASCAL) ? MENU_NAMES_PASCAL[lang][item] : MENU_NAMES[lang][item];

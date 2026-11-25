@@ -5,23 +5,10 @@
 #include "HAL.h"
 #include "settings_ext_pot_menu.h"
 #include "diagnostics_self_test.h"
-
-extern StoredVar_type g_storedVar;
-extern uint16_t g_encoderInvertEnabled;
-extern ESC_type g_escVar;
-extern OBDISP g_obd;
-extern AiEsp32RotaryEncoder g_rotaryEncoder;
-extern char msgStr[50];
-
-extern bool consumeScreensaverWakeInput(bool wakeTriggered);
-extern bool refreshIdleInteractionFromControls(uint32_t* lastInteraction, bool* screensaverActive, uint16_t* lastEncoderPos);
-extern bool serviceIdlePowerTransitions(uint32_t* lastInteraction, bool* screensaverActive);
-extern bool checkRaceModeEscape();
-extern void requestEscapeToMain();
-extern bool isEscapeToMainRequested();
-extern void showScreensaver();
-extern void saveEEPROM(StoredVar_type toSave);
-extern void initMenuItems();
+#include "app_globals.h"
+#include "app_init.h"
+#include "power_ui.h"
+#include "ui_render.h"
 
 static const char* HARDWARE_MENU_LABELS[9][HARDWARE_ITEMS_COUNT] = {
   {"ENC.INVERT", "EKST.POT.", "TRIGGER", "PWM_F MAX", "TEST", "TILBAKE"},

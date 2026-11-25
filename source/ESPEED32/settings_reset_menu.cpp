@@ -4,32 +4,10 @@
 #include "HAL.h"
 #include "ext_pot.h"
 #include "connectivity_portal.h"
-
-extern StoredVar_type g_storedVar;
-extern uint16_t g_statsEnabled;
-extern uint16_t g_antiSpinStepMs;
-extern uint16_t g_antiSpinStepPct;
-extern uint16_t g_antiSpinDisplayMode;
-extern uint16_t g_brakeStep;
-extern uint16_t g_sensiStep;
-extern uint16_t g_advancedMenuEnabled;
-extern uint16_t g_encoderInvertEnabled;
-extern uint16_t g_pwmFreqMaxProfile;
-extern ESC_type g_escVar;
-extern OBDISP g_obd;
-extern AiEsp32RotaryEncoder g_rotaryEncoder;
-extern Preferences g_pref;
-
-extern bool consumeScreensaverWakeInput(bool wakeTriggered);
-extern bool refreshIdleInteractionFromControls(uint32_t* lastInteraction, bool* screensaverActive, uint16_t* lastEncoderPos);
-extern bool serviceIdlePowerTransitions(uint32_t* lastInteraction, bool* screensaverActive);
-extern bool checkRaceModeEscape();
-extern void requestEscapeToMain();
-
-extern void showScreensaver();
-extern void saveEEPROM(StoredVar_type toSave);
-extern void initMenuItems();
-extern void initSettingsMenuItems();
+#include "app_globals.h"
+#include "app_init.h"
+#include "power_ui.h"
+#include "ui_render.h"
 
 static const char* getResetCancelText(uint16_t lang) {
   switch (lang) {

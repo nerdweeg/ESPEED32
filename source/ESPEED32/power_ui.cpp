@@ -2,15 +2,7 @@
 #include <Arduino.h>
 #include "slot_ESC.h"
 #include "connectivity_portal.h"
-
-extern TaskHandle_t Task2;
-extern StoredVar_type g_storedVar;
-extern ESC_type g_escVar;
-extern OBDISP g_obd;
-extern AiEsp32RotaryEncoder g_rotaryEncoder;
-extern uint32_t g_lastEncoderInteraction;
-
-extern void stopTimedWiFiPortal();
+#include "app_globals.h"
 
 /**
  * @brief Count live controller input as user activity for idle timers.

@@ -5,28 +5,9 @@
 #include "ui_strings.h"
 #include "ui_text_access.h"
 #include "connectivity_portal.h"
-
-extern StoredVar_type g_storedVar;
-extern ESC_type g_escVar;
-extern OBDISP g_obd;
-extern char msgStr[50];
-extern uint16_t g_carSel;
-extern uint16_t g_antiSpinDisplayMode;
-extern uint16_t g_brakeStep;
-extern uint16_t g_sensiStep;
-extern Menu_type g_mainMenu;
-extern AiEsp32RotaryEncoder g_rotaryEncoder;
-extern uint8_t g_encoderMainSelector;
-extern uint32_t g_lastEncoderInteraction;
-extern bool g_forceRaceRedraw;
-
-extern bool refreshIdleInteractionFromControls(uint32_t* lastInteraction, bool* screensaverActive, uint16_t* lastEncoderPos);
-extern void showScreensaver();
-extern void showPowerSave(uint32_t inactivityStartMs);
-extern void showDeepSleep();
-extern void initMenuItems();
-extern uint8_t getMainMenuItemsCount();
-extern bool isSettingsLocked();
+#include "app_globals.h"
+#include "app_init.h"
+#include "power_ui.h"
 
 static void formatExtPotLabel(char* out, size_t outSize, int8_t potIndex) {
   if (!out || outSize == 0) return;
@@ -100,7 +81,6 @@ static void formatActiveBrakeStatus(char* out, size_t outSize, uint8_t activeBra
       break;
   }
 }
-
 
 static void formatAntiSpinValue(char* out, size_t outSize, uint16_t antiSpinMs) {
   if (!out || outSize == 0) return;
@@ -340,7 +320,6 @@ void displayRaceModeSimple(uint8_t selectedItem, bool isEditing) {
 
   /* Note: Car name, voltage, and LIMITER warning are displayed by displayStatusLine() */
 }
-
 
 /**
  * @brief Display race mode - compact grid showing all key parameters

@@ -6,30 +6,7 @@
 #include "settings_quick_brake_menu.h"
 #include "settings_menu_root.h"
 #include "diagnostics_lap_stats.h"
-
-extern OBDISP g_obd;
-extern StoredVar_type g_storedVar;
-extern uint16_t g_statsEnabled;
-extern uint16_t g_antiSpinStepMs;
-extern uint16_t g_antiSpinDisplayMode;
-extern uint16_t g_brakeStep;
-extern uint16_t g_sensiStep;
-extern uint16_t g_advancedMenuEnabled;
-extern uint16_t g_encoderInvertEnabled;
-extern uint16_t g_pwmFreqMaxProfile;
-extern Menu_type g_mainMenu;
-extern Menu_type g_settingsMenu;
-extern Menu_type g_carMenu;
-extern uint16_t g_carSel;
-extern AiEsp32RotaryEncoder g_rotaryEncoder;
-extern uint8_t getMainMenuItemsCount();
-extern void toggleSettingsLock();
-
-#ifdef USE_BACKBUFFER
-extern uint8_t ucBackBuffer[1024];
-#else
-extern uint8_t *ucBackBuffer;
-#endif
+#include "app_globals.h"
 
 void IRAM_ATTR readEncoderISR();
 
@@ -69,12 +46,10 @@ void initDisplayAndEncoder()
   Serial.println("[BOOT] initDisplayAndEncoder: done");
 }
 
-
 /* Rotary Encoder ISR */
 void IRAM_ATTR readEncoderISR() {
   g_rotaryEncoder.readEncoder_ISR();
 }
-
 
 /**
  * Initialize the stored variables with default values.
@@ -134,7 +109,6 @@ void initStoredVariables() {
   g_encoderInvertEnabled = ENCODER_INVERT_DEFAULT;
   g_pwmFreqMaxProfile = PWM_FREQ_MAX_PROFILE_DEFAULT;
 }
-
 
 /**
  * Initialize the menu items with the value from the stored variables.
@@ -265,7 +239,6 @@ void initMenuItems() {
     g_carMenu.item[j].value = (void *)&g_storedVar.carParam[j].carNumber;
   }
 }
-
 
 /**
  * Initialize the settings submenu items

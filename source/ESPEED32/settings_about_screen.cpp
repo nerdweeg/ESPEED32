@@ -3,16 +3,9 @@
 #include <esp_mac.h>
 #include "slot_ESC.h"
 #include "connectivity_portal.h"
-
-extern StoredVar_type g_storedVar;
-extern ESC_type g_escVar;
-extern OBDISP g_obd;
-extern AiEsp32RotaryEncoder g_rotaryEncoder;
-
-extern bool consumeScreensaverWakeInput(bool wakeTriggered);
-extern bool refreshIdleInteractionFromControls(uint32_t* lastInteraction, bool* screensaverActive, uint16_t* lastEncoderPos);
-extern bool serviceIdlePowerTransitions(uint32_t* lastInteraction, bool* screensaverActive);
-extern void showScreensaver();
+#include "app_globals.h"
+#include "power_ui.h"
+#include "ui_render.h"
 
 /**
  * Show scrollable device information screen.

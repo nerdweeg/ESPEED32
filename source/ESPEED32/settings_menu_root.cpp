@@ -11,29 +11,9 @@
 #include "settings_reset_menu.h"
 #include "settings_about_screen.h"
 #include "ui_render.h"
-
-extern StoredVar_type g_storedVar;
-extern uint16_t g_statsEnabled;
-extern uint16_t g_antiSpinStepMs;
-extern ESC_type g_escVar;
-extern OBDISP g_obd;
-extern AiEsp32RotaryEncoder g_rotaryEncoder;
-extern Menu_type g_settingsMenu;
-extern char msgStr[50];
-extern uint32_t g_lastEncoderInteraction;
-
-extern void initSettingsMenuItems();
-extern void initMenuItems();
-extern void saveEEPROM(StoredVar_type toSave);
-extern bool consumeScreensaverWakeInput(bool wakeTriggered);
-extern bool refreshIdleInteractionFromControls(uint32_t* lastInteraction, bool* screensaverActive, uint16_t* lastEncoderPos);
-extern bool serviceIdlePowerTransitions(uint32_t* lastInteraction, bool* screensaverActive);
-extern bool checkRaceModeEscape();
-extern void setInSettingsMenu(bool active);
-extern void requestEscapeToMain();
-extern bool isEscapeToMainRequested();
-extern uint8_t getMainMenuSelector();
-extern uint8_t getMainMenuItemsCount();
+#include "app_globals.h"
+#include "app_init.h"
+#include "power_ui.h"
 
 void showSettingsMenu() {
   initSettingsMenuItems();

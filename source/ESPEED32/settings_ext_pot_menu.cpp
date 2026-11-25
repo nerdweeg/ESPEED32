@@ -4,20 +4,9 @@
 #include "ui_text_access.h"
 #include "connectivity_portal.h"
 #include "ext_pot.h"
-
-extern StoredVar_type g_storedVar;
-extern ESC_type g_escVar;
-extern OBDISP g_obd;
-extern AiEsp32RotaryEncoder g_rotaryEncoder;
-extern char msgStr[50];
-
-extern bool consumeScreensaverWakeInput(bool wakeTriggered);
-extern bool refreshIdleInteractionFromControls(uint32_t* lastInteraction, bool* screensaverActive, uint16_t* lastEncoderPos);
-extern bool serviceIdlePowerTransitions(uint32_t* lastInteraction, bool* screensaverActive);
-extern bool checkRaceModeEscape();
-extern void requestEscapeToMain();
-extern void showScreensaver();
-extern void saveEEPROM(StoredVar_type toSave);
+#include "app_globals.h"
+#include "power_ui.h"
+#include "ui_render.h"
 
 static const char* getExtPotTargetLabel(uint8_t lang, uint16_t target) {
   switch (target) {

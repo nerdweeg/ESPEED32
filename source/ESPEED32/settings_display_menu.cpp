@@ -4,28 +4,10 @@
 #include "ui_strings.h"
 #include "ui_text_access.h"
 #include "settings_display_submenus.h"
-
-extern StoredVar_type g_storedVar;
-extern ESC_type g_escVar;
-extern OBDISP g_obd;
-extern AiEsp32RotaryEncoder g_rotaryEncoder;
-extern Menu_type g_settingsMenu;
-extern uint16_t g_advancedMenuEnabled;
-extern char msgStr[50];
-
-extern bool consumeScreensaverWakeInput(bool wakeTriggered);
-extern bool refreshIdleInteractionFromControls(uint32_t* lastInteraction, bool* screensaverActive, uint16_t* lastEncoderPos);
-extern bool serviceIdlePowerTransitions(uint32_t* lastInteraction, bool* screensaverActive);
-extern bool checkRaceModeEscape();
-extern void requestEscapeToMain();
-extern bool isEscapeToMainRequested();
-
-extern void showScreensaver();
-extern void saveEEPROM(StoredVar_type toSave);
-extern void applyAdvancedMenuSetting(uint16_t enabled);
-extern void initMenuItems();
-extern void initSettingsMenuItems();
-extern void initDisplayMenuItems();
+#include "app_globals.h"
+#include "app_init.h"
+#include "power_ui.h"
+#include "ui_render.h"
 
 /**
  * Display settings submenu: VIEW, LANG, CASE, FSIZE, ADVANCED, STEPS, STATUS, BACK.

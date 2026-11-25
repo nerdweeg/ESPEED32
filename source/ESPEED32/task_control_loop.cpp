@@ -5,18 +5,7 @@
 #include "connectivity_portal.h"
 #include "ext_pot.h"
 #include "telemetry_logging.h"
-
-extern StateMachine_enum g_currState;
-extern StoredVar_type g_storedVar;
-extern ESC_type g_escVar;
-extern uint16_t g_carSel;
-extern uint32_t g_lastEncoderInteraction;
-extern portMUX_TYPE g_lapStatsMux;
-
-extern uint16_t normalizeAndClamp(uint16_t raw, uint16_t minIn, uint16_t maxIn, uint16_t normalizedMax, bool isReversed);
-extern uint16_t addDeadBand(uint16_t inputVal, uint16_t minVal, uint16_t maxVal, uint16_t deadBand);
-extern uint16_t throttleCurve2(uint16_t inputThrottleNorm);
-extern uint16_t throttleAntiSpin3(uint16_t requestedSpeedX10);
+#include "app_globals.h"
 
 void Task2code(void *pvParameters) {
   static unsigned long prevCallTime_uS = 0;
