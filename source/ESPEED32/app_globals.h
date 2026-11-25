@@ -73,10 +73,4 @@ void stopTimedTelemetryLogging();
 uint16_t getTelemetryTimedMinutes();
 void setTelemetryTimedMinutes(uint16_t minutes);
 
-/* Throttle processing (called from Task2) */
-uint16_t normalizeAndClamp(uint16_t raw, uint16_t minIn, uint16_t maxIn, uint16_t normalizedMax, bool isReversed);
-uint16_t addDeadBand(uint16_t inputVal, uint16_t minVal, uint16_t maxVal, uint16_t deadBand);
-uint16_t throttleCurve2(uint16_t inputThrottleNorm);
-uint16_t throttleAntiSpin3(uint16_t requestedSpeedX10);
-
 #endif  /* APP_GLOBALS_H_ */

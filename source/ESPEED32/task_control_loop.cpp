@@ -6,6 +6,7 @@
 #include "ext_pot.h"
 #include "telemetry_logging.h"
 #include "app_globals.h"
+#include "throttle_processing.h"
 
 void Task2code(void *pvParameters) {
   static unsigned long prevCallTime_uS = 0;
