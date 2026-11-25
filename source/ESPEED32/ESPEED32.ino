@@ -1317,11 +1317,11 @@ void Task1code(void *pvParameters) {
         if (g_storedVar.carParam[g_carSel].freqPWM != prevFreqPWM)  /* if PWM freq parameter is changed, update motor PWM */
         {
           prevFreqPWM = g_storedVar.carParam[g_carSel].freqPWM;
-          ledcDetach(HB_IN_PIN);
-          ledcDetach(HB_INH_PIN);
-          uint16_t freqTmp = g_storedVar.carParam[g_carSel].freqPWM * 100;
-          ledcAttachChannel(HB_IN_PIN, freqTmp, THR_PWM_RES_BIT, THR_IN_PWM_CHAN);
-          ledcAttachChannel(HB_INH_PIN, freqTmp, THR_PWM_RES_BIT, THR_INH_PWM_CHAN);
+          /* Retime the LEDC timer in place: the pins stay attached, so Task2's
+           * concurrent ledcWrite() on core 1 never hits a detached pin. */
+          uint32_t freqTmp = (uint32_t)g_storedVar.carParam[g_carSel].freqPWM * 100U;
+          ledcChangeFrequency(HB_IN_PIN, freqTmp, THR_PWM_RES_BIT);
+          ledcChangeFrequency(HB_INH_PIN, freqTmp, THR_PWM_RES_BIT);
         }
         if (g_escVar.outputSpeed_pct == 100) /* indicate 100% throttle also on the internal ESP32 LED*/
           digitalWrite(LED_BUILTIN, 1);
