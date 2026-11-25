@@ -155,7 +155,13 @@ void Task2code(void *pvParameters) {
       }
 
       /* Apply motor control (skip if in calibration or init state) */
-      if (!(g_currState == CALIBRATION || g_currState == INIT)) {
+      if (isOtaUploadActive()) {
+        /* Flash writes stall both cores, so never leave a drive duty latched in LEDC during OTA: coast. */
+        HalfBridge_SetPwmDragX10(0, 0);
+        g_escVar.outputSpeed_pct = 0;
+        g_escVar.activeBrakeKind = ACTIVE_BRAKE_NONE;
+        g_escVar.activeBrake_pct = 0;
+      } else if (!(g_currState == CALIBRATION || g_currState == INIT)) {
         static uint16_t prevTriggerNorm = 0;
         bool triggerReleasing = g_escVar.trigger_norm < prevTriggerNorm;
         uint16_t releaseBrakeMode = g_storedVar.carParam[g_carSel].quickBrakeEnabled;

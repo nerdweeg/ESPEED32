@@ -2092,7 +2092,7 @@ static bool parseAndApplyWebPatch(const String& json, String* errorMsg, uint8_t*
 /* OTA progress tracking */
 static size_t g_otaTotal = 0;
 static size_t g_otaWritten = 0;
-static bool g_otaInProgress = false;
+static volatile bool g_otaInProgress = false;  /* Read by Task2 on core 1 (isOtaUploadActive) */
 static bool g_otaTargetSpiffs = false;
 static bool g_otaSessionOk = false;
 static bool g_otaRestartRequested = true;
@@ -4307,6 +4307,10 @@ bool isWiFiPortalActive() {
 
 bool isOtaInProgress() {
   return g_otaInProgress || isOtaDeferredRestartActive();
+}
+
+bool isOtaUploadActive() {
+  return g_otaInProgress;
 }
 
 static void stopWiFiTransportOnly() {
