@@ -51,6 +51,7 @@ static String buildJsonBackupFromConfig(const StoredVar_type& storedVar,
   snprintf(buf, sizeof(buf), "  \"gridCarSelectEnabled\": %u,\n", storedVar.gridCarSelectEnabled); json += buf;
   snprintf(buf, sizeof(buf), "  \"raceViewMode\": %u,\n", storedVar.raceViewMode);   json += buf;
   snprintf(buf, sizeof(buf), "  \"language\": %u,\n", storedVar.language);           json += buf;
+  snprintf(buf, sizeof(buf), "  \"terminology\": %u,\n", storedVar.terminology);     json += buf;
   snprintf(buf, sizeof(buf), "  \"textCase\": %u,\n", storedVar.textCase);           json += buf;
   snprintf(buf, sizeof(buf), "  \"listFontSize\": %u,\n", storedVar.listFontSize);   json += buf;
   snprintf(buf, sizeof(buf), "  \"startupDelay\": %u,\n", storedVar.startupDelay);   json += buf;
@@ -480,6 +481,8 @@ bool parseAndValidateJson(const String& json, StoredVar_type* sv, uint16_t* anti
     sv->raceViewMode = v;
   if (!legacyLanguageIndices && parseJsonInt(json, "language", v) && inRange(v, LANG_NOR, LANG_MAX))
     sv->language = v;
+  if (parseJsonInt(json, "terminology", v) && inRange(v, TERM_ESPEED, TERM_MAX))
+    sv->terminology = v;
   if (parseJsonInt(json, "textCase", v) && inRange(v, TEXT_CASE_UPPER, TEXT_CASE_PASCAL))
     sv->textCase = v;
   if (parseJsonInt(json, "listFontSize", v) && inRange(v, FONT_SIZE_LARGE, FONT_SIZE_SMALL))
@@ -849,6 +852,8 @@ String buildSchemaJson() {
                         "[{\"value\":0,\"label\":\"OFF\"},{\"value\":1,\"label\":\"FULL\"},{\"value\":2,\"label\":\"SIMPLE\"}]");
   appendSchemaEnumField(json, first, "language", "Language",
                         "[{\"value\":0,\"label\":\"NOR\"},{\"value\":1,\"label\":\"ENG\"},{\"value\":2,\"label\":\"ESP\"},{\"value\":3,\"label\":\"DEU\"},{\"value\":4,\"label\":\"ITA\"},{\"value\":5,\"label\":\"NLD\"},{\"value\":6,\"label\":\"POR\"},{\"value\":7,\"label\":\"SVE\"}]");
+  appendSchemaEnumField(json, first, "terminology", "Terminology",
+                        "[{\"value\":0,\"label\":\"ESPEED\"},{\"value\":1,\"label\":\"CS\"},{\"value\":2,\"label\":\"ACD\"}]");
   appendSchemaEnumField(json, first, "textCase", "Text Case",
                         "[{\"value\":0,\"label\":\"UPPER\"},{\"value\":1,\"label\":\"Pascal\"}]");
   appendSchemaEnumField(json, first, "listFontSize", "Font Size",
@@ -938,6 +943,7 @@ String buildStateJson(uint8_t carIndex) {
   snprintf(buf, sizeof(buf), "\"gridCarSelectEnabled\":%u,", g_storedVar.gridCarSelectEnabled); json += buf;
   snprintf(buf, sizeof(buf), "\"raceViewMode\":%u,", g_storedVar.raceViewMode); json += buf;
   snprintf(buf, sizeof(buf), "\"language\":%u,", g_storedVar.language); json += buf;
+  snprintf(buf, sizeof(buf), "\"terminology\":%u,", g_storedVar.terminology); json += buf;
   snprintf(buf, sizeof(buf), "\"textCase\":%u,", g_storedVar.textCase); json += buf;
   snprintf(buf, sizeof(buf), "\"listFontSize\":%u,", g_storedVar.listFontSize); json += buf;
   snprintf(buf, sizeof(buf), "\"startupDelay\":%u,", g_storedVar.startupDelay); json += buf;
@@ -1108,6 +1114,10 @@ bool parseAndApplyWebPatch(const String& json, String* errorMsg, uint8_t* applie
   if (parseJsonInt(json, "language", v)) {
     if (!inRange(v, LANG_NOR, LANG_MAX)) { *errorMsg = "Error: invalid language"; return false; }
     updated.language = (uint16_t)v;
+  }
+  if (parseJsonInt(json, "terminology", v)) {
+    if (!inRange(v, TERM_ESPEED, TERM_MAX)) { *errorMsg = "Error: invalid terminology"; return false; }
+    updated.terminology = (uint16_t)v;
   }
   if (parseJsonInt(json, "textCase", v)) {
     if (!inRange(v, TEXT_CASE_UPPER, TEXT_CASE_PASCAL)) { *errorMsg = "Error: invalid textCase"; return false; }
