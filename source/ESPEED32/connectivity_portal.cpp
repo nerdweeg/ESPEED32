@@ -223,6 +223,18 @@ static void applyDefaultUiAuthCredentials() {
   getDefaultUiAuthPassword(g_uiAuthPassword, sizeof(g_uiAuthPassword));
 }
 
+/* What the WiFi/login preference keys hold in flash, as last loaded or written.
+ * saveEEPROM() calls saveWiFiNetworkSettings() on every menu confirm, so this lets
+ * writeWiFiNetworkSettingsToPrefs() skip the NVS write when nothing changed. */
+static struct {
+  bool valid;               /* false until flash contents are known */
+  bool legacyUserKey;       /* obsolete PREF_KEY_UI_AUTH_USER still present */
+  uint8_t mode;
+  char ssid[WIFI_STA_SSID_MAX_LEN + 1];
+  char pass[WIFI_STA_PASS_MAX_LEN + 1];
+  char authPass[UI_AUTH_PASS_MAX_LEN + 1];
+} g_wifiPrefsPersisted = {};
+
 static void loadWiFiNetworkSettingsIfNeeded() {
   if (g_wifiConfigLoaded) {
     return;
@@ -242,6 +254,12 @@ static void loadWiFiNetworkSettingsIfNeeded() {
     pass.toCharArray(g_wifiClientPassword, sizeof(g_wifiClientPassword));
     getDefaultUiAuthUsername(g_uiAuthUsername, sizeof(g_uiAuthUsername));
     authPass.toCharArray(g_uiAuthPassword, sizeof(g_uiAuthPassword));
+    g_wifiPrefsPersisted.valid = true;
+    g_wifiPrefsPersisted.legacyUserKey = pref.isKey(PREF_KEY_UI_AUTH_USER);
+    g_wifiPrefsPersisted.mode = (uint8_t)mode;
+    copyBoundedString(g_wifiPrefsPersisted.ssid, sizeof(g_wifiPrefsPersisted.ssid), g_wifiClientSsid);
+    copyBoundedString(g_wifiPrefsPersisted.pass, sizeof(g_wifiPrefsPersisted.pass), g_wifiClientPassword);
+    copyBoundedString(g_wifiPrefsPersisted.authPass, sizeof(g_wifiPrefsPersisted.authPass), g_uiAuthPassword);
     getLegacyUiAuthPassword4(legacyDefault4, sizeof(legacyDefault4));
     getLegacyUiAuthPassword8(legacyDefault8, sizeof(legacyDefault8));
     if (g_uiAuthPassword[0] == '\0' ||
@@ -263,16 +281,32 @@ static void loadWiFiNetworkSettingsIfNeeded() {
 static void writeWiFiNetworkSettingsToPrefs() {
   loadWiFiNetworkSettingsIfNeeded();
 
+  uint8_t mode = (uint8_t)((g_wifiConfiguredMode == WIFI_CONFIG_HOME) ? WIFI_CONFIG_HOME : WIFI_CONFIG_AP);
+  if (g_wifiPrefsPersisted.valid && !g_wifiPrefsPersisted.legacyUserKey &&
+      g_wifiPrefsPersisted.mode == mode &&
+      strcmp(g_wifiPrefsPersisted.ssid, g_wifiClientSsid) == 0 &&
+      strcmp(g_wifiPrefsPersisted.pass, g_wifiClientPassword) == 0 &&
+      strcmp(g_wifiPrefsPersisted.authPass, g_uiAuthPassword) == 0) {
+    return;  /* Flash already holds these values */
+  }
+
   Preferences pref;
   if (!pref.begin("stored_var", false)) {
     return;
   }
-  pref.putUChar(PREF_KEY_WIFI_MODE, (uint8_t)((g_wifiConfiguredMode == WIFI_CONFIG_HOME) ? WIFI_CONFIG_HOME : WIFI_CONFIG_AP));
+  pref.putUChar(PREF_KEY_WIFI_MODE, mode);
   pref.putString(PREF_KEY_WIFI_STA_SSID, g_wifiClientSsid);
   pref.putString(PREF_KEY_WIFI_STA_PASS, g_wifiClientPassword);
   pref.remove(PREF_KEY_UI_AUTH_USER);
   pref.putString(PREF_KEY_UI_AUTH_PASS, g_uiAuthPassword);
   pref.end();
+
+  g_wifiPrefsPersisted.valid = true;
+  g_wifiPrefsPersisted.legacyUserKey = false;
+  g_wifiPrefsPersisted.mode = mode;
+  copyBoundedString(g_wifiPrefsPersisted.ssid, sizeof(g_wifiPrefsPersisted.ssid), g_wifiClientSsid);
+  copyBoundedString(g_wifiPrefsPersisted.pass, sizeof(g_wifiPrefsPersisted.pass), g_wifiClientPassword);
+  copyBoundedString(g_wifiPrefsPersisted.authPass, sizeof(g_wifiPrefsPersisted.authPass), g_uiAuthPassword);
 }
 
 void requestWiFiAutoStartOnNextBoot() {
