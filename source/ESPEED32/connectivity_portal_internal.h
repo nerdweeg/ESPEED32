@@ -41,4 +41,31 @@ void handleTelemetryClear();
 void handleTelemetryExportCsv();
 void handleTelemetryExportJson();
 
+/* Shared with the settings JSON module (connectivity_portal.cpp) */
+extern uint16_t g_wifiConfiguredMode;
+extern char g_wifiClientSsid[WIFI_STA_SSID_MAX_LEN + 1];
+extern char g_wifiClientPassword[WIFI_STA_PASS_MAX_LEN + 1];
+extern char g_uiAuthUsername[UI_AUTH_USER_MAX_LEN + 1];
+extern char g_uiAuthPassword[UI_AUTH_PASS_MAX_LEN + 1];
+void copyBoundedString(char* out, size_t outLen, const char* in);
+void loadWiFiNetworkSettingsIfNeeded();
+void getDefaultUiAuthUsername(char* out, size_t outLen);
+void getDefaultUiAuthPassword(char* out, size_t outLen);
+void getBackupControllerId(char* out, size_t outLen);
+void setCurrentUiAuthCredentials(const char* username, const char* password);
+bool areCurrentUiAuthCredentialsDefault();
+bool ensureBackupSecretAvailable(bool createIfMissing);
+bool decryptBackupWiFiPasswordFromJson(const String& json, char* outPassword, size_t outPasswordLen, String* errorMsg);
+bool decryptBackupUiAuthPasswordFromJson(const String& json, char* outPassword, size_t outPasswordLen, String* errorMsg);
+
+/* Settings JSON (portal_settings_json.cpp) */
+const char* getBackupReleaseModeName(uint16_t mode);
+bool parseJsonStr(const String& json, const char* key, char* outStr, int maxLen);
+uint8_t getRequestedCarIndex();
+String buildJsonBackup();
+String buildSchemaJson();
+String buildStateJson(uint8_t carIndex);
+bool parseAndValidateJson(const String& json, StoredVar_type* sv, uint16_t* antiSpinStepMs, uint16_t* antiSpinStepPct, uint16_t* antiSpinDisplayMode, uint16_t* brakeStepRaw, uint16_t* sensiStepRaw, uint16_t* advancedMenuEnabled, uint16_t* encoderInvertEnabled, uint16_t* pwmFreqMaxProfile, uint16_t* adcVoltageRangeMv, uint16_t* wifiConfiguredMode, char* wifiClientSsid, size_t wifiClientSsidLen, char* wifiClientPassword, size_t wifiClientPasswordLen, char* uiAuthUsername, size_t uiAuthUsernameLen, char* uiAuthPassword, size_t uiAuthPasswordLen, String* errorMsg, String* warningMsg = nullptr);
+bool parseAndApplyWebPatch(const String& json, String* errorMsg, uint8_t* appliedCarIndex);
+
 #endif  /* CONNECTIVITY_PORTAL_INTERNAL_H_ */
