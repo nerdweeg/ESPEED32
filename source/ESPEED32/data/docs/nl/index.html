@@ -234,12 +234,13 @@ details.doc-fold>:not(summary){margin-top:8px}
     <p class="small">Deze sectie groepeert wat je op het OLED-scherm ziet: taal, labelstijl, race-indeling, statusbalk en systeeminfo.</p>
     <h3>Taal en display</h3>
     <ul>
-      <li><code>DISPLAY -&gt; LANGUAGE</code> kiest tussen gelokaliseerde labels en de naamprofielen ENG/CS/ACD.</li>
-      <li><code>NOR/ESP/DEU/ITA/NLD/POR/SVE</code>: gelokaliseerde UI met de standaardset <code>BRAKE/SENSI/ANTIS/CURVE/FADE/LIMIT</code>.</li>
-      <li><code>ENG</code>: algemene benamingen (<code>BRAKE/SENSI/ANTIS/CURVE/FADE/LIMIT</code>).</li>
+      <li><code>DISPLAY -&gt; LANGUAGE</code> kiest de taal van de menu's: <code>NOR/ENG/ESP/DEU/ITA/NLD/POR/SVE</code>.</li>
+      <li><code>DISPLAY -&gt; TERMS</code> kiest de namen van de parameters. Dit werkt met elke taal:</li>
+      <li><code>ESPEED</code> (standaard): de gewone namen <code>BRAKE/SENSI/ANTIS/CURVE/FADE/LIMIT</code>, vertaald in de gekozen taal.</li>
       <li><code>CS</code>: termen in CarSteen-stijl (<code>ATTCK/CHOK2/PROFL/CHOK1</code>).</li>
       <li><code>ACD</code>: ACD-termen waar direct van toepassing, met <code>SENSI</code> en <code>CHOKE</code> voor limit. <code>ANTIS</code> blijft anti-spin omdat de ACD-handleiding geen aparte Choke2-term definieert.</li>
-      <li><code>CHOK1</code> (CS) en <code>CHOKE</code> (ACD) werken omgekeerd aan <code>LIMIT</code>: <code>CHOKE = 100 - LIMIT</code>. <code>CHOKE 0</code> betekent geen choke (volle snelheid) en een hogere waarde knijpt meer af. De waarde wordt als LIMIT opgeslagen, dus van taal wisselen houdt dezelfde topsnelheid.</li>
+      <li><code>CHOK1</code> (CS) en <code>CHOKE</code> (ACD) werken omgekeerd aan <code>LIMIT</code>: <code>CHOKE = 100 - LIMIT</code>. <code>CHOKE 0</code> betekent geen choke (volle snelheid) en een hogere waarde knijpt meer af. De waarde wordt als LIMIT opgeslagen, dus wisselen van terminologie houdt dezelfde topsnelheid.</li>
+      <li>Upgrade vanaf v6.14 of ouder: een controller met de taal CS of ACD start in het Engels met de bijbehorende terminologie. Back-ups van voor v6.15 herstellen alles behalve de taal.</li>
       <li><code>DISPLAY -&gt; CASE</code> bepaalt of labels in <code>UPPER</code> of <code>Pascal</code> worden getoond.</li>
       <li><code>DISPLAY -&gt; FONT SIZE</code> verandert de tekstdichtheid van lijsten/menu's tussen <code>LARGE</code> en <code>small</code>.</li>
       <li><code>DISPLAY -&gt; GEAVANCEERD</code> bepaalt of <code>FADE</code>, <code>PWM_F</code> en <code>BRAKE+</code> in het hoofdmenu zichtbaar zijn. Op <code>UIT</code> worden die regels verborgen voor een eenvoudiger menu, maar de opgeslagen autowaarden blijven actief.</li>
@@ -614,7 +615,8 @@ details.doc-fold>:not(summary){margin-top:8px}
 |  |  `- BACK
 |  |- DISPLAY
 |  |  |- RACE MODE (OFF/FULL/SIMPLE)
-|  |  |- LANGUAGE (NOR/ENG/CS/ACD/ESP/DEU/ITA/NLD/POR/SVE)
+|  |  |- LANGUAGE (NOR/ENG/ESP/DEU/ITA/NLD/POR/SVE)
+|  |  |- TERMS (ESPEED/CS/ACD)
 |  |  |- CASE (UPPER/Pascal)
 |  |  |- FONT SIZE (LARGE/small)
 |  |  |- GEAVANCEERD (UIT/AAN)
