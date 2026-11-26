@@ -41,7 +41,7 @@ static void formatConfiguredMenuLabel(const char* source, char* buffer, size_t b
 void showSleepSettings() {
   uint16_t lang = g_storedVar.language;
 
-  /* Labels [NOR, ENG, CS, ACD, ESP, DEU, ITA, NLD, POR] */
+  /* Labels [NOR, ENG, ESP, DEU, ITA, NLD, POR, SWE] */
   const char* lblInterval[LANG_COUNT] = {"INTERV.", "INTERVAL", "INTERVALO", "INTERVAL", "INTERVAL", "INTERVAL", "INTERVAL", "INTERV."};
   const char* lblNow[LANG_COUNT]      = {"SOV NA",  "SLEEP NOW", "REPOSO YA", "JETZT RUH", "DORMI ORA", "SLAAP NU", "DORMIR JA", "SOV NU"};
   const uint8_t ITEM_NOW = 0;
