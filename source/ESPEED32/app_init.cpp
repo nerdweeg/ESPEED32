@@ -69,7 +69,7 @@ void initStoredVariables() {
     g_storedVar.carParam[i].quickBrakeEnabled = QUICK_BRAKE_ENABLED_DEFAULT;
     g_storedVar.carParam[i].quickBrakeThreshold = QUICK_BRAKE_THRESHOLD_DEFAULT;
     g_storedVar.carParam[i].quickBrakeStrength = QUICK_BRAKE_STRENGTH_DEFAULT;
-    snprintf(g_storedVar.carParam[i].carName, sizeof(g_storedVar.carParam[i].carName), "CAR%d", i);
+    setDefaultCarName(g_storedVar.carParam[i], i);
   }
   g_storedVar.selectedCarNumber = 0;
   g_storedVar.minTrigger_raw = 0;

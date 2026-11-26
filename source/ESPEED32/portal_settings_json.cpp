@@ -607,13 +607,14 @@ bool parseAndValidateJson(const String& json, StoredVar_type* sv, uint16_t* anti
 
     CarParam_type& c = sv->carParam[i];
 
-    /* Name - parse into a wider buffer, then keep the first CAR_NAME_MAX_SIZE - 1 chars */
+    /* Name - parse into a wider buffer; normalizeStoredCarNames() below maps legacy 5-char
+       defaults (CAR10..CAR19) and terminates anything longer at 4 chars */
     char tempName[16];
     if (!parseJsonStr(carJson, "name", tempName, sizeof(tempName))) {
       *errorMsg = "Error: missing name in car " + String(i); return false;
     }
     memset(c.carName, 0, CAR_NAME_MAX_SIZE);
-    strncpy(c.carName, tempName, CAR_NAME_MAX_SIZE - 1);  /* memset above keeps the NUL */
+    memcpy(c.carName, tempName, min(strlen(tempName), (size_t)CAR_NAME_MAX_SIZE));
     c.carNumber = i;
 
     /* Numeric fields */
@@ -695,6 +696,7 @@ bool parseAndValidateJson(const String& json, StoredVar_type* sv, uint16_t* anti
     }
   }
 
+  normalizeStoredCarNames(sv);
   clampStoredVarCarPwmFreqsToProfile(sv,
                                      (pwmFreqMaxProfile != nullptr)
                                        ? *pwmFreqMaxProfile

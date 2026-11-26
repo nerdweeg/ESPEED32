@@ -292,6 +292,39 @@ static bool isSensiEditTarget() {
   return g_encoderSelectedValuePtr == &g_storedVar.carParam[g_carSel].minSpeed;
 }
 
+/**
+ * Default profile name: CAR0..CAR9, then CR10..CR19, so every name fits the 4-character carName.
+ */
+void setDefaultCarName(CarParam_type& car, uint8_t index) {
+  snprintf(car.carName, sizeof(car.carName), (index < 10) ? "CAR%u" : "CR%u", (unsigned)index);
+}
+
+/**
+ * Terminate every car name inside carName[]. Older firmware stored the defaults CAR10..CAR19 as
+ * 5 characters with the NUL in the struct padding; those become CR10..CR19, any other unterminated
+ * name is cut to 4 characters.
+ * @return true if any name was changed
+ */
+bool normalizeStoredCarNames(StoredVar_type* storedVar) {
+  if (storedVar == nullptr) return false;
+
+  bool changed = false;
+  for (uint8_t i = 0; i < CAR_MAX_COUNT; i++) {
+    CarParam_type& car = storedVar->carParam[i];
+    if (memchr(car.carName, '\0', sizeof(car.carName)) != nullptr) continue;
+    char legacyDefault[8];
+    snprintf(legacyDefault, sizeof(legacyDefault), "CAR%u", (unsigned)i);
+    if (strlen(legacyDefault) == sizeof(car.carName) &&
+        memcmp(car.carName, legacyDefault, sizeof(car.carName)) == 0) {
+      setDefaultCarName(car, i);
+    } else {
+      car.carName[sizeof(car.carName) - 1] = '\0';
+    }
+    changed = true;
+  }
+  return changed;
+}
+
 bool clampStoredVarCarPwmFreqsToProfile(StoredVar_type* storedVar, uint16_t profile) {
   if (storedVar == nullptr) return false;
 
@@ -931,7 +964,8 @@ void Task1code(void *pvParameters) {
               g_pref.putUShort(PREF_KEY_BRAKE_STEP, g_brakeStep);
               g_pref.putUShort(PREF_KEY_SENSI_STEP, g_sensiStep);
             }
-            if (clampStoredVarCarPwmFreqsToProfile(&g_storedVar, g_pwmFreqMaxProfile)) {
+            bool namesFixed = normalizeStoredCarNames(&g_storedVar);
+            if (clampStoredVarCarPwmFreqsToProfile(&g_storedVar, g_pwmFreqMaxProfile) || namesFixed) {
               g_pref.putBytes("user_param", &g_storedVar, sizeof(g_storedVar));
             }
             initMenuItems();                                                  /* init menu items with EEPROM stored variables */

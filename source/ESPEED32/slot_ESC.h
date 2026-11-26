@@ -487,6 +487,8 @@ typedef struct {
 } StoredVar_type;
 
 bool clampStoredVarCarPwmFreqsToProfile(StoredVar_type* storedVar, uint16_t profile);
+void setDefaultCarName(CarParam_type& car, uint8_t index);
+bool normalizeStoredCarNames(StoredVar_type* storedVar);
 uint16_t getConfiguredPwmFreqMaxProfile();
 uint16_t getConfiguredPwmFreqMaxRaw();
 uint16_t getConfiguredPwmFreqMaxKHz();
