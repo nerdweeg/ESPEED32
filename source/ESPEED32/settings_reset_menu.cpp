@@ -325,8 +325,6 @@ void showResetSubmenu() {
   const char* rowNamesByLang[LANG_COUNT][RS_ITEMS] = {
     {"Bil", "Innstillinger", "Kalibrering", "Nettverk", "Alt", "Tilbake"},
     {"Car", "Settings", "Calibration", "Network", "Everything", "Back"},
-    {"Car", "Settings", "Calibration", "Network", "Everything", "Back"},
-    {"Car", "Settings", "Calibration", "Network", "Everything", "Back"},
     {"Auto", "Ajustes", "Calibrac.", "Red", "Todo", "Atras"},
     {"Auto", "Einstell.", "Kalibr.", "Netzwerk", "Alles", "Zuruck"},
     {"Auto", "Impostaz.", "Calibraz.", "Rete", "Tutto", "Indietro"},

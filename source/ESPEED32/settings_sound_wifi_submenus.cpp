@@ -190,18 +190,18 @@ static void showWiFiClientSetupRequiredScreen() {
 void showWiFiSettings() {
   uint16_t lang = g_storedVar.language;
 
-  const char* lblOpenUpper[LANG_COUNT]  = {"INFO SIDE", "INFO PAGE", "INFO PAGE", "INFO PAGE", "PAG INFO", "INFOSITE", "PAG INFO", "INFO PAG", "PAG INFO", "INFO SIDA"};
-  const char* lblOpenPascal[LANG_COUNT] = {"Info side", "Info page", "Info page", "Info page", "Pag info", "Infosite", "Pag info", "Info pag", "Pag info", "Info sida"};
-  const char* lblTimerUpper[LANG_COUNT] = {"AUTO AV",   "AUTO OFF",  "AUTO OFF",  "AUTO OFF",  "AUTO OFF", "AUTO AUS", "AUTO OFF", "AUTO UIT", "AUTO OFF", "AUTO AV"};
-  const char* lblTimerPascal[LANG_COUNT]= {"Auto av",   "Auto off",  "Auto off",  "Auto off",  "Auto off", "Auto aus", "Auto off", "Auto uit", "Auto off", "Auto av"};
-  const char* lblModeUpper[LANG_COUNT]  = {"MODUS",     "MODE",      "MODE",      "MODE",      "MODO",      "MODUS",    "MODO",      "MODE",     "MODO", "LAGE"};
-  const char* lblModePascal[LANG_COUNT] = {"Modus",     "Mode",      "Mode",      "Mode",      "Modo",      "Modus",    "Modo",      "Mode",     "Modo", "Lage"};
-  const char* lblStartUpper[LANG_COUNT] = {"START WIFI", "START WIFI", "START WIFI", "START WIFI", "INIC WIFI", "START WIFI", "AVVIA WIFI", "START WIFI", "INIC WIFI", "START WIFI"};
-  const char* lblStartPascal[LANG_COUNT]= {"Start WiFi", "Start WiFi", "Start WiFi", "Start WiFi", "Inic WiFi", "Start WiFi", "Avvia WiFi", "Start WiFi", "Inic WiFi", "Start WiFi"};
-  const char* lblStopUpper[LANG_COUNT]  = {"STOPP WIFI", "STOP WIFI",  "STOP WIFI",  "STOP WIFI",  "STOP WIFI", "STOP WIFI",  "STOP WIFI",  "STOP WIFI",  "STOP WIFI", "STOPP WIFI"};
-  const char* lblStopPascal[LANG_COUNT] = {"Stopp WiFi", "Stop WiFi",  "Stop WiFi",  "Stop WiFi",  "Stop WiFi", "Stop WiFi",  "Stop WiFi",  "Stop WiFi",  "Stop WiFi", "Stopp WiFi"};
-  const char* lblQrUpper[LANG_COUNT]    = {"VIS QR",     "SHOW QR",    "SHOW QR",    "SHOW QR",    "VER QR",    "ZEIG QR",    "MOSTRA QR",  "TOON QR",    "VER QR", "VISA QR"};
-  const char* lblQrPascal[LANG_COUNT]   = {"Vis QR",     "Show QR",    "Show QR",    "Show QR",    "Ver QR",    "Zeig QR",    "Mostra QR",  "Toon QR",    "Ver QR", "Visa QR"};
+  const char* lblOpenUpper[LANG_COUNT]  = {"INFO SIDE", "INFO PAGE", "PAG INFO", "INFOSITE", "PAG INFO", "INFO PAG", "PAG INFO", "INFO SIDA"};
+  const char* lblOpenPascal[LANG_COUNT] = {"Info side", "Info page", "Pag info", "Infosite", "Pag info", "Info pag", "Pag info", "Info sida"};
+  const char* lblTimerUpper[LANG_COUNT] = {"AUTO AV",   "AUTO OFF",  "AUTO OFF", "AUTO AUS", "AUTO OFF", "AUTO UIT", "AUTO OFF", "AUTO AV"};
+  const char* lblTimerPascal[LANG_COUNT]= {"Auto av",   "Auto off",  "Auto off", "Auto aus", "Auto off", "Auto uit", "Auto off", "Auto av"};
+  const char* lblModeUpper[LANG_COUNT]  = {"MODUS",     "MODE",      "MODO",      "MODUS",    "MODO",      "MODE",     "MODO", "LAGE"};
+  const char* lblModePascal[LANG_COUNT] = {"Modus",     "Mode",      "Modo",      "Modus",    "Modo",      "Mode",     "Modo", "Lage"};
+  const char* lblStartUpper[LANG_COUNT] = {"START WIFI", "START WIFI", "INIC WIFI", "START WIFI", "AVVIA WIFI", "START WIFI", "INIC WIFI", "START WIFI"};
+  const char* lblStartPascal[LANG_COUNT]= {"Start WiFi", "Start WiFi", "Inic WiFi", "Start WiFi", "Avvia WiFi", "Start WiFi", "Inic WiFi", "Start WiFi"};
+  const char* lblStopUpper[LANG_COUNT]  = {"STOPP WIFI", "STOP WIFI",  "STOP WIFI", "STOP WIFI",  "STOP WIFI",  "STOP WIFI",  "STOP WIFI", "STOPP WIFI"};
+  const char* lblStopPascal[LANG_COUNT] = {"Stopp WiFi", "Stop WiFi",  "Stop WiFi", "Stop WiFi",  "Stop WiFi",  "Stop WiFi",  "Stop WiFi", "Stopp WiFi"};
+  const char* lblQrUpper[LANG_COUNT]    = {"VIS QR",     "SHOW QR",    "VER QR",    "ZEIG QR",    "MOSTRA QR",  "TOON QR",    "VER QR", "VISA QR"};
+  const char* lblQrPascal[LANG_COUNT]   = {"Vis QR",     "Show QR",    "Ver QR",    "Zeig QR",    "Mostra QR",  "Toon QR",    "Ver QR", "Visa QR"};
   const char* const* lblOpen   = (g_storedVar.textCase == TEXT_CASE_PASCAL) ? lblOpenPascal : lblOpenUpper;
   const char* const* lblTimer  = (g_storedVar.textCase == TEXT_CASE_PASCAL) ? lblTimerPascal : lblTimerUpper;
   const char* const* lblMode   = (g_storedVar.textCase == TEXT_CASE_PASCAL) ? lblModePascal : lblModeUpper;
@@ -428,12 +428,12 @@ void showWiFiSettings() {
 void showLoggingSettings() {
   uint16_t lang = g_storedVar.language;
 
-  const char* lblTimerUpper[LANG_COUNT]    = {"AUTO AV",   "AUTO OFF",  "AUTO OFF",  "AUTO OFF",  "AUTO OFF", "AUTO AUS", "AUTO OFF", "AUTO UIT", "AUTO OFF", "AUTO AV"};
-  const char* lblTimerPascal[LANG_COUNT]   = {"Auto av",   "Auto off",  "Auto off",  "Auto off",  "Auto off", "Auto aus", "Auto off", "Auto uit", "Auto off", "Auto av"};
-  const char* lblStartUpper[LANG_COUNT]    = {"START NA",  "START NOW", "START NOW", "START NOW", "INIC AHOR", "START NOW", "AVVIA ORA", "START NU", "INIC AGORA", "START NU"};
-  const char* lblStartPascal[LANG_COUNT]   = {"Start nå",  "Start now", "Start now", "Start now", "Inic ahor", "Start now", "Avvia ora", "Start nu", "Inic agora", "Start nu"};
-  const char* lblStopUpper[LANG_COUNT]     = {"STOPP NA",  "STOP NOW",  "STOP NOW",  "STOP NOW",  "PARA AHOR", "STOP NOW",  "STOP ORA",  "STOP NU",  "STOP AGORA", "STOPP NU"};
-  const char* lblStopPascal[LANG_COUNT]    = {"Stopp nå",  "Stop now",  "Stop now",  "Stop now",  "Para ahor", "Stop now",  "Stop ora",  "Stop nu",  "Stop agora", "Stopp nu"};
+  const char* lblTimerUpper[LANG_COUNT]    = {"AUTO AV",   "AUTO OFF",  "AUTO OFF", "AUTO AUS", "AUTO OFF", "AUTO UIT", "AUTO OFF", "AUTO AV"};
+  const char* lblTimerPascal[LANG_COUNT]   = {"Auto av",   "Auto off",  "Auto off", "Auto aus", "Auto off", "Auto uit", "Auto off", "Auto av"};
+  const char* lblStartUpper[LANG_COUNT]    = {"START NA",  "START NOW", "INIC AHOR", "START NOW", "AVVIA ORA", "START NU", "INIC AGORA", "START NU"};
+  const char* lblStartPascal[LANG_COUNT]   = {"Start nå",  "Start now", "Inic ahor", "Start now", "Avvia ora", "Start nu", "Inic agora", "Start nu"};
+  const char* lblStopUpper[LANG_COUNT]     = {"STOPP NA",  "STOP NOW",  "PARA AHOR", "STOP NOW",  "STOP ORA",  "STOP NU",  "STOP AGORA", "STOPP NU"};
+  const char* lblStopPascal[LANG_COUNT]    = {"Stopp nå",  "Stop now",  "Para ahor", "Stop now",  "Stop ora",  "Stop nu",  "Stop agora", "Stopp nu"};
   const char* const* lblTimer     = (g_storedVar.textCase == TEXT_CASE_PASCAL) ? lblTimerPascal : lblTimerUpper;
   const char* const* lblStartNow  = (g_storedVar.textCase == TEXT_CASE_PASCAL) ? lblStartPascal : lblStartUpper;
   const char* const* lblStopNow   = (g_storedVar.textCase == TEXT_CASE_PASCAL) ? lblStopPascal : lblStopUpper;

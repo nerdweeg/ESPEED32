@@ -394,8 +394,12 @@ bool parseAndValidateJson(const String& json, StoredVar_type* sv, uint16_t* anti
   }
 
   /* Version check - warn but allow cross-version restore for car profiles */
+  bool legacyLanguageIndices = false;
   if (parseJsonInt(json, "version", v) && v != STORED_VAR_VERSION) {
-    /* Different version: car profiles are restored, global settings use defaults for missing fields */
+    /* Different version: car profiles are restored, global settings use defaults for missing fields.
+       Before v25 the language list still held CS/ACD, so its indices no longer match: keep the
+       current language instead of picking the wrong one. */
+    legacyLanguageIndices = (v < 25);
   }
 
   /* Parse global settings - use value if present and valid, otherwise keep default */
@@ -474,7 +478,7 @@ bool parseAndValidateJson(const String& json, StoredVar_type* sv, uint16_t* anti
     sv->gridCarSelectEnabled = v;
   if (parseJsonInt(json, "raceViewMode", v) && inRange(v, 0, 2))
     sv->raceViewMode = v;
-  if (parseJsonInt(json, "language", v) && inRange(v, LANG_NOR, LANG_MAX))
+  if (!legacyLanguageIndices && parseJsonInt(json, "language", v) && inRange(v, LANG_NOR, LANG_MAX))
     sv->language = v;
   if (parseJsonInt(json, "textCase", v) && inRange(v, TEXT_CASE_UPPER, TEXT_CASE_PASCAL))
     sv->textCase = v;
@@ -844,7 +848,7 @@ String buildSchemaJson() {
   appendSchemaEnumField(json, first, "raceViewMode", "Race Mode",
                         "[{\"value\":0,\"label\":\"OFF\"},{\"value\":1,\"label\":\"FULL\"},{\"value\":2,\"label\":\"SIMPLE\"}]");
   appendSchemaEnumField(json, first, "language", "Language",
-                        "[{\"value\":0,\"label\":\"NOR\"},{\"value\":1,\"label\":\"ENG\"},{\"value\":2,\"label\":\"CS\"},{\"value\":3,\"label\":\"ACD\"},{\"value\":4,\"label\":\"ESP\"},{\"value\":5,\"label\":\"DEU\"},{\"value\":6,\"label\":\"ITA\"},{\"value\":7,\"label\":\"NLD\"},{\"value\":8,\"label\":\"POR\"},{\"value\":9,\"label\":\"SVE\"}]");
+                        "[{\"value\":0,\"label\":\"NOR\"},{\"value\":1,\"label\":\"ENG\"},{\"value\":2,\"label\":\"ESP\"},{\"value\":3,\"label\":\"DEU\"},{\"value\":4,\"label\":\"ITA\"},{\"value\":5,\"label\":\"NLD\"},{\"value\":6,\"label\":\"POR\"},{\"value\":7,\"label\":\"SVE\"}]");
   appendSchemaEnumField(json, first, "textCase", "Text Case",
                         "[{\"value\":0,\"label\":\"UPPER\"},{\"value\":1,\"label\":\"Pascal\"}]");
   appendSchemaEnumField(json, first, "listFontSize", "Font Size",

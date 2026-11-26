@@ -21,7 +21,7 @@
 #define SW_PATCH_VERSION 0
 
 /* Stored Variable Version */
-#define STORED_VAR_VERSION 24 /* Increment when stored value scale/format changes */
+#define STORED_VAR_VERSION 25 /* Increment when stored value scale/format changes */
 
 /* Menu Configuration */
 #define MENU_ITEMS_COUNT    12    /* Number of possible items in main menu (including optional STATS, LOCK and CAR) */
@@ -67,14 +67,12 @@
 /* Language Settings */
 #define LANG_NOR            0     /* Norwegian language */
 #define LANG_ENG            1     /* English language */
-#define LANG_CS             2     /* CarSteen terminology (English-based) */
-#define LANG_ACD            3     /* ACD terminology (English-based) */
-#define LANG_ESP            4     /* Spanish language */
-#define LANG_DEU            5     /* German language */
-#define LANG_ITA            6     /* Italian language */
-#define LANG_NLD            7     /* Dutch language */
-#define LANG_POR            8     /* Portuguese language */
-#define LANG_SWE            9     /* Swedish language */
+#define LANG_ESP            2     /* Spanish language */
+#define LANG_DEU            3     /* German language */
+#define LANG_ITA            4     /* Italian language */
+#define LANG_NLD            5     /* Dutch language */
+#define LANG_POR            6     /* Portuguese language */
+#define LANG_SWE            7     /* Swedish language */
 #define LANG_MAX            LANG_SWE
 #define LANG_COUNT          (LANG_MAX + 1)  /* Rows in every language-indexed string table */
 #define LANG_DEFAULT        LANG_ENG
@@ -480,7 +478,7 @@ typedef struct {
   uint16_t soundRace;                       /* Race mode sound: 0=OFF, 1=ON (toggle beep) */
   uint16_t gridCarSelectEnabled;            /* Enable car selection from grid view (0=OFF, 1=ON) */
   uint16_t raceViewMode;                    /* Race view mode: OFF, FULL, or SIMPLE */
-  uint16_t language;                        /* Language: NOR, ENG, CS, ACD, ESP, DEU, ITA, NLD, or POR */
+  uint16_t language;                        /* Language: NOR, ENG, ESP, DEU, ITA, NLD, POR or SWE */
   uint16_t textCase;                        /* Text case style: UPPER or PASCAL */
   uint16_t listFontSize;                    /* List view font size: LARGE or SMALL */
   uint16_t startupDelay;                    /* [×STEP] Startup welcome screen delay */
@@ -561,8 +559,8 @@ static inline uint16_t normalizeTerminology(uint16_t terminology) {
   return (terminology <= TERM_MAX) ? terminology : TERM_DEFAULT;
 }
 
-static inline bool isLimitShownAsChoke(uint16_t lang, uint16_t terminology) {
-  return (normalizeTerminology(terminology) != TERM_ESPEED) || (lang == LANG_CS) || (lang == LANG_ACD);
+static inline bool isLimitShownAsChoke(uint16_t terminology) {
+  return normalizeTerminology(terminology) != TERM_ESPEED;
 }
 
 static inline uint16_t limitPctToChokePct(uint16_t limitPct) {

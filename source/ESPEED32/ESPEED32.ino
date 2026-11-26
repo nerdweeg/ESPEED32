@@ -185,7 +185,22 @@ static const char* PREF_KEY_EXT_POT_TARGET_LEGACY = "ext_pot_tgt";
 static bool g_startWiFiAfterOtaBoot = false;
 
 static bool canMigrateStoredVarVersion(uint8_t storedVarVersion) {
-  return storedVarVersion == 22U || storedVarVersion == 23U;
+  return storedVarVersion == 22U || storedVarVersion == 23U || storedVarVersion == 24U;
+}
+
+/**
+ * v25 moved CS and ACD out of the language list into StoredVar.terminology.
+ * Old language indices: NOR 0, ENG 1, CS 2, ACD 3, ESP 4, DEU 5, ITA 6, NLD 7, POR 8, SWE 9.
+ */
+static void migrateStoredVarLanguageToTerminology(StoredVar_type* storedVar) {
+  if (storedVar == nullptr) return;
+
+  static const uint8_t NEW_LANG_FROM_OLD[] = {
+    LANG_NOR, LANG_ENG, LANG_ENG, LANG_ENG, LANG_ESP, LANG_DEU, LANG_ITA, LANG_NLD, LANG_POR, LANG_SWE
+  };
+  uint16_t oldLang = storedVar->language;
+  storedVar->terminology = (oldLang == 2U) ? TERM_CS : (oldLang == 3U) ? TERM_ACD : TERM_ESPEED;
+  storedVar->language = (oldLang < sizeof(NEW_LANG_FROM_OLD)) ? NEW_LANG_FROM_OLD[oldLang] : LANG_DEFAULT;
 }
 
 static void migrateStoredVarFromHalfPctToTenthPct(StoredVar_type* storedVar) {
@@ -285,7 +300,7 @@ static bool isBrakeEditTarget() {
 
 static bool isChokeEditTarget() {
   return g_encoderSelectedValuePtr == &g_storedVar.carParam[g_carSel].maxSpeed &&
-         isLimitShownAsChoke(g_storedVar.language, g_storedVar.terminology);
+         isLimitShownAsChoke(g_storedVar.terminology);
 }
 
 static bool isSensiEditTarget() {
@@ -884,7 +899,7 @@ void Task1code(void *pvParameters) {
           storedVarVersion = g_pref.getUChar("stored_var_ver");
           Serial.printf("[BOOT] INIT: stored fw=%u.%u, stored_var_ver=%u\n", swMajVer, swMinVer, storedVarVersion);
 
-          if ((storedVarVersion == STORED_VAR_VERSION) || canMigrateStoredVarVersion(storedVarVersion)) /* Load current storage directly, or migrate v22/v23 in-place to 0.1% BRAKE/SENSI */
+          if ((storedVarVersion == STORED_VAR_VERSION) || canMigrateStoredVarVersion(storedVarVersion)) /* Load current storage directly, or migrate v22-v24 in place */
           {
             /* Zero-fill before reading: if the stored blob is shorter than
              * sizeof(g_storedVar) (corrupt NVS entry, or a downgrade from a
@@ -899,10 +914,17 @@ void Task1code(void *pvParameters) {
                             (unsigned)storedVarBytesRead, (unsigned)sizeof(g_storedVar));
             }
             bool migratedToTenths = false;
-            if (storedVarVersion != STORED_VAR_VERSION) {
+            bool migratedLanguage = false;
+            if (storedVarVersion == 22U || storedVarVersion == 23U) {
               migrateStoredVarFromHalfPctToTenthPct(&g_storedVar);
               migratedToTenths = true;
             }
+            if (storedVarVersion != STORED_VAR_VERSION) {
+              migrateStoredVarLanguageToTerminology(&g_storedVar);
+              migratedLanguage = true;
+            }
+            if (g_storedVar.language > LANG_MAX) g_storedVar.language = LANG_DEFAULT;
+            g_storedVar.terminology = normalizeTerminology(g_storedVar.terminology);
             g_statsEnabled = g_pref.getUChar(PREF_KEY_STATS_ENABLED, STATS_ENABLED_DEFAULT) ? 1 : 0;
             g_advancedMenuEnabled = g_pref.getUChar(PREF_KEY_ADVANCED_MENU, ADVANCED_MENU_ENABLED_DEFAULT) ? 1 : 0;
             g_encoderInvertEnabled = g_pref.getUChar(PREF_KEY_ENC_INVERT, ENCODER_INVERT_DEFAULT) ? 1 : 0;
@@ -955,11 +977,13 @@ void Task1code(void *pvParameters) {
               g_pref.putBytes("user_param", &g_storedVar, sizeof(g_storedVar));
               g_pref.putBool(PREF_KEY_SENSI_HALF, true);
             }
-            if (migratedToTenths) {
+            if (migratedToTenths || migratedLanguage) {
               g_pref.putBytes("user_param", &g_storedVar, sizeof(g_storedVar));
               g_pref.putUChar("sw_maj_ver", SW_MAJOR_VERSION);
               g_pref.putUChar("sw_min_ver", SW_MINOR_VERSION);
               g_pref.putUChar("stored_var_ver", STORED_VAR_VERSION);
+            }
+            if (migratedToTenths) {
               g_pref.putBool(PREF_KEY_SENSI_HALF, true);
               g_pref.putUShort(PREF_KEY_BRAKE_STEP, g_brakeStep);
               g_pref.putUShort(PREF_KEY_SENSI_STEP, g_sensiStep);
