@@ -209,8 +209,6 @@ void showScreensaverSettings() {
   const char* ssNamesByLang[LANG_COUNT][SS_ITEMS] = {
     {"NA", "LINJE1", "LINJE2", "TID", "TILBAKE"},
     {"NOW", "LINE1", "LINE2", "TIME", "BACK"},
-    {"NOW", "LINE1", "LINE2", "TIME", "BACK"},
-    {"NOW", "LINE1", "LINE2", "TIME", "BACK"},
     {"AHORA", "LINEA1", "LINEA2", "TIEMPO", "ATRAS"},
     {"JETZT", "ZEILE1", "ZEILE2", "ZEIT", "ZURUCK"},
     {"ORA", "RIGA1", "RIGA2", "TEMPO", "INDIETRO"},
@@ -218,8 +216,8 @@ void showScreensaverSettings() {
     {"AGORA", "LINHA1", "LINHA2", "TEMPO", "VOLTAR"},
     {"NU", "RAD1", "RAD2", "TID", "TILLBAKA"}
   };
-  const char* editorTitleL1ByLang[LANG_COUNT] = {"Linje 1", "Line 1", "Line 1", "Line 1", "Linea 1", "Zeile 1", "Riga 1", "Regel 1", "Linha 1", "Rad 1"};
-  const char* editorTitleL2ByLang[LANG_COUNT] = {"Linje 2", "Line 2", "Line 2", "Line 2", "Linea 2", "Zeile 2", "Riga 2", "Regel 2", "Linha 2", "Rad 2"};
+  const char* editorTitleL1ByLang[LANG_COUNT] = {"Linje 1", "Line 1", "Linea 1", "Zeile 1", "Riga 1", "Regel 1", "Linha 1", "Rad 1"};
+  const char* editorTitleL2ByLang[LANG_COUNT] = {"Linje 2", "Line 2", "Linea 2", "Zeile 2", "Riga 2", "Regel 2", "Linha 2", "Rad 2"};
   const char** ssNames = ssNamesByLang[lang];
   const char* editorTitleL1 = editorTitleL1ByLang[lang];
   const char* editorTitleL2 = editorTitleL2ByLang[lang];
@@ -396,12 +394,12 @@ void showScreensaverSettings() {
 }
 
 void showAntiSpinSettings() {
-  const char* lblTypeUpper[LANG_COUNT]    = {"REGTYPE",   "REG.TYPE", "REG.TYPE", "REG.TYPE", "TIPO REG", "REG.TYP",  "TIPO REG", "REG.TYPE", "TIPO REG", "REG.TYP"};
-  const char* lblTypePascal[LANG_COUNT]   = {"Regtype",   "Reg.type", "Reg.type", "Reg.type", "Tipo reg", "Reg.typ",  "Tipo reg", "Reg.type", "Tipo reg", "Reg.typ"};
-  const char* lblStepMsUpper[LANG_COUNT]  = {"STEG MS",   "STEP MS",  "STEP MS",  "STEP MS",  "PASO MS",  "SCHR MS",  "PASSO MS", "STAP MS",  "PASSO MS", "STEG MS"};
-  const char* lblStepMsPascal[LANG_COUNT] = {"Steg ms",   "Step ms",  "Step ms",  "Step ms",  "Paso ms",  "Schr ms",  "Passo ms", "Stap ms",  "Passo ms", "Steg ms"};
-  const char* lblStepPctUpper[LANG_COUNT] = {"STEG %",    "STEP %",   "STEP %",   "STEP %",   "PASO %",   "SCHR %",   "PASSO %",  "STAP %",   "PASSO %", "STEG %"};
-  const char* lblStepPctPascal[LANG_COUNT]= {"Steg %",    "Step %",   "Step %",   "Step %",   "Paso %",   "Schr %",   "Passo %",  "Stap %",   "Passo %", "Steg %"};
+  const char* lblTypeUpper[LANG_COUNT]    = {"REGTYPE",   "REG.TYPE", "TIPO REG", "REG.TYP",  "TIPO REG", "REG.TYPE", "TIPO REG", "REG.TYP"};
+  const char* lblTypePascal[LANG_COUNT]   = {"Regtype",   "Reg.type", "Tipo reg", "Reg.typ",  "Tipo reg", "Reg.type", "Tipo reg", "Reg.typ"};
+  const char* lblStepMsUpper[LANG_COUNT]  = {"STEG MS",   "STEP MS",  "PASO MS",  "SCHR MS",  "PASSO MS", "STAP MS",  "PASSO MS", "STEG MS"};
+  const char* lblStepMsPascal[LANG_COUNT] = {"Steg ms",   "Step ms",  "Paso ms",  "Schr ms",  "Passo ms", "Stap ms",  "Passo ms", "Steg ms"};
+  const char* lblStepPctUpper[LANG_COUNT] = {"STEG %",    "STEP %",   "PASO %",   "SCHR %",   "PASSO %",  "STAP %",   "PASSO %", "STEG %"};
+  const char* lblStepPctPascal[LANG_COUNT]= {"Steg %",    "Step %",   "Paso %",   "Schr %",   "Passo %",  "Stap %",   "Passo %", "Steg %"};
   const char* const* lblType     = (g_storedVar.textCase == TEXT_CASE_PASCAL) ? lblTypePascal : lblTypeUpper;
   const char* const* lblStepMs   = (g_storedVar.textCase == TEXT_CASE_PASCAL) ? lblStepMsPascal : lblStepMsUpper;
   const char* const* lblStepPct  = (g_storedVar.textCase == TEXT_CASE_PASCAL) ? lblStepPctPascal : lblStepPctUpper;
@@ -628,52 +626,40 @@ void showAntiSpinSettings() {
   obdFill(&g_obd, OBD_WHITE, 1);
 }
 
+/* Row labels shared by the status bar and race slot pickers: SLOT 1-4 + BACK */
+static const char* const SLOT_ROW_NAMES[LANG_COUNT][5] = {
+  {"FELT 1", "FELT 2", "FELT 3", "FELT 4", "TILBAKE"},
+  {"SLOT 1", "SLOT 2", "SLOT 3", "SLOT 4", "BACK"},
+  {"CAMPO 1", "CAMPO 2", "CAMPO 3", "CAMPO 4", "ATRAS"},
+  {"SLOT 1", "SLOT 2", "SLOT 3", "SLOT 4", "ZURUCK"},
+  {"SLOT 1", "SLOT 2", "SLOT 3", "SLOT 4", "INDIETRO"},
+  {"SLOT 1", "SLOT 2", "SLOT 3", "SLOT 4", "TERUG"},
+  {"SLOT 1", "SLOT 2", "SLOT 3", "SLOT 4", "VOLTAR"},
+  {"FALT 1", "FALT 2", "FALT 3", "FALT 4", "TILLBAKA"}
+};
+
+/* What a slot picker edits: four stored slot values and how options map to them. */
+struct SlotPickerConfig {
+  uint16_t* slots;                                                  /* 4 stored slot values */
+  uint8_t slotCount;
+  uint8_t optionCount;
+  uint8_t (*optionOf)(uint16_t storedValue, uint8_t slot);         /* stored value -> option index */
+  uint16_t (*storedOf)(uint8_t option);                            /* option index -> stored value */
+  void (*formatOption)(uint8_t option, char* out, size_t outSize); /* label shown for an option */
+  bool previewStatusLine;                                           /* live status bar at y=56 */
+};
+
 /**
- * Status line slot settings submenu.
- * Items: SLOT 1-4 (select content per fixed column) + BACK.
- * Live preview of the status bar is shown at y=56 while browsing and editing.
+ * Slot picker submenu: SLOT 1-4 (choose the content of each slot) + BACK.
  * Follows the same ITEM_SELECTION / VALUE_SELECTION pattern as showSettingsMenu().
  */
-void showStatusSettings() {
-  /* ST_ITEMS: 4 slots + BACK */
-  const uint8_t ST_ITEMS = STATUS_SLOTS + 1;
-  /* Highest normalized slot id used for labels/lookups; legacy STATUS_CURRENT_MA is normalized away. */
-  const uint8_t ST_SLOT_MAX = STATUS_DEVICE_ID;
-  const uint8_t ST_SLOT_OPTION_MAX = (uint8_t)((sizeof(STATUS_SLOT_SELECTABLE_VALUES) / sizeof(STATUS_SLOT_SELECTABLE_VALUES[0])) - 1U);
+static void runSlotPicker(const SlotPickerConfig& cfg) {
+  const uint8_t ST_ITEMS = cfg.slotCount + 1;
   const uint8_t ST_LABEL_CHARS = 5;
   const uint8_t ST_LABEL_PIXELS = ST_LABEL_CHARS * 6;
 
   uint8_t lang = g_storedVar.language;
-
-  /* Row labels */
-  const char* rowNamesByLang[LANG_COUNT][ST_ITEMS] = {
-    {"FELT 1", "FELT 2", "FELT 3", "FELT 4", "TILBAKE"},
-    {"SLOT 1", "SLOT 2", "SLOT 3", "SLOT 4", "BACK"},
-    {"SLOT 1", "SLOT 2", "SLOT 3", "SLOT 4", "BACK"},
-    {"SLOT 1", "SLOT 2", "SLOT 3", "SLOT 4", "BACK"},
-    {"CAMPO 1", "CAMPO 2", "CAMPO 3", "CAMPO 4", "ATRAS"},
-    {"SLOT 1", "SLOT 2", "SLOT 3", "SLOT 4", "ZURUCK"},
-    {"SLOT 1", "SLOT 2", "SLOT 3", "SLOT 4", "INDIETRO"},
-    {"SLOT 1", "SLOT 2", "SLOT 3", "SLOT 4", "TERUG"},
-    {"SLOT 1", "SLOT 2", "SLOT 3", "SLOT 4", "VOLTAR"},
-    {"FALT 1", "FALT 2", "FALT 3", "FALT 4", "TILLBAKA"}
-  };
-  const char** rowNames = rowNamesByLang[lang];
-
-  /* Content type labels shown right-justified in menu. */
-  const char* slotLabelsByLang[LANG_COUNT][ST_SLOT_MAX + 1] = {
-    {"---", "OUT%", "GASS", "BIL", "AMPE", "VOLT", "AMPE", "BREMS", "VBAT", "ID"},
-    {"---", "OUT%", "THRO", "CAR", "CURR", "VOLT", "CURR", "BRAKE", "VBAT", "ID"},
-    {"---", "OUT%", "THRO", "CAR", "CURR", "VOLT", "CURR", "BRAKE", "VBAT", "ID"},
-    {"---", "OUT%", "THRO", "CAR", "CURR", "VOLT", "CURR", "BRAKE", "VBAT", "ID"},
-    {"---", "OUT%", "GAS", "AUTO", "AMP", "VOLT", "AMP", "FRENO", "VBAT", "ID"},
-    {"---", "OUT%", "GAS", "AUTO", "AMP", "VOLT", "AMP", "BREMS", "VBAT", "ID"},
-    {"---", "OUT%", "GAS", "AUTO", "AMP", "VOLT", "AMP", "FRENO", "VBAT", "ID"},
-    {"---", "OUT%", "GAS", "AUTO", "AMP", "VOLT", "AMP", "REM", "VBAT", "ID"},
-    {"---", "OUT%", "GAS", "AUTO", "CORR", "VOLT", "CORR", "FREIO", "VBAT", "ID"},
-    {"---", "OUT%", "GAS", "BIL", "AMP", "VOLT", "AMP", "BROMS", "VBAT", "ID"}
-  };
-  const char** slotLabels = slotLabelsByLang[lang];
+  const char* const* rowNames = SLOT_ROW_NAMES[lang];
 
   obdFill(&g_obd, OBD_WHITE, 1);
   g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
@@ -718,11 +704,11 @@ void showStatusSettings() {
     }
 
     /* Brake button */
-    static BrakeButtonEdge brakeInStatus;
-    if (brakeInStatus.pressed()) {
+    static BrakeButtonEdge brakeInSlotPicker;
+    if (brakeInSlotPicker.pressed()) {
       if (state == VALUE_SELECTION) {
         /* Cancel: restore original value */
-        g_storedVar.statusSlot[sel - 1] = origValue;
+        cfg.slots[sel - 1] = origValue;
         state = ITEM_SELECTION;
         g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
         setUiEncoderBoundaries(1, ST_ITEMS, false);
@@ -744,7 +730,7 @@ void showStatusSettings() {
       if (state == ITEM_SELECTION) {
         sel = (uint8_t)ep;
       } else {
-        g_storedVar.statusSlot[sel - 1] = getStatusSlotValueFromOptionIndex(ep);
+        cfg.slots[sel - 1] = cfg.storedOf((uint8_t)ep);
         forceRedraw = true;
       }
     }
@@ -764,10 +750,9 @@ void showStatusSettings() {
                        (isSelected && state == ITEM_SELECTION) ? OBD_WHITE : OBD_BLACK, 1);
 
         /* Value label right-justified in a wider field for longer slot names. */
-        if (idx < STATUS_SLOTS) {
-          uint16_t v = normalizeStatusSlotValue(g_storedVar.statusSlot[idx]);
+        if (idx < cfg.slotCount) {
           char lbl[ST_LABEL_CHARS + 1];
-          formatConfiguredMenuLabel((v <= ST_SLOT_MAX) ? slotLabels[v] : "???", lbl, sizeof(lbl));
+          cfg.formatOption(cfg.optionOf(cfg.slots[idx], idx), lbl, sizeof(lbl));
           char vbuf[ST_LABEL_CHARS + 1];
           snprintf(vbuf, sizeof(vbuf), "%*s", ST_LABEL_CHARS, lbl);
           obdWriteString(&g_obd, 0, OLED_WIDTH - ST_LABEL_PIXELS, yPx, vbuf, FONT_6x8,
@@ -776,7 +761,7 @@ void showStatusSettings() {
       }
 
       /* Live preview at y=56: show how the status bar will actually look */
-      displayStatusLine();
+      if (cfg.previewStatusLine) displayStatusLine();
 
       prevSel = sel;
     }
@@ -791,11 +776,10 @@ void showStatusSettings() {
           break;
         }
         /* Enter value selection for this slot */
-        origValue = normalizeStatusSlotValue(g_storedVar.statusSlot[sel - 1]);
-        g_storedVar.statusSlot[sel - 1] = origValue;
+        origValue = cfg.slots[sel - 1];
         g_rotaryEncoder.setAcceleration(SEL_ACCELERATION);
-        setUiEncoderBoundaries(0, ST_SLOT_OPTION_MAX, false);
-        resetUiEncoder(getStatusSlotOptionIndex(origValue));
+        setUiEncoderBoundaries(0, cfg.optionCount - 1, false);
+        resetUiEncoder(cfg.optionOf(origValue, sel - 1));
         state       = VALUE_SELECTION;
         obdFill(&g_obd, OBD_WHITE, 1);
         prevSel     = 0xFF;
@@ -821,6 +805,78 @@ void showStatusSettings() {
 
   saveEEPROM(g_storedVar);
   obdFill(&g_obd, OBD_WHITE, 1);
+}
+
+/* Status bar content labels, indexed by normalized STATUS_* value. */
+static const char* const STATUS_SLOT_LABELS[LANG_COUNT][STATUS_DEVICE_ID + 1] = {
+  {"---", "OUT%", "GASS", "BIL", "AMPE", "VOLT", "AMPE", "BREMS", "VBAT", "ID"},
+  {"---", "OUT%", "THRO", "CAR", "CURR", "VOLT", "CURR", "BRAKE", "VBAT", "ID"},
+  {"---", "OUT%", "GAS", "AUTO", "AMP", "VOLT", "AMP", "FRENO", "VBAT", "ID"},
+  {"---", "OUT%", "GAS", "AUTO", "AMP", "VOLT", "AMP", "BREMS", "VBAT", "ID"},
+  {"---", "OUT%", "GAS", "AUTO", "AMP", "VOLT", "AMP", "FRENO", "VBAT", "ID"},
+  {"---", "OUT%", "GAS", "AUTO", "AMP", "VOLT", "AMP", "REM", "VBAT", "ID"},
+  {"---", "OUT%", "GAS", "AUTO", "CORR", "VOLT", "CORR", "FREIO", "VBAT", "ID"},
+  {"---", "OUT%", "GAS", "BIL", "AMP", "VOLT", "AMP", "BROMS", "VBAT", "ID"}
+};
+
+static uint8_t statusSlotOptionOf(uint16_t storedValue, uint8_t) {
+  return getStatusSlotOptionIndex(storedValue);
+}
+
+static uint16_t statusSlotStoredOf(uint8_t option) {
+  return getStatusSlotValueFromOptionIndex(option);
+}
+
+static void formatStatusSlotOption(uint8_t option, char* out, size_t outSize) {
+  formatConfiguredMenuLabel(STATUS_SLOT_LABELS[g_storedVar.language][getStatusSlotValueFromOptionIndex(option)], out, outSize);
+}
+
+/**
+ * Status line slot settings submenu, with a live preview of the status bar at y=56.
+ */
+void showStatusSettings() {
+  SlotPickerConfig cfg = {
+    g_storedVar.statusSlot, STATUS_SLOTS,
+    (uint8_t)(sizeof(STATUS_SLOT_SELECTABLE_VALUES) / sizeof(STATUS_SLOT_SELECTABLE_VALUES[0])),
+    statusSlotOptionOf, statusSlotStoredOf, formatStatusSlotOption, true
+  };
+  runSlotPicker(cfg);
+}
+
+/* Parameters offered for the race view slots, in menu order. BRAKE+ is a submenu, so it is left out. */
+static const uint8_t RACE_SLOT_OPTIONS[] = {
+  RACE_PARAM_BRAKE, RACE_PARAM_SENSI, RACE_PARAM_ANTIS, RACE_PARAM_CURVE,
+  RACE_PARAM_FADE, RACE_PARAM_LIMIT, RACE_PARAM_PWM_F
+};
+static const uint8_t RACE_SLOT_OPTION_COUNT = sizeof(RACE_SLOT_OPTIONS) / sizeof(RACE_SLOT_OPTIONS[0]);
+
+static uint8_t raceSlotOptionOf(uint16_t storedValue, uint8_t slot) {
+  uint8_t param = normalizeRaceSlotParam(storedValue, slot);
+  for (uint8_t i = 0; i < RACE_SLOT_OPTION_COUNT; i++) {
+    if (RACE_SLOT_OPTIONS[i] == param) return i;
+  }
+  return 0;
+}
+
+static uint16_t raceSlotStoredOf(uint8_t option) {
+  return (uint16_t)RACE_SLOT_OPTIONS[(option < RACE_SLOT_OPTION_COUNT) ? option : 0] + 1U;
+}
+
+static void formatRaceSlotOption(uint8_t option, char* out, size_t outSize) {
+  /* getRaceLabel() already applies text case and terminology */
+  snprintf(out, outSize, "%s", getRaceLabel(g_storedVar.language, RACE_SLOT_OPTIONS[(option < RACE_SLOT_OPTION_COUNT) ? option : 0]));
+}
+
+/**
+ * Race view slot settings submenu: choose the parameter in each of the four race view slots.
+ * SIMPLE race view shows the first two.
+ */
+void showRaceSlotSettings() {
+  SlotPickerConfig cfg = {
+    g_storedVar.raceSlot, RACE_SLOTS, RACE_SLOT_OPTION_COUNT,
+    raceSlotOptionOf, raceSlotStoredOf, formatRaceSlotOption, false
+  };
+  runSlotPicker(cfg);
 }
 
 /**

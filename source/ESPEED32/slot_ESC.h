@@ -17,17 +17,17 @@
 
 /* Firmware Version */
 #define SW_MAJOR_VERSION 6
-#define SW_MINOR_VERSION 14
+#define SW_MINOR_VERSION 15
 #define SW_PATCH_VERSION 0
 
 /* Stored Variable Version */
-#define STORED_VAR_VERSION 24 /* Increment when stored value scale/format changes */
+#define STORED_VAR_VERSION 25 /* Increment when stored value scale/format changes */
 
 /* Menu Configuration */
 #define MENU_ITEMS_COUNT    12    /* Number of possible items in main menu (including optional STATS, LOCK and CAR) */
 #define SETTINGS_ITEMS_COUNT 12   /* Number of items in settings menu (including BACK) */
 #define POWER_ITEMS_COUNT    6    /* Number of items in power submenu (SCRSV, SLEEP, D-SLEEP, STARTUP, VIN CAL., BACK) */
-#define DISPLAY_ITEMS_COUNT  8    /* Number of items in display submenu (VIEW, LANG, CASE, FSIZE, ADVANCED, STEPS, STATUS, BACK) */
+#define DISPLAY_ITEMS_COUNT  10   /* Number of items in display submenu (VIEW, RACE SLOTS, LANG, TERMS, CASE, FSIZE, ADVANCED, STEPS, STATUS, BACK) */
 #define STEPS_ITEMS_COUNT    4    /* Number of items in steps submenu (ANTISPIN, BRAKE STEP, SENSI STEP, BACK) */
 #define HARDWARE_ITEMS_COUNT 6    /* Number of items in hardware submenu (ENC INV, EXT POT, TRIGGER, PWM_F MAX, TEST, BACK) */
 #define MAIN_MENU_BASE_TUNING_ITEMS 4 /* BRAKE, SENSI, ANTIS, CURVE always stay before optional advanced items */
@@ -49,13 +49,15 @@
 
 /* Display submenu item indexes */
 #define DISPLAY_ITEM_VIEW_IDX      0
-#define DISPLAY_ITEM_LANG_IDX      1
-#define DISPLAY_ITEM_CASE_IDX      2
-#define DISPLAY_ITEM_FSIZE_IDX     3
-#define DISPLAY_ITEM_ADVANCED_IDX  4
-#define DISPLAY_ITEM_STEPS_IDX     5
-#define DISPLAY_ITEM_STATUS_IDX    6
-#define DISPLAY_ITEM_BACK_IDX      7
+#define DISPLAY_ITEM_RACE_SLOTS_IDX 1
+#define DISPLAY_ITEM_LANG_IDX      2
+#define DISPLAY_ITEM_TERM_IDX      3
+#define DISPLAY_ITEM_CASE_IDX      4
+#define DISPLAY_ITEM_FSIZE_IDX     5
+#define DISPLAY_ITEM_ADVANCED_IDX  6
+#define DISPLAY_ITEM_STEPS_IDX     7
+#define DISPLAY_ITEM_STATUS_IDX    8
+#define DISPLAY_ITEM_BACK_IDX      9
 
 /* Race Mode View Types */
 #define RACE_VIEW_OFF       0     /* No race mode (list view only) */
@@ -66,17 +68,58 @@
 /* Language Settings */
 #define LANG_NOR            0     /* Norwegian language */
 #define LANG_ENG            1     /* English language */
-#define LANG_CS             2     /* CarSteen terminology (English-based) */
-#define LANG_ACD            3     /* ACD terminology (English-based) */
-#define LANG_ESP            4     /* Spanish language */
-#define LANG_DEU            5     /* German language */
-#define LANG_ITA            6     /* Italian language */
-#define LANG_NLD            7     /* Dutch language */
-#define LANG_POR            8     /* Portuguese language */
-#define LANG_SWE            9     /* Swedish language */
+#define LANG_ESP            2     /* Spanish language */
+#define LANG_DEU            3     /* German language */
+#define LANG_ITA            4     /* Italian language */
+#define LANG_NLD            5     /* Dutch language */
+#define LANG_POR            6     /* Portuguese language */
+#define LANG_SWE            7     /* Swedish language */
 #define LANG_MAX            LANG_SWE
 #define LANG_COUNT          (LANG_MAX + 1)  /* Rows in every language-indexed string table */
 #define LANG_DEFAULT        LANG_ENG
+
+/* Language pickers list languages alphabetically by label; stored values keep the LANG_* ids. */
+static inline uint8_t langFromPickerIndex(uint16_t index) {
+  static const uint8_t ORDER[LANG_COUNT] = {LANG_DEU, LANG_ENG, LANG_ESP, LANG_ITA, LANG_NLD, LANG_NOR, LANG_POR, LANG_SWE};
+  return (index < LANG_COUNT) ? ORDER[index] : LANG_DEFAULT;
+}
+
+static inline uint8_t pickerIndexOfLang(uint16_t lang) {
+  for (uint8_t i = 0; i < LANG_COUNT; i++) {
+    if (langFromPickerIndex(i) == lang) return i;
+  }
+  return pickerIndexOfLang(LANG_DEFAULT);
+}
+
+/* Race view slots. Parameter ids are MENU_NAMES indices, so race labels follow language and
+ * terminology. A stored slot value is (param + 1); 0 means "this slot's default". */
+#define RACE_SLOTS          4
+#define RACE_PARAM_BRAKE    0
+#define RACE_PARAM_SENSI    1
+#define RACE_PARAM_ANTIS    2
+#define RACE_PARAM_CURVE    3
+#define RACE_PARAM_FADE     4
+#define RACE_PARAM_PWM_F    5
+#define RACE_PARAM_LIMIT    7     /* 6 is BRAKE+, a submenu that cannot be shown in race view */
+#define RACE_PARAM_LABELS   8     /* columns in RACE_LABELS */
+
+static inline bool isRaceParamSelectable(uint16_t param) {
+  return param <= RACE_PARAM_LIMIT && param != 6U;
+}
+
+/* Default layout (FULL: all four slots, SIMPLE: the first two): BRAKE, SENSI, ANTIS, CURVE. */
+static inline uint8_t normalizeRaceSlotParam(uint16_t storedValue, uint8_t slot) {
+  if (storedValue >= 1U && isRaceParamSelectable(storedValue - 1U)) return (uint8_t)(storedValue - 1U);
+  return (slot < RACE_SLOTS) ? slot : RACE_PARAM_BRAKE;  /* defaults are params 0..3 in slot order */
+}
+
+/* Terminology sets: replace a few parameter names on top of any language */
+#define TERM_ESPEED         0     /* ESPEED32 names: SENSI, ANTIS, CURVE, LIMIT */
+#define TERM_CS             1     /* CarSteen names: ATTCK, CHOK2, PROFL, CHOK1 */
+#define TERM_ACD            2     /* ACD names: CHOKE for LIMIT */
+#define TERM_MAX            TERM_ACD
+#define TERM_COUNT          (TERM_MAX + 1)
+#define TERM_DEFAULT        TERM_ESPEED
 
 /* Default Parameter Values */
 #define BRAKE_SCALE              10     /* 0.1% resolution: stored value = percent * 10 */
@@ -324,7 +367,7 @@ void applyAdcVoltageRangeMilliVolts(uint16_t range_mV);
 
 /* Car Configuration */
 #define CAR_MAX_COUNT       20  /* Maximum number of car profiles */
-#define CAR_NAME_MAX_SIZE   5   /* Car name length (4 chars + null terminator) */
+#define CAR_NAME_MAX_SIZE   6   /* Car name length (5 chars + null terminator) */
 #define SCREENSAVER_TEXT_MAX 22  /* Screensaver text max length (21 chars + null, fits FONT_6x8 line) */
 #define SCREENSAVER_LINE1_DEFAULT "ESPEED32"   /* Default screensaver line 1 */
 #define SCREENSAVER_LINE2_DEFAULT "Controller" /* Default screensaver line 2 */
@@ -447,7 +490,7 @@ typedef struct {
   ThrottleCurveVertex_type throttleCurveVertex;  /* Throttle response curve */
   uint16_t fade;                            /* [%] Initial trigger zone that ramps from 0 to SENSI */
   uint16_t antiSpin;                        /* [ms] Anti-spin ramp time (0-999ms) */
-  char carName[CAR_NAME_MAX_SIZE];          /* Car profile name (4 chars + null) */
+  char carName[CAR_NAME_MAX_SIZE];          /* Car profile name (5 chars + null); uses the byte that was padding before v6.15 */
   uint16_t carNumber;                       /* Profile index in array */
   uint16_t freqPWM;                         /* [100*Hz] Motor PWM frequency */
   uint16_t brakeButtonReduction;            /* [%] Alternate brake value when button pressed (0-100%) */
@@ -455,6 +498,10 @@ typedef struct {
   uint16_t quickBrakeThreshold;            /* [%] Release-brake zone near trigger release */
   uint16_t quickBrakeStrength;             /* [%] Release-brake level (quick or drag) */
 } CarParam_type;
+
+/* carName[6] fills the padding byte that followed carName[5], so the stored layout is unchanged. */
+static_assert(sizeof(CarParam_type) == 32, "CarParam_type layout is stored in NVS and backups");
+static_assert(offsetof(CarParam_type, carNumber) == 20, "carName must not move the fields after it");
 
 /**
  * @brief Non-volatile stored variables
@@ -471,7 +518,7 @@ typedef struct {
   uint16_t soundRace;                       /* Race mode sound: 0=OFF, 1=ON (toggle beep) */
   uint16_t gridCarSelectEnabled;            /* Enable car selection from grid view (0=OFF, 1=ON) */
   uint16_t raceViewMode;                    /* Race view mode: OFF, FULL, or SIMPLE */
-  uint16_t language;                        /* Language: NOR, ENG, CS, ACD, ESP, DEU, ITA, NLD, or POR */
+  uint16_t language;                        /* Language: NOR, ENG, ESP, DEU, ITA, NLD, POR or SWE */
   uint16_t textCase;                        /* Text case style: UPPER or PASCAL */
   uint16_t listFontSize;                    /* List view font size: LARGE or SMALL */
   uint16_t startupDelay;                    /* [×STEP] Startup welcome screen delay */
@@ -484,6 +531,8 @@ typedef struct {
   uint16_t lockMenuEnabled;          /* Show LOCK item in main menu: 0=OFF, 1=ON */
   uint16_t lockShortcutIdx;          /* Brake hold shortcut: 0=OFF, 1=1s, 2=2s, …, 10=10s */
   uint16_t lockConfirmEnabled;       /* Show fullscreen LOCKED/UNLOCKED flash: 0=OFF, 1=ON */
+  uint16_t terminology;              /* Parameter names: TERM_ESPEED, TERM_CS or TERM_ACD */
+  uint16_t raceSlot[RACE_SLOTS];     /* Race view slots: RACE_PARAM_* + 1, 0 = slot default */
 } StoredVar_type;
 
 bool clampStoredVarCarPwmFreqsToProfile(StoredVar_type* storedVar, uint16_t profile);
@@ -547,8 +596,12 @@ typedef struct {
 
 /* CS/ACD call LIMIT "choke", which runs the opposite way: CHOKE = 100 - LIMIT.
  * Storage always uses LIMIT; only the displayed/edited value is inverted. */
-static inline bool isLimitShownAsChoke(uint16_t lang) {
-  return (lang == LANG_CS) || (lang == LANG_ACD);
+static inline uint16_t normalizeTerminology(uint16_t terminology) {
+  return (terminology <= TERM_MAX) ? terminology : TERM_DEFAULT;
+}
+
+static inline bool isLimitShownAsChoke(uint16_t terminology) {
+  return normalizeTerminology(terminology) != TERM_ESPEED;
 }
 
 static inline uint16_t limitPctToChokePct(uint16_t limitPct) {

@@ -234,12 +234,13 @@ details.doc-fold>:not(summary){margin-top:8px}
     <p class="small">Deze sectie groepeert wat je op het OLED-scherm ziet: taal, labelstijl, race-indeling, statusbalk en systeeminfo.</p>
     <h3>Taal en display</h3>
     <ul>
-      <li><code>DISPLAY -&gt; LANGUAGE</code> kiest tussen gelokaliseerde labels en de naamprofielen ENG/CS/ACD.</li>
-      <li><code>NOR/ESP/DEU/ITA/NLD/POR/SVE</code>: gelokaliseerde UI met de standaardset <code>BRAKE/SENSI/ANTIS/CURVE/FADE/LIMIT</code>.</li>
-      <li><code>ENG</code>: algemene benamingen (<code>BRAKE/SENSI/ANTIS/CURVE/FADE/LIMIT</code>).</li>
+      <li><code>DISPLAY -&gt; LANGUAGE</code> kiest de taal van de menu's: <code>DEU/ENG/ESP/ITA/NLD/NOR/POR/SVE</code>.</li>
+      <li><code>DISPLAY -&gt; TERMS</code> kiest de namen van de parameters. Dit werkt met elke taal:</li>
+      <li><code>ESPEED</code> (standaard): de gewone namen <code>BRAKE/SENSI/ANTIS/CURVE/FADE/LIMIT</code>, vertaald in de gekozen taal.</li>
       <li><code>CS</code>: termen in CarSteen-stijl (<code>ATTCK/CHOK2/PROFL/CHOK1</code>).</li>
       <li><code>ACD</code>: ACD-termen waar direct van toepassing, met <code>SENSI</code> en <code>CHOKE</code> voor limit. <code>ANTIS</code> blijft anti-spin omdat de ACD-handleiding geen aparte Choke2-term definieert.</li>
-      <li><code>CHOK1</code> (CS) en <code>CHOKE</code> (ACD) werken omgekeerd aan <code>LIMIT</code>: <code>CHOKE = 100 - LIMIT</code>. <code>CHOKE 0</code> betekent geen choke (volle snelheid) en een hogere waarde knijpt meer af. De waarde wordt als LIMIT opgeslagen, dus van taal wisselen houdt dezelfde topsnelheid.</li>
+      <li><code>CHOK1</code> (CS) en <code>CHOKE</code> (ACD) werken omgekeerd aan <code>LIMIT</code>: <code>CHOKE = 100 - LIMIT</code>. <code>CHOKE 0</code> betekent geen choke (volle snelheid) en een hogere waarde knijpt meer af. De waarde wordt als LIMIT opgeslagen, dus wisselen van terminologie houdt dezelfde topsnelheid.</li>
+      <li>Upgrade vanaf v6.14 of ouder: een controller met de taal CS of ACD start in het Engels met de bijbehorende terminologie. Back-ups van voor v6.15 herstellen alles behalve de taal.</li>
       <li><code>DISPLAY -&gt; CASE</code> bepaalt of labels in <code>UPPER</code> of <code>Pascal</code> worden getoond.</li>
       <li><code>DISPLAY -&gt; FONT SIZE</code> verandert de tekstdichtheid van lijsten/menu's tussen <code>LARGE</code> en <code>small</code>.</li>
       <li><code>DISPLAY -&gt; GEAVANCEERD</code> bepaalt of <code>FADE</code>, <code>PWM_F</code> en <code>BRAKE+</code> in het hoofdmenu zichtbaar zijn. Op <code>UIT</code> worden die regels verborgen voor een eenvoudiger menu, maar de opgeslagen autowaarden blijven actief.</li>
@@ -256,6 +257,7 @@ details.doc-fold>:not(summary){margin-top:8px}
       <li><code>DISPLAY -&gt; RACE MODE</code>: OFF / FULL / SIMPLE.</li>
       <li>FULL-grid: BRAKE, SENSI, ANTIS, CURVE (+ CAR als <code>RACESWP</code> op ON staat).</li>
       <li>SIMPLE-grid: BRAKE, SENSI (+ CAR als <code>RACESWP</code> op ON staat).</li>
+      <li><code>DISPLAY -&gt; RACE SLOTS</code>: kies de parameter voor elk veld in de race-weergave (BRAKE, SENSI, ANTIS, CURVE, FADE, LIMIT, PWM_F). FULL toont velden 1-4, SIMPLE velden 1-2. Standaard: BRAKE, SENSI, ANTIS, CURVE. De namen volgen taal en terminologie.</li>
       <li>Lang drukken op de encoder wisselt tussen LIST en GRID.</li>
     </ul>
     <figure class="doc-media">
@@ -278,7 +280,7 @@ details.doc-fold>:not(summary){margin-top:8px}
     <p class="small">Het menu <code>CAR</code> beheert de autoprofilen. Elk profiel slaat zijn eigen <code>Car Params</code> op: <code>BRAKE</code>, <code>SENSI</code>, <code>ANTIS</code>, <code>CURVE</code>, <code>FADE</code>, <code>PWM_F</code>, <code>BRAKE+</code> en <code>LIMIT</code>. Dit is dezelfde parametergroep die later terugkomt in de <code>Advanced Config Editor</code>. Als <code>DISPLAY -&gt; GEAVANCEERD</code> op <code>UIT</code> staat, worden <code>FADE</code>, <code>PWM_F</code> en <code>BRAKE+</code> in het hoofdmenu verborgen, maar de opgeslagen profielwaarden blijven gelden.</p>
     <ul>
       <li><code>SELECT</code>: kies actief autoprofiel (0-19).</li>
-      <li><code>RENAME</code>: editor voor een naam van 4 tekens (ASCII 32-122). Zie <a href="https://slatecave.net/notebook/ascii/" target="_blank" rel="noopener noreferrer">ASCII-tabel</a>.</li>
+      <li><code>RENAME</code>: editor voor een naam van 5 tekens (ASCII 32-122). Zie <a href="https://slatecave.net/notebook/ascii/" target="_blank" rel="noopener noreferrer">ASCII-tabel</a>.</li>
       <li><code>RACESWP</code>: ON maakt profielwissel direct vanuit GRID-modus mogelijk. Standaard: OFF.</li>
       <li><code>COPY</code>: kopieer van een profiel naar een ander, of naar ALL profiles.</li>
       <li><code>RESET</code>: reset alle autoprofilen met bevestiging.</li>
@@ -542,6 +544,7 @@ details.doc-fold>:not(summary){margin-top:8px}
       <li>De eerste pagina is de publieke controller-home. Gevoelige tools zoals <code>Controller Panel</code>, <code>Backup</code>, <code>Restore</code>, telemetrie, OTA en <code>Advanced Config Editor</code> zijn beschermd met controller-login.</li>
       <li>De standaard controller-login is gebruikersnaam <code>espeed32</code> en wachtwoord <code>espeed32</code>. De huidige login staat ook op de WiFi-infopagina van de controller.</li>
       <li>Backupbestanden exporteren geen Client WiFi-wachtwoord en geen controller-login-wachtwoord. Restore behoudt de lokale WiFi/login-gegevens die al op die controller opgeslagen zijn.</li>
+      <li>Back-ups bevatten alle autoprofielen en controllerinstellingen, ook race- en statusvelden, slaaptijden, LOCK, STATS en de doelen van de externe potmeters. Het type triggersensor wordt alleen hersteld op de controller waarvan de back-up komt.</li>
     </ol>
     <figure class="doc-media">
       <img src="../assets/wifi_examples.svg" alt="OLED-infopagina van de controller en voorbeeld van QR-code op volledig scherm">
@@ -614,7 +617,9 @@ details.doc-fold>:not(summary){margin-top:8px}
 |  |  `- BACK
 |  |- DISPLAY
 |  |  |- RACE MODE (OFF/FULL/SIMPLE)
-|  |  |- LANGUAGE (NOR/ENG/CS/ACD/ESP/DEU/ITA/NLD/POR/SVE)
+|  |  |- RACE SLOTS (SLOT 1-4)
+|  |  |- LANGUAGE (DEU/ENG/ESP/ITA/NLD/NOR/POR/SVE)
+|  |  |- TERMS (ESPEED/CS/ACD)
 |  |  |- CASE (UPPER/Pascal)
 |  |  |- FONT SIZE (LARGE/small)
 |  |  |- GEAVANCEERD (UIT/AAN)

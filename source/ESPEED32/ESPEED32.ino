@@ -185,7 +185,22 @@ static const char* PREF_KEY_EXT_POT_TARGET_LEGACY = "ext_pot_tgt";
 static bool g_startWiFiAfterOtaBoot = false;
 
 static bool canMigrateStoredVarVersion(uint8_t storedVarVersion) {
-  return storedVarVersion == 22U || storedVarVersion == 23U;
+  return storedVarVersion == 22U || storedVarVersion == 23U || storedVarVersion == 24U;
+}
+
+/**
+ * v25 moved CS and ACD out of the language list into StoredVar.terminology.
+ * Old language indices: NOR 0, ENG 1, CS 2, ACD 3, ESP 4, DEU 5, ITA 6, NLD 7, POR 8, SWE 9.
+ */
+static void migrateStoredVarLanguageToTerminology(StoredVar_type* storedVar) {
+  if (storedVar == nullptr) return;
+
+  static const uint8_t NEW_LANG_FROM_OLD[] = {
+    LANG_NOR, LANG_ENG, LANG_ENG, LANG_ENG, LANG_ESP, LANG_DEU, LANG_ITA, LANG_NLD, LANG_POR, LANG_SWE
+  };
+  uint16_t oldLang = storedVar->language;
+  storedVar->terminology = (oldLang == 2U) ? TERM_CS : (oldLang == 3U) ? TERM_ACD : TERM_ESPEED;
+  storedVar->language = (oldLang < sizeof(NEW_LANG_FROM_OLD)) ? NEW_LANG_FROM_OLD[oldLang] : LANG_DEFAULT;
 }
 
 static void migrateStoredVarFromHalfPctToTenthPct(StoredVar_type* storedVar) {
@@ -285,7 +300,7 @@ static bool isBrakeEditTarget() {
 
 static bool isChokeEditTarget() {
   return g_encoderSelectedValuePtr == &g_storedVar.carParam[g_carSel].maxSpeed &&
-         isLimitShownAsChoke(g_storedVar.language);
+         isLimitShownAsChoke(g_storedVar.terminology);
 }
 
 static bool isSensiEditTarget() {
@@ -293,16 +308,15 @@ static bool isSensiEditTarget() {
 }
 
 /**
- * Default profile name: CAR0..CAR9, then CR10..CR19, so every name fits the 4-character carName.
+ * Default profile name: CAR0..CAR19.
  */
 void setDefaultCarName(CarParam_type& car, uint8_t index) {
-  snprintf(car.carName, sizeof(car.carName), (index < 10) ? "CAR%u" : "CR%u", (unsigned)index);
+  snprintf(car.carName, sizeof(car.carName), "CAR%u", (unsigned)index);
 }
 
 /**
- * Terminate every car name inside carName[]. Older firmware stored the defaults CAR10..CAR19 as
- * 5 characters with the NUL in the struct padding; those become CR10..CR19, any other unterminated
- * name is cut to 4 characters.
+ * Make sure every car name is terminated inside carName[]. The last byte was struct padding
+ * before carName grew to 6 bytes, so an old blob or a long restored name may lack the NUL.
  * @return true if any name was changed
  */
 bool normalizeStoredCarNames(StoredVar_type* storedVar) {
@@ -311,16 +325,10 @@ bool normalizeStoredCarNames(StoredVar_type* storedVar) {
   bool changed = false;
   for (uint8_t i = 0; i < CAR_MAX_COUNT; i++) {
     CarParam_type& car = storedVar->carParam[i];
-    if (memchr(car.carName, '\0', sizeof(car.carName)) != nullptr) continue;
-    char legacyDefault[8];
-    snprintf(legacyDefault, sizeof(legacyDefault), "CAR%u", (unsigned)i);
-    if (strlen(legacyDefault) == sizeof(car.carName) &&
-        memcmp(car.carName, legacyDefault, sizeof(car.carName)) == 0) {
-      setDefaultCarName(car, i);
-    } else {
+    if (memchr(car.carName, '\0', sizeof(car.carName)) == nullptr) {
       car.carName[sizeof(car.carName) - 1] = '\0';
+      changed = true;
     }
-    changed = true;
   }
   return changed;
 }
@@ -390,6 +398,51 @@ static uint16_t getSteppedEditStartEncoder(uint16_t rawValue, uint16_t stepRaw) 
 static uint16_t getSteppedEditMaxEncoder(uint16_t maxRaw, uint16_t stepRaw) {
   if (stepRaw == 0U) return 0U;
   return (uint16_t)(maxRaw / stepRaw);
+}
+
+/**
+ * Point the encoder at the current car's value for a race view parameter and set its limits.
+ */
+static void selectRaceParamForEdit(uint8_t param, uint16_t* minValue, uint16_t* maxValue) {
+  CarParam_type& car = g_storedVar.carParam[g_carSel];
+  switch (param) {
+    case RACE_PARAM_SENSI:
+      g_encoderSelectedValuePtr = &car.minSpeed;
+      *minValue = 0;
+      *maxValue = getSelectedSensiMaxRaw();
+      break;
+    case RACE_PARAM_ANTIS:
+      g_encoderSelectedValuePtr = &car.antiSpin;
+      *minValue = 0;
+      *maxValue = antiSpinUiMaxValue(g_antiSpinDisplayMode);
+      break;
+    case RACE_PARAM_CURVE:
+      g_encoderSelectedValuePtr = &car.throttleCurveVertex.curveSpeedDiff;
+      *minValue = THROTTLE_CURVE_SPEED_DIFF_MIN_VALUE;
+      *maxValue = THROTTLE_CURVE_SPEED_DIFF_MAX_VALUE;
+      break;
+    case RACE_PARAM_FADE:
+      g_encoderSelectedValuePtr = &car.fade;
+      *minValue = 0;
+      *maxValue = FADE_MAX_VALUE;
+      break;
+    case RACE_PARAM_PWM_F:
+      g_encoderSelectedValuePtr = &car.freqPWM;
+      *minValue = FREQ_MIN_VALUE / 100;
+      *maxValue = getConfiguredPwmFreqMaxRaw();
+      break;
+    case RACE_PARAM_LIMIT:
+      g_encoderSelectedValuePtr = &car.maxSpeed;
+      *minValue = max(5, (int)sensiToWholePctCeil(car.minSpeed) + 5);
+      *maxValue = MAX_SPEED_DEFAULT;
+      break;
+    case RACE_PARAM_BRAKE:
+    default:
+      g_encoderSelectedValuePtr = &car.brake;
+      *minValue = 0;
+      *maxValue = BRAKE_MAX_VALUE;
+      break;
+  }
 }
 
 static uint16_t configureEncoderForSelectedValueEdit(uint16_t minRaw, uint16_t maxRaw) {
@@ -884,7 +937,7 @@ void Task1code(void *pvParameters) {
           storedVarVersion = g_pref.getUChar("stored_var_ver");
           Serial.printf("[BOOT] INIT: stored fw=%u.%u, stored_var_ver=%u\n", swMajVer, swMinVer, storedVarVersion);
 
-          if ((storedVarVersion == STORED_VAR_VERSION) || canMigrateStoredVarVersion(storedVarVersion)) /* Load current storage directly, or migrate v22/v23 in-place to 0.1% BRAKE/SENSI */
+          if ((storedVarVersion == STORED_VAR_VERSION) || canMigrateStoredVarVersion(storedVarVersion)) /* Load current storage directly, or migrate v22-v24 in place */
           {
             /* Zero-fill before reading: if the stored blob is shorter than
              * sizeof(g_storedVar) (corrupt NVS entry, or a downgrade from a
@@ -899,10 +952,17 @@ void Task1code(void *pvParameters) {
                             (unsigned)storedVarBytesRead, (unsigned)sizeof(g_storedVar));
             }
             bool migratedToTenths = false;
-            if (storedVarVersion != STORED_VAR_VERSION) {
+            bool migratedLanguage = false;
+            if (storedVarVersion == 22U || storedVarVersion == 23U) {
               migrateStoredVarFromHalfPctToTenthPct(&g_storedVar);
               migratedToTenths = true;
             }
+            if (storedVarVersion != STORED_VAR_VERSION) {
+              migrateStoredVarLanguageToTerminology(&g_storedVar);
+              migratedLanguage = true;
+            }
+            if (g_storedVar.language > LANG_MAX) g_storedVar.language = LANG_DEFAULT;
+            g_storedVar.terminology = normalizeTerminology(g_storedVar.terminology);
             g_statsEnabled = g_pref.getUChar(PREF_KEY_STATS_ENABLED, STATS_ENABLED_DEFAULT) ? 1 : 0;
             g_advancedMenuEnabled = g_pref.getUChar(PREF_KEY_ADVANCED_MENU, ADVANCED_MENU_ENABLED_DEFAULT) ? 1 : 0;
             g_encoderInvertEnabled = g_pref.getUChar(PREF_KEY_ENC_INVERT, ENCODER_INVERT_DEFAULT) ? 1 : 0;
@@ -955,11 +1015,13 @@ void Task1code(void *pvParameters) {
               g_pref.putBytes("user_param", &g_storedVar, sizeof(g_storedVar));
               g_pref.putBool(PREF_KEY_SENSI_HALF, true);
             }
-            if (migratedToTenths) {
+            if (migratedToTenths || migratedLanguage) {
               g_pref.putBytes("user_param", &g_storedVar, sizeof(g_storedVar));
               g_pref.putUChar("sw_maj_ver", SW_MAJOR_VERSION);
               g_pref.putUChar("sw_min_ver", SW_MINOR_VERSION);
               g_pref.putUChar("stored_var_ver", STORED_VAR_VERSION);
+            }
+            if (migratedToTenths) {
               g_pref.putBool(PREF_KEY_SENSI_HALF, true);
               g_pref.putUShort(PREF_KEY_BRAKE_STEP, g_brakeStep);
               g_pref.putUShort(PREF_KEY_SENSI_STEP, g_sensiStep);
@@ -1544,62 +1606,19 @@ MenuState_enum rotary_onButtonClick(MenuState_enum currMenuState)
       uint8_t gridItem = g_encoderMainSelector - 1;  /* 0-4 (FULL) or 0-2 (SIMPLE) */
       g_rotaryEncoder.setAcceleration(SEL_ACCELERATION);
 
-      /* Map grid item to parameter pointer and limits based on race view mode */
-      if (g_storedVar.raceViewMode == RACE_VIEW_SIMPLE) {
-        /* SIMPLE mode: 0=BRAKE, 1=SENSI, 2=CAR */
-        switch (gridItem) {
-          case 0:  /* BRAKE */
-            g_encoderSelectedValuePtr = &g_storedVar.carParam[g_carSel].brake;
-            selectedParamMaxValue = BRAKE_MAX_VALUE;
-            selectedParamMinValue = 0;
-            break;
-          case 1:  /* SENSI (minSpeed) */
-            g_encoderSelectedValuePtr = &g_storedVar.carParam[g_carSel].minSpeed;
-            selectedParamMaxValue = getSelectedSensiMaxRaw();
-            selectedParamMinValue = 0;
-            break;
-          case 2:  /* CAR - select different car */
-            g_encoderSelectedValuePtr = &g_storedVar.selectedCarNumber;
-            selectedParamMaxValue = CAR_MAX_COUNT - 1;
-            selectedParamMinValue = 0;
-            g_isEditingCarSelection = true;  /* Prevent g_carSel update during edit */
-            break;
-          default:
-            return ITEM_SELECTION;
-        }
-      }
-      else {
-        /* FULL mode: 0=BRAKE, 1=SENSI, 2=ANTIS, 3=CURVE, 4=CAR */
-        switch (gridItem) {
-          case 0:  /* BRAKE */
-            g_encoderSelectedValuePtr = &g_storedVar.carParam[g_carSel].brake;
-            selectedParamMaxValue = BRAKE_MAX_VALUE;
-            selectedParamMinValue = 0;
-            break;
-          case 1:  /* SENSI (minSpeed) */
-            g_encoderSelectedValuePtr = &g_storedVar.carParam[g_carSel].minSpeed;
-            selectedParamMaxValue = getSelectedSensiMaxRaw();
-            selectedParamMinValue = 0;
-            break;
-          case 2:  /* ANTIS (antiSpin) */
-            g_encoderSelectedValuePtr = &g_storedVar.carParam[g_carSel].antiSpin;
-            selectedParamMaxValue = antiSpinUiMaxValue(g_antiSpinDisplayMode);
-            selectedParamMinValue = 0;
-            break;
-          case 3:  /* CURVE */
-            g_encoderSelectedValuePtr = &g_storedVar.carParam[g_carSel].throttleCurveVertex.curveSpeedDiff;
-            selectedParamMaxValue = THROTTLE_CURVE_SPEED_DIFF_MAX_VALUE;
-            selectedParamMinValue = THROTTLE_CURVE_SPEED_DIFF_MIN_VALUE;
-            break;
-          case 4:  /* CAR - select different car */
-            g_encoderSelectedValuePtr = &g_storedVar.selectedCarNumber;
-            selectedParamMaxValue = CAR_MAX_COUNT - 1;
-            selectedParamMinValue = 0;
-            g_isEditingCarSelection = true;  /* Prevent g_carSel update during edit */
-            break;
-          default:
-            return ITEM_SELECTION;
-        }
+      /* Map grid item to a race slot parameter or CAR.
+       * SIMPLE: 0-1 = race slots 0-1, 2 = CAR. FULL: 0-3 = race slots 0-3, 4 = CAR. */
+      uint8_t slotCount = (g_storedVar.raceViewMode == RACE_VIEW_SIMPLE) ? 2U : RACE_SLOTS;
+      if (gridItem < slotCount) {
+        selectRaceParamForEdit(normalizeRaceSlotParam(g_storedVar.raceSlot[gridItem], gridItem), &selectedParamMinValue, &selectedParamMaxValue);
+      } else if (gridItem == slotCount) {
+        /* CAR - select different car */
+        g_encoderSelectedValuePtr = &g_storedVar.selectedCarNumber;
+        selectedParamMaxValue = CAR_MAX_COUNT - 1;
+        selectedParamMinValue = 0;
+        g_isEditingCarSelection = true;  /* Prevent g_carSel update during edit */
+      } else {
+        return ITEM_SELECTION;
       }
 
       g_originalValueBeforeEdit = *g_encoderSelectedValuePtr;  /* Save original value for cancel before any stepped-edit snapping */

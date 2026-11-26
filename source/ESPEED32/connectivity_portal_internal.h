@@ -65,7 +65,16 @@ uint8_t getRequestedCarIndex();
 String buildJsonBackup();
 String buildSchemaJson();
 String buildStateJson(uint8_t carIndex);
-bool parseAndValidateJson(const String& json, StoredVar_type* sv, uint16_t* antiSpinStepMs, uint16_t* antiSpinStepPct, uint16_t* antiSpinDisplayMode, uint16_t* brakeStepRaw, uint16_t* sensiStepRaw, uint16_t* advancedMenuEnabled, uint16_t* encoderInvertEnabled, uint16_t* pwmFreqMaxProfile, uint16_t* adcVoltageRangeMv, uint16_t* wifiConfiguredMode, char* wifiClientSsid, size_t wifiClientSsidLen, char* wifiClientPassword, size_t wifiClientPasswordLen, char* uiAuthUsername, size_t uiAuthUsernameLen, char* uiAuthPassword, size_t uiAuthPasswordLen, String* errorMsg, String* warningMsg = nullptr);
+/* Restored settings that live outside StoredVar. */
+struct RestoreExtraSettings {
+  uint16_t statsEnabled;
+  uint16_t extPotTarget[2];
+  uint16_t sensorTypeOverride;
+  bool sensorTypeOverrideSet;  /* only restored on the controller the backup came from */
+};
+void loadRestoreExtraSettings(RestoreExtraSettings* extras);
+void applyRestoreExtraSettings(const RestoreExtraSettings& extras);
+bool parseAndValidateJson(const String& json, StoredVar_type* sv, uint16_t* antiSpinStepMs, uint16_t* antiSpinStepPct, uint16_t* antiSpinDisplayMode, uint16_t* brakeStepRaw, uint16_t* sensiStepRaw, uint16_t* advancedMenuEnabled, uint16_t* encoderInvertEnabled, uint16_t* pwmFreqMaxProfile, uint16_t* adcVoltageRangeMv, uint16_t* wifiConfiguredMode, char* wifiClientSsid, size_t wifiClientSsidLen, char* wifiClientPassword, size_t wifiClientPasswordLen, char* uiAuthUsername, size_t uiAuthUsernameLen, char* uiAuthPassword, size_t uiAuthPasswordLen, String* errorMsg, String* warningMsg = nullptr, RestoreExtraSettings* extras = nullptr);
 bool parseAndApplyWebPatch(const String& json, String* errorMsg, uint8_t* appliedCarIndex);
 
 #endif  /* CONNECTIVITY_PORTAL_INTERNAL_H_ */

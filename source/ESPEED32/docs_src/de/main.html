@@ -70,12 +70,13 @@
     <p class="small">Hier ist alles gebuendelt, was du auf dem OLED siehst: Sprache, Beschriftung, Race-Ansicht, Statuszeile und Systeminfos.</p>
     <h3>Sprache und Anzeige</h3>
     <ul>
-      <li><code>DISPLAY -&gt; LANGUAGE</code> waehlt zwischen lokalisierten Labels und den Namensprofilen ENG/CS/ACD.</li>
-      <li><code>NOR/ESP/DEU/ITA/NLD/POR/SVE</code>: lokalisierte UI mit den Standardnamen <code>BRAKE/SENSI/ANTIS/CURVE/FADE/LIMIT</code>.</li>
-      <li><code>ENG</code>: generische Namen (<code>BRAKE/SENSI/ANTIS/CURVE/FADE/LIMIT</code>).</li>
+      <li><code>DISPLAY -&gt; LANGUAGE</code> waehlt die Sprache der Menues: <code>DEU/ENG/ESP/ITA/NLD/NOR/POR/SVE</code>.</li>
+      <li><code>DISPLAY -&gt; TERMS</code> waehlt die Parameternamen. Das funktioniert mit jeder Sprache:</li>
+      <li><code>ESPEED</code> (Standard): die ueblichen Namen <code>BRAKE/SENSI/ANTIS/CURVE/FADE/LIMIT</code>, in der gewaehlten Sprache.</li>
       <li><code>CS</code>: CarSteen-Stil (<code>ATTCK/CHOK2/PROFL/CHOK1</code>).</li>
       <li><code>ACD</code>: ACD-Stil, wo es direkte Entsprechungen gibt (<code>SENSI</code> und <code>CHOKE</code> fuer LIMIT).</li>
-      <li><code>CHOK1</code> (CS) und <code>CHOKE</code> (ACD) laufen umgekehrt zu <code>LIMIT</code>: <code>CHOKE = 100 - LIMIT</code>. <code>CHOKE 0</code> bedeutet keine Drosselung (volle Geschwindigkeit), ein hoeherer Wert drosselt mehr. Gespeichert wird LIMIT, ein Sprachwechsel aendert die Hoechstgeschwindigkeit also nicht.</li>
+      <li><code>CHOK1</code> (CS) und <code>CHOKE</code> (ACD) laufen umgekehrt zu <code>LIMIT</code>: <code>CHOKE = 100 - LIMIT</code>. <code>CHOKE 0</code> bedeutet keine Drosselung (volle Geschwindigkeit), ein hoeherer Wert drosselt mehr. Gespeichert wird LIMIT, ein Wechsel der Terminologie aendert die Hoechstgeschwindigkeit also nicht.</li>
+      <li>Update von v6.14 oder aelter: Ein Controller mit der Sprache CS oder ACD startet auf Englisch mit der passenden Terminologie. Backups von vor v6.15 stellen alles ausser der Sprache wieder her.</li>
       <li><code>DISPLAY -&gt; CASE</code> waehlt, ob Labels in <code>UPPER</code> oder <code>Pascal</code> angezeigt werden.</li>
       <li><code>DISPLAY -&gt; FONT SIZE</code> stellt die Listen- und Menueansicht auf <code>LARGE</code> oder <code>small</code>.</li>
       <li><code>ANZEIGE -&gt; ERWEITERT</code> legt fest, ob <code>FADE</code>, <code>PWM_F</code> und <code>BREMSE+</code> im Hauptmenue sichtbar sind. Auf <code>AUS</code> werden diese Zeilen fuer ein einfacheres Menue ausgeblendet, die gespeicherten Fahrzeugwerte bleiben aber aktiv.</li>
@@ -92,6 +93,7 @@
       <li><code>DISPLAY -> RACE MODE</code>: OFF / FULL / SIMPLE.</li>
       <li>FULL: BRAKE, SENSI, ANTIS, CURVE (+ CAR wenn <code>RACESWP</code> ON).</li>
       <li>SIMPLE: BRAKE, SENSI (+ CAR wenn <code>RACESWP</code> ON).</li>
+      <li><code>DISPLAY -&gt; RACE SLOTS</code>: waehlt den Parameter fuer jedes Feld der Race-Ansicht (BRAKE, SENSI, ANTIS, CURVE, FADE, LIMIT, PWM_F). FULL zeigt Felder 1-4, SIMPLE Felder 1-2. Standard ist BRAKE, SENSI, ANTIS, CURVE. Die Namen folgen Sprache und Terminologie.</li>
       <li>Langer Encoder-Druck wechselt LIST/GRID.</li>
     </ul>
     <figure class="doc-media">
@@ -114,7 +116,7 @@
     <p class="small">Das <code>CAR</code>-Menue verwaltet die Fahrzeugprofile. Jedes Profil speichert seine eigenen <code>Car Params</code>, also Werte wie <code>BRAKE</code>, <code>SENSI</code>, <code>ANTIS</code>, <code>CURVE</code>, <code>FADE</code>, <code>PWM_F</code>, <code>BREMSE+</code> und <code>LIMIT</code>. Genau diese Parametergruppe taucht spaeter auch im <code>Advanced Config Editor</code> wieder auf. Wenn <code>ANZEIGE -&gt; ERWEITERT</code> auf <code>AUS</code> steht, werden <code>FADE</code>, <code>PWM_F</code> und <code>BREMSE+</code> im Hauptmenue ausgeblendet, die gespeicherten Profilwerte gelten aber weiter.</p>
     <ul>
       <li><code>SELECT</code>: aktives Profil waehlen (0-19).</li>
-      <li><code>RENAME</code>: 4-Zeichen Name (ASCII 32-122). Siehe <a href="https://slatecave.net/notebook/ascii/" target="_blank" rel="noopener noreferrer">ASCII-Tabelle</a>.</li>
+      <li><code>RENAME</code>: 5-Zeichen Name (ASCII 32-122). Siehe <a href="https://slatecave.net/notebook/ascii/" target="_blank" rel="noopener noreferrer">ASCII-Tabelle</a>.</li>
       <li><code>RACESWP</code>: ON erlaubt Profilwechsel direkt im GRID. Standard: OFF.</li>
       <li><code>COPY</code>: von einem Profil auf ein anderes oder auf alle kopieren.</li>
       <li><code>RESET</code>: alle Fahrzeugprofile zuruecksetzen (mit Bestaetigung).</li>
@@ -376,6 +378,7 @@
       <li>Die erste Seite ist die oeffentliche Controller-Startseite. Empfindliche Werkzeuge wie <code>Controller Panel</code>, <code>Backup</code>, <code>Restore</code>, Telemetrie, OTA und <code>Advanced Config Editor</code> sind durch Controller-Login geschuetzt.</li>
       <li>Standard-Login des Controllers ist Benutzername <code>espeed32</code> und Passwort <code>espeed32</code>. Der aktuelle Login wird auch auf der WiFi-Infoseite des Controllers angezeigt.</li>
       <li>Backup-Dateien exportieren weder Client-WiFi-Passwort noch Controller-Login-Passwort. Restore behaelt die lokalen WiFi/Login-Daten, die bereits auf diesem Controller gespeichert sind.</li>
+      <li>Backups enthalten alle Fahrzeugprofile und Controller-Einstellungen, auch Race- und Statusfelder, Schlafzeiten, LOCK, STATS und die Ziele der externen Potis. Der Trigger-Sensortyp wird nur auf dem Controller wiederhergestellt, von dem das Backup stammt.</li>
     </ol>
     <figure class="doc-media">
       <img src="../assets/wifi_examples.svg" alt="Beispiel fuer die OLED-WiFi-Infoseite und den Vollbild-QR-Code auf dem Controller">
@@ -448,7 +451,9 @@
 |  |  `- BACK
 |  |- DISPLAY
 |  |  |- RACE MODE (OFF/FULL/SIMPLE)
-|  |  |- LANGUAGE (NOR/ENG/CS/ACD/ESP/DEU/ITA/NLD/POR/SVE)
+|  |  |- RACE SLOTS (SLOT 1-4)
+|  |  |- LANGUAGE (DEU/ENG/ESP/ITA/NLD/NOR/POR/SVE)
+|  |  |- TERMS (ESPEED/CS/ACD)
 |  |  |- CASE (UPPER/Pascal)
 |  |  |- FONT SIZE (LARGE/small)
 |  |  |- ERWEITERT (AUS/EIN)

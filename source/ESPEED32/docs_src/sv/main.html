@@ -72,12 +72,13 @@
     <p class="small">Det här avsnittet samlar det du ser på OLED-skärmen: språk, textstil, race-layout, statusrad och systeminformation.</p>
     <h3>Språk och skärm</h3>
     <ul>
-      <li><code>SKARM -&gt; SPRAK</code> väljer mellan översatta etiketter och namnprofilerna ENG/CS/ACD.</li>
-      <li><code>NOR/ESP/DEU/ITA/NLD/POR/SVE</code>: översatt gränssnitt med standardnamnen <code>BRAKE/SENSI/ANTIS/CURVE/FADE/LIMIT</code>. På svenska heter de <code>BROMS/SENSI/ANTIS/KURVA/FADE/GRANS</code>.</li>
-      <li><code>ENG</code>: generiska namn (<code>BRAKE/SENSI/ANTIS/CURVE/FADE/LIMIT</code>).</li>
+      <li><code>SKARM -&gt; SPRAK</code> väljer språk i menyerna: <code>DEU/ENG/ESP/ITA/NLD/NOR/POR/SVE</code>.</li>
+      <li><code>SKARM -&gt; TERMER</code> väljer namnen på parametrarna. Det fungerar med alla språk:</li>
+      <li><code>ESPEED</code> (standard): de vanliga namnen <code>BRAKE/SENSI/ANTIS/CURVE/FADE/LIMIT</code>, översatta till valt språk.</li>
       <li><code>CS</code>: CarSteen-termer (<code>ATTCK/CHOK2/PROFL/CHOK1</code>).</li>
       <li><code>ACD</code>: ACD-termer där det finns en direkt motsvarighet (<code>SENSI</code> och <code>CHOKE</code> för gräns). <code>ANTIS</code> behålls som antispinn eftersom ACD-manualen inte har någon egen Choke2-term.</li>
-      <li><code>CHOK1</code> (CS) och <code>CHOKE</code> (ACD) går åt motsatt håll mot <code>LIMIT</code>: <code>CHOKE = 100 - LIMIT</code>. <code>CHOKE 0</code> betyder ingen strypning (full fart), och ett högre värde stryper mer. Inställningen sparas som LIMIT, så byte av språk ger samma toppfart.</li>
+      <li><code>CHOK1</code> (CS) och <code>CHOKE</code> (ACD) går åt motsatt håll mot <code>LIMIT</code>: <code>CHOKE = 100 - LIMIT</code>. <code>CHOKE 0</code> betyder ingen strypning (full fart), och ett högre värde stryper mer. Inställningen sparas som LIMIT, så byte av terminologi ger samma toppfart.</li>
+      <li>Uppgradering från v6.14 eller äldre: en kontroller som stod på språket CS eller ACD startar på engelska med motsvarande terminologi. Säkerhetskopior från före v6.15 återställer allt utom språket.</li>
       <li><code>SKARM -&gt; STIL</code> väljer om etiketterna visas som <code>UPPER</code> eller <code>Pascal</code>.</li>
       <li><code>SKARM -&gt; TEXTSTRL</code> växlar textstorleken i listor och menyer mellan <code>STOR</code> och <code>liten</code>.</li>
       <li><code>SKARM -&gt; AVANCER.</code> styr om <code>FADE</code>, <code>PWM_F</code> och <code>BROMS+</code> visas i huvudmenyn. Med <code>AV</code> döljs raderna för en enklare meny, men de sparade bilvärdena gäller fortfarande.</li>
@@ -94,6 +95,7 @@
       <li><code>SKARM -> RACELAGE</code>: AV / FULL / ENKEL.</li>
       <li>FULL: BROMS, SENSI, ANTIS, KURVA (+ BIL om <code>RACESWP</code> är PA).</li>
       <li>ENKEL: BROMS, SENSI (+ BIL om <code>RACESWP</code> är PA).</li>
+      <li><code>SKARM -&gt; RACEFALT</code>: välj vilken parameter som visas i varje fält i racevyn (BRAKE, SENSI, ANTIS, CURVE, FADE, LIMIT, PWM_F). FULL visar fält 1-4, ENKEL fält 1-2. Standard är BROMS, SENSI, ANTIS, KURVA. Namnen följer språk och terminologi.</li>
       <li>Långt tryck på encodern växlar mellan LIST och GRID.</li>
     </ul>
     <figure class="doc-media">
@@ -116,7 +118,7 @@
     <p class="small">Menyn <code>*BIL*</code> hanterar bilprofilerna. Varje profil har egna <code>Car Params</code>: <code>BROMS</code>, <code>SENSI</code>, <code>ANTIS</code>, <code>KURVA</code>, <code>FADE</code>, <code>PWM_F</code>, <code>BROMS+</code> och <code>GRANS</code>. Det är samma parametergrupp som du senare möter i <code>Advanced Config Editor</code>. Om <code>SKARM -&gt; AVANCER.</code> är <code>AV</code> döljs <code>FADE</code>, <code>PWM_F</code> och <code>BROMS+</code> i huvudmenyn, men de sparade profilvärdena gäller fortfarande.</p>
     <ul>
       <li><code>VALJ</code>: välj aktiv bilprofil (0-19).</li>
-      <li><code>NAMNGE</code>: namneditor med 4 tecken (ASCII 32-122). Se <a href="https://slatecave.net/notebook/ascii/" target="_blank" rel="noopener noreferrer">ASCII-tabell</a>.</li>
+      <li><code>NAMNGE</code>: namneditor med 5 tecken (ASCII 32-122). Se <a href="https://slatecave.net/notebook/ascii/" target="_blank" rel="noopener noreferrer">ASCII-tabell</a>.</li>
       <li><code>RACESWP</code>: PA gör att du kan byta profil direkt i GRID-vyn. Standard: AV.</li>
       <li><code>KOPIA</code>: kopiera från en profil till en annan, eller till ALLA profiler.</li>
       <li><code>ATERSTALL</code>: återställ alla bilprofiler (med bekräftelse).</li>
@@ -380,6 +382,7 @@
       <li>Första sidan är kontrollens öppna startsida. Känsliga verktyg som <code>Controller Panel</code>, <code>Backup</code>, <code>Restore</code>, telemetri, OTA och <code>Advanced Config Editor</code> skyddas av kontrollens inloggning.</li>
       <li>Standardinloggning är användarnamnet <code>espeed32</code> och lösenordet <code>espeed32</code>. Den aktuella inloggningen visas också på kontrollens WiFi-infosida.</li>
       <li>Säkerhetskopior innehåller inte lösenordet för klient-WiFi eller kontrollens inloggning. Vid återställning behålls de WiFi- och inloggningsuppgifter som redan finns sparade i kontrollen.</li>
+      <li>Säkerhetskopior innehåller alla bilprofiler och kontrollinställningar, även race- och statusfält, vilotider, LOCK, STATS och målen för externa potentiometrar. Triggersensorns typ återställs bara på den kontroll som säkerhetskopian kommer från.</li>
     </ol>
     <figure class="doc-media">
       <img src="../assets/wifi_examples.svg" alt="Kontrollens WiFi-infosida på OLED och QR-kod i helskärm">
@@ -452,7 +455,9 @@
 |  |  `- TILLBAKA
 |  |- SKARM
 |  |  |- RACELAGE (AV/FULL/ENKEL)
-|  |  |- SPRAK (NOR/ENG/CS/ACD/ESP/DEU/ITA/NLD/POR/SVE)
+|  |  |- RACEFALT (FALT 1-4)
+|  |  |- SPRAK (DEU/ENG/ESP/ITA/NLD/NOR/POR/SVE)
+|  |  |- TERMER (ESPEED/CS/ACD)
 |  |  |- STIL (UPPER/Pascal)
 |  |  |- TEXTSTRL (STOR/liten)
 |  |  |- AVANCER. (AV/PA)

@@ -235,12 +235,13 @@ details.doc-fold>:not(summary){margin-top:8px}
     <p class="small">This section groups what you see on the OLED: language, label style, race layout, status bar, and system info.</p>
     <h3>Language and display</h3>
     <ul>
-      <li><code>DISPLAY -&gt; LANGUAGE</code> selects between localized labels and the ENG/CS/ACD naming profiles.</li>
-      <li><code>NOR/ESP/DEU/ITA/NLD/POR/SVE</code>: localized UI using the standard <code>BRAKE/SENSI/ANTIS/CURVE/FADE/LIMIT</code> naming set.</li>
-      <li><code>ENG</code>: generic naming (<code>BRAKE/SENSI/ANTIS/CURVE/FADE/LIMIT</code>).</li>
+      <li><code>DISPLAY -&gt; LANGUAGE</code> selects the UI language: <code>DEU/ENG/ESP/ITA/NLD/NOR/POR/SVE</code>.</li>
+      <li><code>DISPLAY -&gt; TERMS</code> selects the parameter names. It works with every language:</li>
+      <li><code>ESPEED</code> (default): the standard <code>BRAKE/SENSI/ANTIS/CURVE/FADE/LIMIT</code> names, translated with the selected language.</li>
       <li><code>CS</code>: CarSteen-style terms (<code>ATTCK/CHOK2/PROFL/CHOK1</code>).</li>
       <li><code>ACD</code>: ACD-style terms where directly applicable (<code>SENSI</code> and <code>CHOKE</code> for limit). <code>ANTIS</code> remains anti-spin because the ACD manual does not define a separate Choke2 term.</li>
-      <li><code>CHOK1</code> (CS) and <code>CHOKE</code> (ACD) run the opposite way to <code>LIMIT</code>: <code>CHOKE = 100 - LIMIT</code>. <code>CHOKE 0</code> means no choke (full speed), and a higher value chokes more. The setting is stored as LIMIT, so switching language keeps the same top speed.</li>
+      <li><code>CHOK1</code> (CS) and <code>CHOKE</code> (ACD) run the opposite way to <code>LIMIT</code>: <code>CHOKE = 100 - LIMIT</code>. <code>CHOKE 0</code> means no choke (full speed), and a higher value chokes more. The setting is stored as LIMIT, so switching terminology keeps the same top speed.</li>
+      <li>Upgrading from v6.14 or older: a controller set to the CS or ACD language starts in English with the matching terminology. Backups from before v6.15 restore everything except the language.</li>
       <li><code>DISPLAY -&gt; CASE</code> chooses whether labels are shown in <code>UPPER</code> or <code>Pascal</code>.</li>
       <li><code>DISPLAY -&gt; FONT SIZE</code> changes list/menu text density between <code>LARGE</code> and <code>small</code>.</li>
       <li><code>DISPLAY -&gt; ADVANCED</code> toggles whether <code>FADE</code>, <code>PWM_F</code>, and <code>BRAKE+</code> are shown in the main menu. Turning it <code>OFF</code> hides those rows for a simpler menu, but the stored car values still stay active.</li>
@@ -257,6 +258,7 @@ details.doc-fold>:not(summary){margin-top:8px}
       <li><code>DISPLAY -> RACE MODE</code>: OFF / FULL / SIMPLE.</li>
       <li>FULL grid: BRAKE, SENSI, ANTIS, CURVE (+ CAR if <code>RACESWP</code> is ON).</li>
       <li>SIMPLE grid: BRAKE, SENSI (+ CAR if <code>RACESWP</code> is ON).</li>
+      <li><code>DISPLAY -&gt; RACE SLOTS</code>: choose the parameter shown in each race slot (BRAKE, SENSI, ANTIS, CURVE, FADE, LIMIT, PWM_F). FULL shows slots 1-4, SIMPLE slots 1-2. The default is BRAKE, SENSI, ANTIS, CURVE. Names follow the language and terminology.</li>
       <li>Long encoder press toggles LIST/GRID.</li>
     </ul>
     <figure class="doc-media">
@@ -279,7 +281,7 @@ details.doc-fold>:not(summary){margin-top:8px}
     <p class="small">The <code>CAR</code> menu manages the car profiles. Each profile stores its own <code>Car Params</code>: <code>BRAKE</code>, <code>SENSI</code>, <code>ANTIS</code>, <code>CURVE</code>, <code>FADE</code>, <code>PWM_F</code>, <code>BRAKE+</code>, and <code>LIMIT</code>. This is the same parameter group you meet later in the <code>Advanced Config Editor</code>. If <code>DISPLAY -&gt; ADVANCED</code> is <code>OFF</code>, <code>FADE</code>, <code>PWM_F</code>, and <code>BRAKE+</code> are hidden from the main menu, but the stored profile values still apply.</p>
     <ul>
       <li><code>SELECT</code>: choose active car profile (0-19).</li>
-      <li><code>RENAME</code>: 4-character name editor (ASCII 32-122). See <a href="https://slatecave.net/notebook/ascii/" target="_blank" rel="noopener noreferrer">ASCII table</a>.</li>
+      <li><code>RENAME</code>: 5-character name editor (ASCII 32-122). See <a href="https://slatecave.net/notebook/ascii/" target="_blank" rel="noopener noreferrer">ASCII table</a>.</li>
       <li><code>RACESWP</code>: ON allows profile switching directly from GRID mode. Default: OFF.</li>
       <li><code>COPY</code>: copy from one profile to another, or to ALL profiles.</li>
       <li><code>RESET</code>: reset all car profiles (with confirmation).</li>
@@ -543,6 +545,7 @@ details.doc-fold>:not(summary){margin-top:8px}
       <li>The first page is public controller home. Sensitive tools such as <code>Controller Panel</code>, <code>Backup</code>, <code>Restore</code>, telemetry, OTA, and <code>Advanced Config Editor</code> are protected by controller login.</li>
       <li>Default controller login is username <code>espeed32</code> and password <code>espeed32</code>. The current login is also shown on the controller WiFi info page.</li>
       <li>Backup files do not export Client WiFi or controller login passwords. Restore keeps the local WiFi/login credentials already stored on that controller.</li>
+      <li>Backups contain all car profiles and controller settings, including race and status slots, sleep timeouts, LOCK, STATS and the external pot targets. The trigger sensor type is only restored on the controller the backup came from.</li>
     </ol>
     <figure class="doc-media">
       <img src="../assets/wifi_examples.svg" alt="Controller OLED WiFi info page and full-screen QR example">
@@ -615,7 +618,9 @@ details.doc-fold>:not(summary){margin-top:8px}
 |  |  `- BACK
 |  |- DISPLAY
 |  |  |- RACE MODE (OFF/FULL/SIMPLE)
-|  |  |- LANGUAGE (NOR/ENG/CS/ACD/ESP/DEU/ITA/NLD/POR/SVE)
+|  |  |- RACE SLOTS (SLOT 1-4)
+|  |  |- LANGUAGE (DEU/ENG/ESP/ITA/NLD/NOR/POR/SVE)
+|  |  |- TERMS (ESPEED/CS/ACD)
 |  |  |- CASE (UPPER/Pascal)
 |  |  |- FONT SIZE (LARGE/small)
 |  |  |- ADVANCED (OFF/ON)

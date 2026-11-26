@@ -272,6 +272,8 @@ static void doResetSettings() {
   g_storedVar.gridCarSelectEnabled = GRID_CAR_SELECT_DEFAULT;
   g_storedVar.raceViewMode         = RACE_VIEW_DEFAULT;
   g_storedVar.language             = LANG_DEFAULT;
+  g_storedVar.terminology          = TERM_DEFAULT;
+  for (uint8_t s = 0; s < RACE_SLOTS; s++) g_storedVar.raceSlot[s] = 0;
   g_storedVar.textCase             = TEXT_CASE_DEFAULT;
   g_storedVar.listFontSize         = FONT_SIZE_DEFAULT;
   g_storedVar.startupDelay         = STARTUP_DELAY_DEFAULT;
@@ -323,8 +325,6 @@ void showResetSubmenu() {
 
   const char* rowNamesByLang[LANG_COUNT][RS_ITEMS] = {
     {"Bil", "Innstillinger", "Kalibrering", "Nettverk", "Alt", "Tilbake"},
-    {"Car", "Settings", "Calibration", "Network", "Everything", "Back"},
-    {"Car", "Settings", "Calibration", "Network", "Everything", "Back"},
     {"Car", "Settings", "Calibration", "Network", "Everything", "Back"},
     {"Auto", "Ajustes", "Calibrac.", "Red", "Todo", "Atras"},
     {"Auto", "Einstell.", "Kalibr.", "Netzwerk", "Alles", "Zuruck"},

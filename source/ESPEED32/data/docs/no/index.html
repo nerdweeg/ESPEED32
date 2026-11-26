@@ -235,12 +235,13 @@ details.doc-fold>:not(summary){margin-top:8px}
     <p class="small">Denne delen samler det du ser på OLED: språk, tekststil, racevisning, statuslinje og systeminfo.</p>
     <h3>Språk og display</h3>
     <ul>
-      <li><code>DISPLAY -&gt; LANGUAGE</code> velger mellom lokaliserte etiketter og navneprofilene ENG/CS/ACD.</li>
-      <li><code>NOR/ESP/DEU/ITA/NLD/POR/SVE</code>: lokalisert UI med standardnavnene <code>BRAKE/SENSI/ANTIS/CURVE/FADE/LIMIT</code>.</li>
-      <li><code>ENG</code>: generiske navn (<code>BRAKE/SENSI/ANTIS/CURVE/FADE/LIMIT</code>).</li>
+      <li><code>DISPLAY -&gt; LANGUAGE</code> velger språk i menyene: <code>DEU/ENG/ESP/ITA/NLD/NOR/POR/SVE</code>.</li>
+      <li><code>DISPLAY -&gt; TERMS</code> velger navnene på parameterne. Det virker med alle språk:</li>
+      <li><code>ESPEED</code> (standard): de vanlige navnene <code>BRAKE/SENSI/ANTIS/CURVE/FADE/LIMIT</code>, oversatt til valgt språk.</li>
       <li><code>CS</code>: CarSteen-stil (<code>ATTCK/CHOK2/PROFL/CHOK1</code>).</li>
       <li><code>ACD</code>: ACD-stil der det finnes direkte treff (<code>SENSI</code> og <code>CHOKE</code> for limit). <code>ANTIS</code> beholdes som antispinn siden ACD-manualen ikke bruker en egen Choke2-term.</li>
-      <li><code>CHOK1</code> (CS) og <code>CHOKE</code> (ACD) går motsatt vei av <code>LIMIT</code>: <code>CHOKE = 100 - LIMIT</code>. <code>CHOKE 0</code> betyr ingen kvelning (full fart), og høyere verdi kveler mer. Innstillingen lagres som LIMIT, så bytte av språk gir samme toppfart.</li>
+      <li><code>CHOK1</code> (CS) og <code>CHOKE</code> (ACD) går motsatt vei av <code>LIMIT</code>: <code>CHOKE = 100 - LIMIT</code>. <code>CHOKE 0</code> betyr ingen kvelning (full fart), og høyere verdi kveler mer. Innstillingen lagres som LIMIT, så bytte av terminologi gir samme toppfart.</li>
+      <li>Oppgradering fra v6.14 eller eldre: en kontroller som sto på språket CS eller ACD, starter på engelsk med tilsvarende terminologi. Backuper fra før v6.15 gjenoppretter alt unntatt språket.</li>
       <li><code>DISPLAY -&gt; CASE</code> velger om etiketter vises i <code>UPPER</code> eller <code>Pascal</code>.</li>
       <li><code>DISPLAY -&gt; FONT SIZE</code> velger mellom <code>LARGE</code> og <code>small</code> for liste- og menyvisning.</li>
       <li><code>SKJERM -&gt; AVANSERT</code> velger om <code>FADE</code>, <code>PWM_F</code> og <code>BREMS+</code> vises i hovedmenyen. Setter du den til <code>AV</code>, skjules disse radene for en enklere meny, men de lagrede bilverdiene er fortsatt aktive.</li>
@@ -257,6 +258,7 @@ details.doc-fold>:not(summary){margin-top:8px}
       <li><code>DISPLAY -> RACE MODE</code>: OFF / FULL / SIMPLE.</li>
       <li>FULL grid: BRAKE, SENSI, ANTIS, CURVE (+ CAR hvis <code>RACESWP</code> er ON).</li>
       <li>SIMPLE grid: BRAKE, SENSI (+ CAR hvis <code>RACESWP</code> er ON).</li>
+      <li><code>DISPLAY -&gt; RACE SLOTS</code>: velg hvilken parameter som vises i hvert felt i race-visningen (BRAKE, SENSI, ANTIS, CURVE, FADE, LIMIT, PWM_F). FULL viser felt 1-4, SIMPLE felt 1-2. Standard er BRAKE, SENSI, ANTIS, CURVE. Navnene følger språk og terminologi.</li>
       <li>Langt trykk encoder veksler LIST/GRID.</li>
     </ul>
     <figure class="doc-media">
@@ -279,7 +281,7 @@ details.doc-fold>:not(summary){margin-top:8px}
     <p class="small"><code>CAR</code> styrer bilprofilene. Hver profil lagrer sine egne <code>Car Params</code>, altså kjøreverdier som <code>BRAKE</code>, <code>SENSI</code>, <code>ANTIS</code>, <code>CURVE</code>, <code>FADE</code>, <code>PWM_F</code>, <code>BREMS+</code> og <code>LIMIT</code>. Det er samme parametergruppe du møter igjen senere i <code>Advanced Config Editor</code>. Hvis <code>SKJERM -&gt; AVANSERT</code> er satt til <code>AV</code>, skjules <code>FADE</code>, <code>PWM_F</code> og <code>BREMS+</code> i hovedmenyen, men de lagrede profilverdiene virker fortsatt.</p>
     <ul>
       <li><code>SELECT</code>: velg aktiv bilprofil (0-19).</li>
-      <li><code>RENAME</code>: 4-tegns navn (ASCII 32-122), redigert tegn for tegn. Se <a href="https://slatecave.net/notebook/ascii/" target="_blank" rel="noopener noreferrer">ASCII-tabell</a>.</li>
+      <li><code>RENAME</code>: 5-tegns navn (ASCII 32-122), redigert tegn for tegn. Se <a href="https://slatecave.net/notebook/ascii/" target="_blank" rel="noopener noreferrer">ASCII-tabell</a>.</li>
       <li><code>RACESWP</code>: ON gir mulighet for car-select direkte i GRID-view. Standard: OFF.</li>
       <li><code>COPY</code>: kopier fra en profil til en annen eller til ALL.</li>
       <li><code>RESET</code>: nullstill alle bilprofiler (krever bekreftelse).</li>
@@ -543,6 +545,7 @@ details.doc-fold>:not(summary){margin-top:8px}
       <li>Første side er kontrollerens offentlige startside. Sensitive verktøy som <code>Controller Panel</code>, <code>Backup</code>, <code>Restore</code>, telemetri, OTA og <code>Advanced Config Editor</code> krever controller-login.</li>
       <li>Default controller-login er username <code>espeed32</code> og password <code>espeed32</code>. Gjeldende login vises også på kontrollerens WiFi info-side.</li>
       <li>Backup-filer eksporterer ikke Client WiFi-passord eller controller-login-passord. Restore beholder de lokale WiFi/login-credentials som allerede ligger på den kontrolleren.</li>
+      <li>Backuper inneholder alle bilprofiler og kontrollerinnstillinger, også race- og statusfelt, dvaletider, LOCK, STATS og målene for eksterne potmetre. Triggersensortypen gjenopprettes bare på kontrolleren backupen ble tatt fra.</li>
     </ol>
     <figure class="doc-media">
       <img src="../assets/wifi_examples.svg" alt="Eksempel på WiFi info-side og fullskjerms QR-kode på kontrollerens OLED">
@@ -615,7 +618,9 @@ details.doc-fold>:not(summary){margin-top:8px}
 |  |  `- BACK
 |  |- DISPLAY
 |  |  |- RACE MODE (OFF/FULL/SIMPLE)
-|  |  |- LANGUAGE (NOR/ENG/CS/ACD/ESP/DEU/ITA/NLD/POR/SVE)
+|  |  |- RACE SLOTS (FELT 1-4)
+|  |  |- LANGUAGE (DEU/ENG/ESP/ITA/NLD/NOR/POR/SVE)
+|  |  |- TERMS (ESPEED/CS/ACD)
 |  |  |- CASE (UPPER/Pascal)
 |  |  |- FONT SIZE (LARGE/small)
 |  |  |- AVANSERT (AV/PA)

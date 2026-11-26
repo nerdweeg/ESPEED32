@@ -1,5 +1,9 @@
 #include "connectivity_portal_internal.h"
 #include "app_init.h"
+#include "ext_pot.h"
+#if defined(TLE493D_MAG)
+#include "tle493d.h"
+#endif
 
 /* Settings JSON: backup build/parse/validate, web UI schema and state, and live web patches. */
 
@@ -51,6 +55,22 @@ static String buildJsonBackupFromConfig(const StoredVar_type& storedVar,
   snprintf(buf, sizeof(buf), "  \"gridCarSelectEnabled\": %u,\n", storedVar.gridCarSelectEnabled); json += buf;
   snprintf(buf, sizeof(buf), "  \"raceViewMode\": %u,\n", storedVar.raceViewMode);   json += buf;
   snprintf(buf, sizeof(buf), "  \"language\": %u,\n", storedVar.language);           json += buf;
+  snprintf(buf, sizeof(buf), "  \"terminology\": %u,\n", storedVar.terminology);     json += buf;
+  for (uint8_t s = 0; s < RACE_SLOTS; s++) {
+    snprintf(buf, sizeof(buf), "  \"raceSlot%u\": %u,\n", (unsigned)s, storedVar.raceSlot[s]); json += buf;
+  }
+  for (uint8_t s = 0; s < STATUS_SLOTS; s++) {
+    snprintf(buf, sizeof(buf), "  \"statusSlot%u\": %u,\n", (unsigned)s, normalizeStatusSlotValue(storedVar.statusSlot[s])); json += buf;
+  }
+  snprintf(buf, sizeof(buf), "  \"powerSaveTimeout\": %u,\n", storedVar.powerSaveTimeout); json += buf;
+  snprintf(buf, sizeof(buf), "  \"deepSleepTimeout\": %u,\n", storedVar.deepSleepTimeout); json += buf;
+  snprintf(buf, sizeof(buf), "  \"lockMenuEnabled\": %u,\n", storedVar.lockMenuEnabled);   json += buf;
+  snprintf(buf, sizeof(buf), "  \"lockShortcutIdx\": %u,\n", storedVar.lockShortcutIdx);   json += buf;
+  snprintf(buf, sizeof(buf), "  \"lockConfirmEnabled\": %u,\n", storedVar.lockConfirmEnabled); json += buf;
+  snprintf(buf, sizeof(buf), "  \"statsEnabled\": %u,\n", g_statsEnabled ? 1U : 0U);   json += buf;
+  snprintf(buf, sizeof(buf), "  \"extPot1Target\": %u,\n", g_extPotTarget[0]);         json += buf;
+  snprintf(buf, sizeof(buf), "  \"extPot2Target\": %u,\n", g_extPotTarget[1]);         json += buf;
+  snprintf(buf, sizeof(buf), "  \"triggerSensorType\": %u,\n", HAL_GetTriggerSensorTypeOverride()); json += buf;
   snprintf(buf, sizeof(buf), "  \"textCase\": %u,\n", storedVar.textCase);           json += buf;
   snprintf(buf, sizeof(buf), "  \"listFontSize\": %u,\n", storedVar.listFontSize);   json += buf;
   snprintf(buf, sizeof(buf), "  \"startupDelay\": %u,\n", storedVar.startupDelay);   json += buf;
@@ -307,7 +327,7 @@ bool parseAndValidateJson(const String& json, StoredVar_type* sv, uint16_t* anti
                                  size_t wifiClientPasswordLen, char* uiAuthUsername,
                                  size_t uiAuthUsernameLen, char* uiAuthPassword,
                                  size_t uiAuthPasswordLen, String* errorMsg,
-                                 String* warningMsg) {
+                                 String* warningMsg, RestoreExtraSettings* extras) {
   int32_t v;
   bool wifiPasswordStoredSpecified = false;
   bool wifiPasswordStored = false;
@@ -394,8 +414,12 @@ bool parseAndValidateJson(const String& json, StoredVar_type* sv, uint16_t* anti
   }
 
   /* Version check - warn but allow cross-version restore for car profiles */
+  bool legacyLanguageIndices = false;
   if (parseJsonInt(json, "version", v) && v != STORED_VAR_VERSION) {
-    /* Different version: car profiles are restored, global settings use defaults for missing fields */
+    /* Different version: car profiles are restored, global settings use defaults for missing fields.
+       Before v25 the language list still held CS/ACD, so its indices no longer match: keep the
+       current language instead of picking the wrong one. */
+    legacyLanguageIndices = (v < 25);
   }
 
   /* Parse global settings - use value if present and valid, otherwise keep default */
@@ -474,8 +498,46 @@ bool parseAndValidateJson(const String& json, StoredVar_type* sv, uint16_t* anti
     sv->gridCarSelectEnabled = v;
   if (parseJsonInt(json, "raceViewMode", v) && inRange(v, 0, 2))
     sv->raceViewMode = v;
-  if (parseJsonInt(json, "language", v) && inRange(v, LANG_NOR, LANG_MAX))
+  if (!legacyLanguageIndices && parseJsonInt(json, "language", v) && inRange(v, LANG_NOR, LANG_MAX))
     sv->language = v;
+  if (parseJsonInt(json, "terminology", v) && inRange(v, TERM_ESPEED, TERM_MAX))
+    sv->terminology = v;
+  for (uint8_t s = 0; s < RACE_SLOTS; s++) {
+    char key[12];
+    snprintf(key, sizeof(key), "raceSlot%u", (unsigned)s);
+    if (parseJsonInt(json, key, v) && (v == 0 || (inRange(v, 1, RACE_PARAM_LIMIT + 1) && isRaceParamSelectable(v - 1))))
+      sv->raceSlot[s] = v;
+  }
+  for (uint8_t s = 0; s < STATUS_SLOTS; s++) {
+    char key[12];
+    snprintf(key, sizeof(key), "statusSlot%u", (unsigned)s);
+    if (parseJsonInt(json, key, v) && inRange(v, STATUS_BLANK, STATUS_DEVICE_ID))
+      sv->statusSlot[s] = normalizeStatusSlotValue(v);
+  }
+  if (parseJsonInt(json, "powerSaveTimeout", v) && inRange(v, 0, POWER_SAVE_TIMEOUT_MAX))
+    sv->powerSaveTimeout = v;
+  if (parseJsonInt(json, "deepSleepTimeout", v) && (v == 0 || inRange(v, DEEP_SLEEP_TIMEOUT_MIN, DEEP_SLEEP_TIMEOUT_MAX)))
+    sv->deepSleepTimeout = v;
+  if (parseJsonInt(json, "lockMenuEnabled", v) && inRange(v, 0, 1))
+    sv->lockMenuEnabled = v;
+  if (parseJsonInt(json, "lockShortcutIdx", v) && inRange(v, 0, LOCK_SHORTCUT_COUNT))
+    sv->lockShortcutIdx = v;
+  if (parseJsonInt(json, "lockConfirmEnabled", v) && inRange(v, 0, 1))
+    sv->lockConfirmEnabled = v;
+  if (extras != nullptr) {
+    if (parseJsonInt(json, "statsEnabled", v) && inRange(v, 0, 1))
+      extras->statsEnabled = (uint16_t)v;
+    if (parseJsonInt(json, "extPot1Target", v) && inRange(v, EXT_POT_TARGET_MIN, EXT_POT_TARGET_MAX))
+      extras->extPotTarget[0] = (uint16_t)v;
+    if (parseJsonInt(json, "extPot2Target", v) && inRange(v, EXT_POT_TARGET_MIN, EXT_POT_TARGET_MAX))
+      extras->extPotTarget[1] = (uint16_t)v;
+    /* The sensor type belongs to this board's hardware, so only take it from its own backup */
+    if (controllerLocalSettingsRestoreAllowed &&
+        parseJsonInt(json, "triggerSensorType", v) && inRange(v, 0, TRIGGER_SENSOR_TYPE_MAX)) {
+      extras->sensorTypeOverride = (uint16_t)v;
+      extras->sensorTypeOverrideSet = true;
+    }
+  }
   if (parseJsonInt(json, "textCase", v) && inRange(v, TEXT_CASE_UPPER, TEXT_CASE_PASCAL))
     sv->textCase = v;
   if (parseJsonInt(json, "listFontSize", v) && inRange(v, FONT_SIZE_LARGE, FONT_SIZE_SMALL))
@@ -607,8 +669,8 @@ bool parseAndValidateJson(const String& json, StoredVar_type* sv, uint16_t* anti
 
     CarParam_type& c = sv->carParam[i];
 
-    /* Name - parse into a wider buffer; normalizeStoredCarNames() below maps legacy 5-char
-       defaults (CAR10..CAR19) and terminates anything longer at 4 chars */
+    /* Name - parse into a wider buffer; normalizeStoredCarNames() below terminates anything
+       longer than CAR_NAME_MAX_SIZE - 1 chars */
     char tempName[16];
     if (!parseJsonStr(carJson, "name", tempName, sizeof(tempName))) {
       *errorMsg = "Error: missing name in car " + String(i); return false;
@@ -844,7 +906,9 @@ String buildSchemaJson() {
   appendSchemaEnumField(json, first, "raceViewMode", "Race Mode",
                         "[{\"value\":0,\"label\":\"OFF\"},{\"value\":1,\"label\":\"FULL\"},{\"value\":2,\"label\":\"SIMPLE\"}]");
   appendSchemaEnumField(json, first, "language", "Language",
-                        "[{\"value\":0,\"label\":\"NOR\"},{\"value\":1,\"label\":\"ENG\"},{\"value\":2,\"label\":\"CS\"},{\"value\":3,\"label\":\"ACD\"},{\"value\":4,\"label\":\"ESP\"},{\"value\":5,\"label\":\"DEU\"},{\"value\":6,\"label\":\"ITA\"},{\"value\":7,\"label\":\"NLD\"},{\"value\":8,\"label\":\"POR\"},{\"value\":9,\"label\":\"SVE\"}]");
+                        "[{\"value\":3,\"label\":\"DEU\"},{\"value\":1,\"label\":\"ENG\"},{\"value\":2,\"label\":\"ESP\"},{\"value\":4,\"label\":\"ITA\"},{\"value\":5,\"label\":\"NLD\"},{\"value\":0,\"label\":\"NOR\"},{\"value\":6,\"label\":\"POR\"},{\"value\":7,\"label\":\"SVE\"}]");
+  appendSchemaEnumField(json, first, "terminology", "Terminology",
+                        "[{\"value\":0,\"label\":\"ESPEED\"},{\"value\":1,\"label\":\"CS\"},{\"value\":2,\"label\":\"ACD\"}]");
   appendSchemaEnumField(json, first, "textCase", "Text Case",
                         "[{\"value\":0,\"label\":\"UPPER\"},{\"value\":1,\"label\":\"Pascal\"}]");
   appendSchemaEnumField(json, first, "listFontSize", "Font Size",
@@ -867,6 +931,14 @@ String buildSchemaJson() {
                         "[{\"value\":0,\"label\":\"BLANK\"},{\"value\":1,\"label\":\"OUTPUT\"},{\"value\":2,\"label\":\"THROTTLE\"},{\"value\":3,\"label\":\"CAR\"},{\"value\":4,\"label\":\"CURR\"},{\"value\":5,\"label\":\"VOLTAGE\"},{\"value\":8,\"label\":\"BATTERY\"},{\"value\":7,\"label\":\"ACTIVE BRAKE\"},{\"value\":9,\"label\":\"DEVICE ID\"}]");
   appendSchemaEnumField(json, first, "statusSlot3", "Status Slot 4",
                         "[{\"value\":0,\"label\":\"BLANK\"},{\"value\":1,\"label\":\"OUTPUT\"},{\"value\":2,\"label\":\"THROTTLE\"},{\"value\":3,\"label\":\"CAR\"},{\"value\":4,\"label\":\"CURR\"},{\"value\":5,\"label\":\"VOLTAGE\"},{\"value\":8,\"label\":\"BATTERY\"},{\"value\":7,\"label\":\"ACTIVE BRAKE\"},{\"value\":9,\"label\":\"DEVICE ID\"}]");
+  for (uint8_t s = 0; s < RACE_SLOTS; s++) {
+    char key[12];
+    char label[16];
+    snprintf(key, sizeof(key), "raceSlot%u", (unsigned)s);
+    snprintf(label, sizeof(label), "Race Slot %u", (unsigned)(s + 1));
+    appendSchemaEnumField(json, first, key, label,
+                          "[{\"value\":1,\"label\":\"BRAKE\"},{\"value\":2,\"label\":\"SENSI\"},{\"value\":3,\"label\":\"ANTIS\"},{\"value\":4,\"label\":\"CURVE\"},{\"value\":5,\"label\":\"FADE\"},{\"value\":8,\"label\":\"LIMIT\"},{\"value\":6,\"label\":\"PWM_F\"}]");
+  }
   appendSchemaStringField(json, first, "screensaverLine1", "Screensaver Line 1", SCREENSAVER_TEXT_MAX - 1);
   appendSchemaStringField(json, first, "screensaverLine2", "Screensaver Line 2", SCREENSAVER_TEXT_MAX - 1);
   json += "],";
@@ -934,6 +1006,11 @@ String buildStateJson(uint8_t carIndex) {
   snprintf(buf, sizeof(buf), "\"gridCarSelectEnabled\":%u,", g_storedVar.gridCarSelectEnabled); json += buf;
   snprintf(buf, sizeof(buf), "\"raceViewMode\":%u,", g_storedVar.raceViewMode); json += buf;
   snprintf(buf, sizeof(buf), "\"language\":%u,", g_storedVar.language); json += buf;
+  snprintf(buf, sizeof(buf), "\"terminology\":%u,", g_storedVar.terminology); json += buf;
+  for (uint8_t s = 0; s < RACE_SLOTS; s++) {
+    snprintf(buf, sizeof(buf), "\"raceSlot%u\":%u,", (unsigned)s,
+             (unsigned)normalizeRaceSlotParam(g_storedVar.raceSlot[s], s) + 1U); json += buf;
+  }
   snprintf(buf, sizeof(buf), "\"textCase\":%u,", g_storedVar.textCase); json += buf;
   snprintf(buf, sizeof(buf), "\"listFontSize\":%u,", g_storedVar.listFontSize); json += buf;
   snprintf(buf, sizeof(buf), "\"startupDelay\":%u,", g_storedVar.startupDelay); json += buf;
@@ -1104,6 +1181,20 @@ bool parseAndApplyWebPatch(const String& json, String* errorMsg, uint8_t* applie
   if (parseJsonInt(json, "language", v)) {
     if (!inRange(v, LANG_NOR, LANG_MAX)) { *errorMsg = "Error: invalid language"; return false; }
     updated.language = (uint16_t)v;
+  }
+  for (uint8_t s = 0; s < RACE_SLOTS; s++) {
+    char key[12];
+    snprintf(key, sizeof(key), "raceSlot%u", (unsigned)s);
+    if (parseJsonInt(json, key, v)) {
+      if (!inRange(v, 1, RACE_PARAM_LIMIT + 1) || !isRaceParamSelectable(v - 1)) {
+        *errorMsg = "Error: invalid " + String(key); return false;
+      }
+      updated.raceSlot[s] = (uint16_t)v;
+    }
+  }
+  if (parseJsonInt(json, "terminology", v)) {
+    if (!inRange(v, TERM_ESPEED, TERM_MAX)) { *errorMsg = "Error: invalid terminology"; return false; }
+    updated.terminology = (uint16_t)v;
   }
   if (parseJsonInt(json, "textCase", v)) {
     if (!inRange(v, TEXT_CASE_UPPER, TEXT_CASE_PASCAL)) { *errorMsg = "Error: invalid textCase"; return false; }
@@ -1303,4 +1394,26 @@ bool parseAndApplyWebPatch(const String& json, String* errorMsg, uint8_t* applie
 
   if (appliedCarIndex != nullptr) *appliedCarIndex = carIndex;
   return true;
+}
+
+void loadRestoreExtraSettings(RestoreExtraSettings* extras) {
+  extras->statsEnabled = g_statsEnabled ? 1U : 0U;
+  extras->extPotTarget[0] = g_extPotTarget[0];
+  extras->extPotTarget[1] = g_extPotTarget[1];
+  extras->sensorTypeOverride = HAL_GetTriggerSensorTypeOverride();
+  extras->sensorTypeOverrideSet = false;
+}
+
+void applyRestoreExtraSettings(const RestoreExtraSettings& extras) {
+  g_statsEnabled = extras.statsEnabled ? 1U : 0U;
+  g_extPotTarget[0] = extras.extPotTarget[0];
+  g_extPotTarget[1] = extras.extPotTarget[1];
+  sanitizeExtPotTargets(0);
+#if defined(TLE493D_MAG)
+  /* Only persist it: restore reboots right after, and the new mode is applied at boot, so the
+     portal task never reconfigures the sensor while the control loop is reading it. */
+  if (extras.sensorTypeOverrideSet) {
+    TLE493D_SaveOverrideMode(extras.sensorTypeOverride);
+  }
+#endif
 }

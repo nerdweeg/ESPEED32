@@ -17,6 +17,8 @@ const char* getReleaseBrakeModeLabel(uint8_t lang, uint8_t mode);
 const char* getLockMenuName(uint8_t lang, uint8_t item);
 const char* getLockShortcutLabel(uint8_t lang, uint8_t idx);
 const char* getBackLabel(uint8_t lang);
+const char* getLimiterLabel(uint8_t lang);
+const char* getTerminologyLabel(uint8_t terminology);
 uint8_t getMenuLines();
 
 #endif  /* UI_TEXT_ACCESS_H_ */

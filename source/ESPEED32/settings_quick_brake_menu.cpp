@@ -48,11 +48,11 @@ static AdvancedBrakeRowType getAdvancedBrakeRowType(uint16_t mode, uint8_t visib
 }
 
 static const char* getAdvancedBrakeRowLabel(uint8_t lang, uint16_t mode, AdvancedBrakeRowType rowType) {
-  static const char* BUTTON_LABELS[LANG_COUNT] = {"Alt.brems", "Alt.Brake", "Alt.Brake", "Alt.Brake", "Alt.Freno", "Alt.Brems", "Alt.Freno", "Alt.Rem", "Alt.Trav", "Alt.broms"};
-  static const char* MODE_LABELS[LANG_COUNT]   = {"Rel.brems", "Rel.Brake", "Rel.Brake", "Rel.Brake", "Rel.Freno", "Rel.Brems", "Rel.Freno", "Rel.Rem", "Rel.Trav", "Rel.broms"};
-  static const char* ZONE_LABELS[LANG_COUNT]   = {"Sone", "Zone", "Zone", "Zone", "Zona", "Zone", "Zona", "Zone", "Zona", "Zon"};
-  static const char* QUICK_LABELS[LANG_COUNT]  = {"Quick", "Quick", "Quick", "Quick", "Quick", "Quick", "Quick", "Quick", "Quick", "Quick"};
-  static const char* DRAG_LABELS[LANG_COUNT]   = {"Drag", "Drag", "Drag", "Drag", "Drag", "Drag", "Drag", "Drag", "Drag", "Drag"};
+  static const char* BUTTON_LABELS[LANG_COUNT] = {"Alt.brems", "Alt.Brake", "Alt.Freno", "Alt.Brems", "Alt.Freno", "Alt.Rem", "Alt.Trav", "Alt.broms"};
+  static const char* MODE_LABELS[LANG_COUNT]   = {"Rel.brems", "Rel.Brake", "Rel.Freno", "Rel.Brems", "Rel.Freno", "Rel.Rem", "Rel.Trav", "Rel.broms"};
+  static const char* ZONE_LABELS[LANG_COUNT]   = {"Sone", "Zone", "Zona", "Zone", "Zona", "Zone", "Zona", "Zon"};
+  static const char* QUICK_LABELS[LANG_COUNT]  = {"Quick", "Quick", "Quick", "Quick", "Quick", "Quick", "Quick", "Quick"};
+  static const char* DRAG_LABELS[LANG_COUNT]   = {"Drag", "Drag", "Drag", "Drag", "Drag", "Drag", "Drag", "Drag"};
 
   switch (rowType) {
     case AB_ROW_BUTTON:
@@ -72,8 +72,6 @@ static const char* getAdvancedBrakeRowLabel(uint8_t lang, uint16_t mode, Advance
 static const char* getReleaseBrakeMenuModeValue(uint8_t lang, uint16_t mode) {
   static const char* MODE_VALUES[LANG_COUNT][3] = {
     {"AV", "QUICK", "DRAG"},
-    {"OFF", "QUICK", "DRAG"},
-    {"OFF", "QUICK", "DRAG"},
     {"OFF", "QUICK", "DRAG"},
     {"OFF", "QUICK", "DRAG"},
     {"AUS", "QUICK", "DRAG"},

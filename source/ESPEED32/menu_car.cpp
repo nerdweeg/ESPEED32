@@ -630,7 +630,7 @@ void showSelectRenameCar() {
   {
     uint16_t lang = g_storedVar.language;
     static const char* const allCarsLabel[LANG_COUNT] = {
-      "ALLE BILER", "ALL CARS", "ALL CARS", "ALL CARS",
+      "ALLE BILER", "ALL CARS",
       "TODOS AUTOS", "ALLE AUTOS", "TUTTE AUTO", "ALLE AUTOS",
       "TODOS CARROS", "ALLA BILAR"
     };

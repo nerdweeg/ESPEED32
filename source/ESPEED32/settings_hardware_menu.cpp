@@ -14,8 +14,6 @@
 static const char* HARDWARE_MENU_LABELS[LANG_COUNT][HARDWARE_ITEMS_COUNT] = {
   {"ENC.INVERT", "EKST.POT.", "TRIGGER", "PWM_F MAX", "TEST", "TILBAKE"},
   {"ENC.INVERT", "EXT.POT.", "TRIGGER", "PWM_F MAX", "TEST", "BACK"},
-  {"ENC.INVERT", "EXT.POT.", "TRIGGER", "PWM_F MAX", "TEST", "BACK"},
-  {"ENC.INVERT", "EXT.POT.", "TRIGGER", "PWM_F MAX", "TEST", "BACK"},
   {"ENC.INVERT", "POT.EXT.", "TRIGGER", "PWM_F MAX", "TEST", "ATRAS"},
   {"ENC.INVERT", "EXT.POT.", "TRIGGER", "PWM_F MAX", "TEST", "ZURUCK"},
   {"ENC.INVERT", "POT.EST.", "TRIGGER", "PWM_F MAX", "TEST", "INDIETRO"},
@@ -26,8 +24,6 @@ static const char* HARDWARE_MENU_LABELS[LANG_COUNT][HARDWARE_ITEMS_COUNT] = {
 
 static const char* HARDWARE_MENU_LABELS_PASCAL[LANG_COUNT][HARDWARE_ITEMS_COUNT] = {
   {"Enc.Invert", "Ekst.Pot.", "Trigger", "Pwm_F Max", "Test", "Tilbake"},
-  {"Enc.Invert", "Ext.Pot.", "Trigger", "Pwm_F Max", "Test", "Back"},
-  {"Enc.Invert", "Ext.Pot.", "Trigger", "Pwm_F Max", "Test", "Back"},
   {"Enc.Invert", "Ext.Pot.", "Trigger", "Pwm_F Max", "Test", "Back"},
   {"Enc.Invert", "Pot.Ext.", "Trigger", "Pwm_F Max", "Test", "Atras"},
   {"Enc.Invert", "Ext.Pot.", "Trigger", "Pwm_F Max", "Test", "Zuruck"},
@@ -40,8 +36,6 @@ static const char* HARDWARE_MENU_LABELS_PASCAL[LANG_COUNT][HARDWARE_ITEMS_COUNT]
 static const char* SENSOR_MENU_LABELS[LANG_COUNT][4] = {
   {"FAMILIE", "AKTIV", "TYPE", "TILBAKE"},
   {"FAMILY", "ACTIVE", "TYPE", "BACK"},
-  {"FAMILY", "ACTIVE", "TYPE", "BACK"},
-  {"FAMILY", "ACTIVE", "TYPE", "BACK"},
   {"FAMILIA", "ACTIVO", "TYPE", "ATRAS"},
   {"FAMILIE", "AKTIV", "TYPE", "ZURUCK"},
   {"FAMIGLIA", "ATTIVO", "TYPE", "INDIETRO"},
@@ -52,8 +46,6 @@ static const char* SENSOR_MENU_LABELS[LANG_COUNT][4] = {
 
 static const char* SENSOR_MENU_LABELS_PASCAL[LANG_COUNT][4] = {
   {"Familie", "Aktiv", "Type", "Tilbake"},
-  {"Family", "Active", "Type", "Back"},
-  {"Family", "Active", "Type", "Back"},
   {"Family", "Active", "Type", "Back"},
   {"Familia", "Activo", "Type", "Atras"},
   {"Familie", "Aktiv", "Type", "Zuruck"},

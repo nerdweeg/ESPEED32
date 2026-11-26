@@ -16,11 +16,11 @@ static void formatVoltageString(char* buffer, size_t bufferSize, uint16_t milliv
 static void showVinCalibrationScreen() {
   uint16_t lang = g_storedVar.language;
 
-  const char* lblRead[LANG_COUNT]   = {"LES", "READ", "READ", "READ", "LEE", "IST", "LETT", "LEES", "LER", "LAS"};
-  const char* lblSet[LANG_COUNT]    = {"SETT", "SET", "SET", "SET", "SET", "SET", "SET", "SET", "SET", "SATT"};
-  const char* lblSave[LANG_COUNT]   = {"TRYKK=LAGR", "CLICK=SAVE", "CLICK=SAVE", "CLICK=SAVE", "CLICK=SAVE", "CLICK=SAVE", "CLICK=SAVE", "KLIK=OPSL", "CLIQUE=GRAV", "TRYCK=SPAR"};
-  const char* lblCancel[LANG_COUNT] = {"BREMS=TILB", "BRAKE=BACK", "BRAKE=BACK", "BRAKE=BACK", "FRENO=ATR", "BREMSE=ZRK", "FRENO=BACK", "REM=TERUG", "TRAV=VOLT", "BROMS=TILL"};
-  const char* lblNoVin[LANG_COUNT]  = {"INGEN VIN", "NO VIN", "NO VIN", "NO VIN", "SIN VIN", "KEIN VIN", "NO VIN", "GEEN VIN", "SEM VIN", "INGEN VIN"};
+  const char* lblRead[LANG_COUNT]   = {"LES", "READ", "LEE", "IST", "LETT", "LEES", "LER", "LAS"};
+  const char* lblSet[LANG_COUNT]    = {"SETT", "SET", "SET", "SET", "SET", "SET", "SET", "SATT"};
+  const char* lblSave[LANG_COUNT]   = {"TRYKK=LAGR", "CLICK=SAVE", "CLICK=SAVE", "CLICK=SAVE", "CLICK=SAVE", "KLIK=OPSL", "CLIQUE=GRAV", "TRYCK=SPAR"};
+  const char* lblCancel[LANG_COUNT] = {"BREMS=TILB", "BRAKE=BACK", "FRENO=ATR", "BREMSE=ZRK", "FRENO=BACK", "REM=TERUG", "TRAV=VOLT", "BROMS=TILL"};
+  const char* lblNoVin[LANG_COUNT]  = {"INGEN VIN", "NO VIN", "SIN VIN", "KEIN VIN", "NO VIN", "GEEN VIN", "SEM VIN", "INGEN VIN"};
 
   const uint8_t menuFont = FONT_8x8;
   const uint8_t lineH = HEIGHT8x8;

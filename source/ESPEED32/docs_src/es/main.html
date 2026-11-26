@@ -70,12 +70,13 @@
     <p class="small">Aqui se junta todo lo que ves en la OLED: idioma, estilo de etiquetas, vista de carrera, barra de estado e informacion del sistema.</p>
     <h3>Idioma y display</h3>
     <ul>
-      <li><code>DISPLAY -&gt; LANGUAGE</code> elige entre etiquetas localizadas y los perfiles de nombres ENG/CS/ACD.</li>
-      <li><code>NOR/ESP/DEU/ITA/NLD/POR/SVE</code>: interfaz localizada con los nombres estandar <code>BRAKE/SENSI/ANTIS/CURVE/FADE/LIMIT</code>.</li>
-      <li><code>ENG</code>: nombres genericos (<code>BRAKE/SENSI/ANTIS/CURVE/FADE/LIMIT</code>).</li>
+      <li><code>DISPLAY -&gt; LANGUAGE</code> elige el idioma de los menus: <code>DEU/ENG/ESP/ITA/NLD/NOR/POR/SVE</code>.</li>
+      <li><code>DISPLAY -&gt; TERMS</code> elige los nombres de los parametros. Funciona con todos los idiomas:</li>
+      <li><code>ESPEED</code> (por defecto): los nombres habituales <code>BRAKE/SENSI/ANTIS/CURVE/FADE/LIMIT</code>, traducidos al idioma elegido.</li>
       <li><code>CS</code>: estilo CarSteen (<code>ATTCK/CHOK2/PROFL/CHOK1</code>).</li>
       <li><code>ACD</code>: estilo ACD donde hay equivalencia directa (<code>SENSI</code> y <code>CHOKE</code> para LIMIT).</li>
-      <li><code>CHOK1</code> (CS) y <code>CHOKE</code> (ACD) van al reves que <code>LIMIT</code>: <code>CHOKE = 100 - LIMIT</code>. <code>CHOKE 0</code> significa sin estrangulamiento (velocidad maxima) y un valor mayor estrangula mas. Se guarda como LIMIT, asi que cambiar de idioma mantiene la misma velocidad maxima.</li>
+      <li><code>CHOK1</code> (CS) y <code>CHOKE</code> (ACD) van al reves que <code>LIMIT</code>: <code>CHOKE = 100 - LIMIT</code>. <code>CHOKE 0</code> significa sin estrangulamiento (velocidad maxima) y un valor mayor estrangula mas. Se guarda como LIMIT, asi que cambiar la terminologia mantiene la misma velocidad maxima.</li>
+      <li>Actualizacion desde v6.14 o anterior: un controlador con el idioma CS o ACD arranca en ingles con la terminologia correspondiente. Las copias de seguridad anteriores a v6.15 restauran todo excepto el idioma.</li>
       <li><code>DISPLAY -&gt; CASE</code> decide si las etiquetas se muestran en <code>UPPER</code> o <code>Pascal</code>.</li>
       <li><code>DISPLAY -&gt; FONT SIZE</code> cambia la vista de listas y menus entre <code>LARGE</code> y <code>small</code>.</li>
       <li><code>PANTALLA -&gt; AVANZADO</code> decide si <code>FADE</code>, <code>PWM_F</code> y <code>FRENO+</code> se muestran en el menu principal. En <code>OFF</code> se ocultan esas filas para dejar un menu mas simple, pero los valores guardados del coche siguen activos.</li>
@@ -92,6 +93,7 @@
       <li><code>DISPLAY -> RACE MODE</code>: OFF / FULL / SIMPLE.</li>
       <li>FULL: BRAKE, SENSI, ANTIS, CURVE (+ CAR si <code>RACESWP</code> esta ON).</li>
       <li>SIMPLE: BRAKE, SENSI (+ CAR si <code>RACESWP</code> esta ON).</li>
+      <li><code>DISPLAY -&gt; RACE SLOTS</code>: elige el parametro de cada campo de la vista race (BRAKE, SENSI, ANTIS, CURVE, FADE, LIMIT, PWM_F). FULL muestra los campos 1-4, SIMPLE los campos 1-2. Por defecto: BRAKE, SENSI, ANTIS, CURVE. Los nombres siguen el idioma y la terminologia.</li>
       <li>Pulsacion larga del encoder cambia LIST/GRID.</li>
     </ul>
     <figure class="doc-media">
@@ -114,7 +116,7 @@
     <p class="small">El menu <code>CAR</code> gestiona los perfiles de coche. Cada perfil guarda sus propios <code>Car Params</code>, es decir valores como <code>BRAKE</code>, <code>SENSI</code>, <code>ANTIS</code>, <code>CURVE</code>, <code>FADE</code>, <code>PWM_F</code>, <code>FRENO+</code> y <code>LIMIT</code>. Es el mismo grupo de parametros que reaparece despues en el <code>Advanced Config Editor</code>. Si <code>PANTALLA -&gt; AVANZADO</code> esta en <code>OFF</code>, <code>FADE</code>, <code>PWM_F</code> y <code>FRENO+</code> quedan ocultos en el menu principal, pero los valores guardados del perfil siguen aplicandose.</p>
     <ul>
       <li><code>SELECT</code>: elegir perfil activo (0-19).</li>
-      <li><code>RENAME</code>: editor de 4 caracteres (ASCII 32-122). Ver <a href="https://slatecave.net/notebook/ascii/" target="_blank" rel="noopener noreferrer">tabla ASCII</a>.</li>
+      <li><code>RENAME</code>: editor de 5 caracteres (ASCII 32-122). Ver <a href="https://slatecave.net/notebook/ascii/" target="_blank" rel="noopener noreferrer">tabla ASCII</a>.</li>
       <li><code>RACESWP</code>: ON permite cambio de perfil directo desde GRID. Por defecto: OFF.</li>
       <li><code>COPY</code>: copiar de un perfil a otro o a todos.</li>
       <li><code>RESET</code>: reset de perfiles de coche (con confirmacion).</li>
@@ -364,6 +366,7 @@
       <li>La primera pagina es la home publica del controlador. Herramientas sensibles como <code>Controller Panel</code>, <code>Backup</code>, <code>Restore</code>, telemetria, OTA y <code>Advanced Config Editor</code> estan protegidas por login del controlador.</li>
       <li>Las credenciales por defecto del controlador son usuario <code>espeed32</code> y password <code>espeed32</code>. El login actual tambien se muestra en la WiFi info page del controlador.</li>
       <li>Los backups no exportan la password de Client WiFi ni la password de login del controlador. Restore mantiene las credenciales locales ya guardadas en ese controlador.</li>
+      <li>Los backups incluyen todos los perfiles de coche y los ajustes del controlador, tambien los campos race y de estado, los tiempos de reposo, LOCK, STATS y los destinos de los potenciometros externos. El tipo de sensor del gatillo solo se restaura en el controlador del que procede el backup.</li>
     </ol>
     <figure class="doc-media">
       <img src="../assets/wifi_examples.svg" alt="Ejemplo de pantalla OLED con info WiFi y QR a pantalla completa en el controlador">
@@ -436,7 +439,9 @@
 |  |  `- BACK
 |  |- DISPLAY
 |  |  |- RACE MODE (OFF/FULL/SIMPLE)
-|  |  |- LANGUAGE (NOR/ENG/CS/ACD/ESP/DEU/ITA/NLD/POR/SVE)
+|  |  |- RACE SLOTS (CAMPO 1-4)
+|  |  |- LANGUAGE (DEU/ENG/ESP/ITA/NLD/NOR/POR/SVE)
+|  |  |- TERMS (ESPEED/CS/ACD)
 |  |  |- CASE (UPPER/Pascal)
 |  |  |- FONT SIZE (LARGE/small)
 |  |  |- AVANZADO (OFF/ON)

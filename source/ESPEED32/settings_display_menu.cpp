@@ -11,10 +11,10 @@
 #include "menu_input.h"
 
 /**
- * Display settings submenu: VIEW, LANG, CASE, FSIZE, ADVANCED, STEPS, STATUS, BACK.
+ * Display settings submenu: VIEW, RACE SLOTS, LANG, TERMS, CASE, FSIZE, ADVANCED, STEPS, STATUS, BACK.
  * 2-choice params (CASE, FSIZE, ADVANCED) toggle instantly on click.
- * Multi-choice params (VIEW=3, LANG=9) use press-enter / scroll / confirm.
- * STEPS and STATUS open dedicated submenus.
+ * Multi-choice params (VIEW, LANG, TERMS) use press-enter / scroll / confirm.
+ * RACE SLOTS, STEPS and STATUS open dedicated submenus.
  */
 void showDisplaySettings() {
   initDisplayMenuItems();
@@ -32,6 +32,7 @@ void showDisplaySettings() {
   uint16_t originalValue = 0;
 
   uint16_t prevLanguage = g_storedVar.language;
+  uint16_t prevTerminology = g_storedVar.terminology;
   uint16_t tempLanguage = g_storedVar.language;
   bool isEditingLanguage = false;
 
@@ -113,6 +114,17 @@ void showDisplaySettings() {
           prevSel = 0;
           continue;
         }
+        if (sel == DISPLAY_ITEM_RACE_SLOTS_IDX + 1) {
+          showRaceSlotSettings();
+          if (isEscapeToMainRequested()) break;
+          initDisplayMenuItems();
+          g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
+          setUiEncoderBoundaries(1, DISPLAY_ITEMS_COUNT, false);
+          resetUiEncoder(sel);
+          obdFill(&g_obd, OBD_WHITE, 1);
+          prevSel = 0;
+          continue;
+        }
         if (sel == DISPLAY_ITEM_STATUS_IDX + 1) {
           showStatusSettings();
           if (isEscapeToMainRequested()) break;
@@ -145,7 +157,7 @@ void showDisplaySettings() {
           continue;
         }
 
-        /* Multi-choice VALUE_SELECTION: VIEW (3 options), LANG (9 options) */
+        /* Multi-choice VALUE_SELECTION: VIEW, LANG, TERMS */
         if (g_settingsMenu.item[sel - 1].value != ITEM_NO_VALUE) {
           if (sel == DISPLAY_ITEM_LANG_IDX + 1) {
             isEditingLanguage = true;
@@ -162,7 +174,7 @@ void showDisplaySettings() {
           }
           setUiEncoderBoundaries(g_settingsMenu.item[sel - 1].minValue,
                                         g_settingsMenu.item[sel - 1].maxValue, false);
-          resetUiEncoder(isEditingLanguage ? tempLanguage : *valuePtr);
+          resetUiEncoder(isEditingLanguage ? pickerIndexOfLang(tempLanguage) : *valuePtr);
         }
       } else {
         /* Confirm edit */
@@ -172,8 +184,9 @@ void showDisplaySettings() {
         resetUiEncoder(sel);
         if (isEditingLanguage) { g_storedVar.language = tempLanguage; lang = tempLanguage; isEditingLanguage = false; }
         saveEEPROM(g_storedVar);
-        if (g_storedVar.language != prevLanguage) {
+        if (g_storedVar.language != prevLanguage || g_storedVar.terminology != prevTerminology) {
           prevLanguage = g_storedVar.language;
+          prevTerminology = g_storedVar.terminology;
           reinitDisplayMenu();
           lang = g_storedVar.language;
         }
@@ -188,7 +201,7 @@ void showDisplaySettings() {
         sel = readUiEncoder();
       } else {
         if (isEditingLanguage) {
-          tempLanguage = readUiEncoder();
+          tempLanguage = langFromPickerIndex(readUiEncoder());
         } else {
           *valuePtr = readUiEncoder();
         }
@@ -242,6 +255,8 @@ void showDisplaySettings() {
         } else if (itemIdx == DISPLAY_ITEM_LANG_IDX) {
           uint16_t dispLang = (isEditingLanguage && isValueSel) ? tempLanguage : value;
           snprintf(msgStr, sizeof(msgStr), "%3s", LANG_LABELS[dispLang]);
+        } else if (itemIdx == DISPLAY_ITEM_TERM_IDX) {
+          snprintf(msgStr, sizeof(msgStr), "%6s", getTerminologyLabel(value));
         } else if (itemIdx == DISPLAY_ITEM_CASE_IDX) {
           snprintf(msgStr, sizeof(msgStr), "%6s", TEXT_CASE_LABELS[g_storedVar.language][value]);
         } else if (itemIdx == DISPLAY_ITEM_FSIZE_IDX) {
