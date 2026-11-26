@@ -29,7 +29,7 @@ static const char* getResetCancelledText(uint16_t lang) {
     case LANG_ESP: return "CANCELADO!";
     case LANG_DEU: return "ABBRUCH!";
     case LANG_ITA: return "ANNULLATO!";
-    case LANG_NLD: return "GEANNULEERD";
+    case LANG_NLD: return "AFGEBROKEN";
     case LANG_POR: return "CANCELADO!";
     case LANG_SWE: return "AVBRUTET!";
     default:       return "CANCELLED!";
@@ -83,8 +83,8 @@ const char* getResetDoneText(uint16_t lang) {
     case LANG_ITA: return "RESET OK!";
     case LANG_NLD: return "RESET OK!";
     case LANG_POR: return "RESET OK!";
-    case LANG_SWE: return "ATERSTALLT!";
-    default:       return "RESET DONE!";
+    case LANG_SWE: return "ATERSTALLT";
+    default:       return "RESET OK!";
   }
 }
 
@@ -101,6 +101,7 @@ static bool resetConfirm(const char* label) {
     obdFill(&g_obd, OBD_WHITE, 1);
     const char* msg = getResetCancelledText(lang);
     int tw = strlen(msg) * WIDTH12x16;
+    if (tw > OLED_WIDTH) tw = OLED_WIDTH;  /* never start left of column 0 */
     obdWriteString(&g_obd, 0, (OLED_WIDTH - tw) / 2, 24, (char *)msg, FONT_12x16, OBD_BLACK, 1);
     delay(1000);
     obdFill(&g_obd, OBD_WHITE, 1);
@@ -400,6 +401,7 @@ void showResetSubmenu() {
         obdFill(&g_obd, OBD_WHITE, 1);
         const char* doneText = getResetDoneText(lang);
         int tw = strlen(doneText) * WIDTH12x16;
+        if (tw > OLED_WIDTH) tw = OLED_WIDTH;  /* never start left of column 0 */
         obdWriteString(&g_obd, 0, (OLED_WIDTH - tw) / 2, 24, (char *)doneText, FONT_12x16, OBD_BLACK, 1);
         delay(1500);
 

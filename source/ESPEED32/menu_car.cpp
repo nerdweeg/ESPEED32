@@ -644,6 +644,7 @@ void showSelectRenameCar() {
       initMenuItems();
       obdFill(&g_obd, OBD_WHITE, 1);
       int tw = strlen(doneText) * WIDTH12x16;
+      if (tw > OLED_WIDTH) tw = OLED_WIDTH;  /* never start left of column 0 */
       obdWriteString(&g_obd, 0, (OLED_WIDTH - tw) / 2, 24, (char *)doneText, FONT_12x16, OBD_BLACK, 1);
       delay(1500);
       obdFill(&g_obd, OBD_WHITE, 1);
