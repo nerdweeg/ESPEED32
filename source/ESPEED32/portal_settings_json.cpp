@@ -607,13 +607,13 @@ bool parseAndValidateJson(const String& json, StoredVar_type* sv, uint16_t* anti
 
     CarParam_type& c = sv->carParam[i];
 
-    /* Name - use temp buffer to preserve names up to CAR_NAME_MAX_SIZE chars */
+    /* Name - parse into a wider buffer, then keep the first CAR_NAME_MAX_SIZE - 1 chars */
     char tempName[16];
     if (!parseJsonStr(carJson, "name", tempName, sizeof(tempName))) {
       *errorMsg = "Error: missing name in car " + String(i); return false;
     }
     memset(c.carName, 0, CAR_NAME_MAX_SIZE);
-    strncpy(c.carName, tempName, CAR_NAME_MAX_SIZE);
+    strncpy(c.carName, tempName, CAR_NAME_MAX_SIZE - 1);  /* memset above keeps the NUL */
     c.carNumber = i;
 
     /* Numeric fields */
