@@ -426,18 +426,6 @@ static bool hexToBytes(const char* in, uint8_t* out, size_t outLen) {
   return true;
 }
 
-static bool encodeBase64(const uint8_t* in, size_t inLen, char* out, size_t outLen) {
-  if (in == nullptr || out == nullptr || outLen == 0) return false;
-  size_t actualLen = 0;
-  int rc = mbedtls_base64_encode((unsigned char*)out, outLen - 1U, &actualLen, in, inLen);
-  if (rc != 0 || actualLen >= outLen) {
-    out[0] = '\0';
-    return false;
-  }
-  out[actualLen] = '\0';
-  return true;
-}
-
 static bool decodeBase64(const char* in, uint8_t* out, size_t outLen, size_t* actualLen) {
   if (in == nullptr || out == nullptr) return false;
   size_t decodedLen = 0;
@@ -481,48 +469,6 @@ bool ensureBackupSecretAvailable(bool createIfMissing) {
     memset(g_backupSecret, 0, sizeof(g_backupSecret));
   }
   return ok;
-}
-
-static bool encryptBackupWiFiPassword(const char* password, const char* backupControllerId,
-                                      char* nonceB64, size_t nonceB64Len,
-                                      char* tagB64, size_t tagB64Len,
-                                      char* cipherB64, size_t cipherB64Len) {
-  if (password == nullptr || backupControllerId == nullptr ||
-      nonceB64 == nullptr || tagB64 == nullptr || cipherB64 == nullptr) {
-    return false;
-  }
-  size_t passwordLen = strlen(password);
-  if (passwordLen == 0 || passwordLen > WIFI_STA_PASS_MAX_LEN) {
-    return false;
-  }
-  if (!ensureBackupSecretAvailable(true)) {
-    return false;
-  }
-
-  uint8_t nonce[WIFI_BACKUP_NONCE_LEN];
-  uint8_t tag[WIFI_BACKUP_TAG_LEN];
-  uint8_t cipher[WIFI_STA_PASS_MAX_LEN];
-  esp_fill_random(nonce, sizeof(nonce));
-
-  mbedtls_gcm_context ctx;
-  mbedtls_gcm_init(&ctx);
-  int rc = mbedtls_gcm_setkey(&ctx, MBEDTLS_CIPHER_ID_AES,
-                              g_backupSecret, (unsigned int)(sizeof(g_backupSecret) * 8U));
-  if (rc == 0) {
-    rc = mbedtls_gcm_crypt_and_tag(&ctx, MBEDTLS_GCM_ENCRYPT, passwordLen,
-                                   nonce, sizeof(nonce),
-                                   (const unsigned char*)backupControllerId, strlen(backupControllerId),
-                                   (const unsigned char*)password, cipher,
-                                   sizeof(tag), tag);
-  }
-  mbedtls_gcm_free(&ctx);
-  if (rc != 0) {
-    return false;
-  }
-
-  return encodeBase64(nonce, sizeof(nonce), nonceB64, nonceB64Len) &&
-         encodeBase64(tag, sizeof(tag), tagB64, tagB64Len) &&
-         encodeBase64(cipher, passwordLen, cipherB64, cipherB64Len);
 }
 
 bool decryptBackupWiFiPasswordFromJson(const String& json, char* outPassword,
