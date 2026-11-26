@@ -78,6 +78,19 @@
 #define LANG_COUNT          (LANG_MAX + 1)  /* Rows in every language-indexed string table */
 #define LANG_DEFAULT        LANG_ENG
 
+/* Language pickers list languages alphabetically by label; stored values keep the LANG_* ids. */
+static inline uint8_t langFromPickerIndex(uint16_t index) {
+  static const uint8_t ORDER[LANG_COUNT] = {LANG_DEU, LANG_ENG, LANG_ESP, LANG_ITA, LANG_NLD, LANG_NOR, LANG_POR, LANG_SWE};
+  return (index < LANG_COUNT) ? ORDER[index] : LANG_DEFAULT;
+}
+
+static inline uint8_t pickerIndexOfLang(uint16_t lang) {
+  for (uint8_t i = 0; i < LANG_COUNT; i++) {
+    if (langFromPickerIndex(i) == lang) return i;
+  }
+  return pickerIndexOfLang(LANG_DEFAULT);
+}
+
 /* Race view slots. Parameter ids are MENU_NAMES indices, so race labels follow language and
  * terminology. A stored slot value is (param + 1); 0 means "this slot's default". */
 #define RACE_SLOTS          4

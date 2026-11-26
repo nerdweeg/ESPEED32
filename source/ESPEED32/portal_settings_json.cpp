@@ -860,7 +860,7 @@ String buildSchemaJson() {
   appendSchemaEnumField(json, first, "raceViewMode", "Race Mode",
                         "[{\"value\":0,\"label\":\"OFF\"},{\"value\":1,\"label\":\"FULL\"},{\"value\":2,\"label\":\"SIMPLE\"}]");
   appendSchemaEnumField(json, first, "language", "Language",
-                        "[{\"value\":0,\"label\":\"NOR\"},{\"value\":1,\"label\":\"ENG\"},{\"value\":2,\"label\":\"ESP\"},{\"value\":3,\"label\":\"DEU\"},{\"value\":4,\"label\":\"ITA\"},{\"value\":5,\"label\":\"NLD\"},{\"value\":6,\"label\":\"POR\"},{\"value\":7,\"label\":\"SVE\"}]");
+                        "[{\"value\":3,\"label\":\"DEU\"},{\"value\":1,\"label\":\"ENG\"},{\"value\":2,\"label\":\"ESP\"},{\"value\":4,\"label\":\"ITA\"},{\"value\":5,\"label\":\"NLD\"},{\"value\":0,\"label\":\"NOR\"},{\"value\":6,\"label\":\"POR\"},{\"value\":7,\"label\":\"SVE\"}]");
   appendSchemaEnumField(json, first, "terminology", "Terminology",
                         "[{\"value\":0,\"label\":\"ESPEED\"},{\"value\":1,\"label\":\"CS\"},{\"value\":2,\"label\":\"ACD\"}]");
   appendSchemaEnumField(json, first, "textCase", "Text Case",

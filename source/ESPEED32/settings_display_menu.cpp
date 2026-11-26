@@ -174,7 +174,7 @@ void showDisplaySettings() {
           }
           setUiEncoderBoundaries(g_settingsMenu.item[sel - 1].minValue,
                                         g_settingsMenu.item[sel - 1].maxValue, false);
-          resetUiEncoder(isEditingLanguage ? tempLanguage : *valuePtr);
+          resetUiEncoder(isEditingLanguage ? pickerIndexOfLang(tempLanguage) : *valuePtr);
         }
       } else {
         /* Confirm edit */
@@ -201,7 +201,7 @@ void showDisplaySettings() {
         sel = readUiEncoder();
       } else {
         if (isEditingLanguage) {
-          tempLanguage = readUiEncoder();
+          tempLanguage = langFromPickerIndex(readUiEncoder());
         } else {
           *valuePtr = readUiEncoder();
         }
