@@ -10,6 +10,17 @@
 #include "ui_render.h"
 #include "menu_input.h"
 
+/* Row names are written in Pascal case; upper-case them when the UPPER text style is selected. */
+static void formatResetRowLabel(const char* source, char* buffer, size_t bufferSize) {
+  if (bufferSize == 0) return;
+  size_t out = 0;
+  for (; source[out] != '\0' && out + 1 < bufferSize; out++) {
+    char c = source[out];
+    buffer[out] = (g_storedVar.textCase == TEXT_CASE_UPPER && c >= 'a' && c <= 'z') ? (char)(c - 'a' + 'A') : c;
+  }
+  buffer[out] = '\0';
+}
+
 static const char* getResetCancelText(uint16_t lang) {
   switch (lang) {
     case LANG_NOR: return "TILBAKE=AVBRYT";
@@ -394,7 +405,9 @@ void showResetSubmenu() {
       lastInteraction = millis();
       if (sel == RS_ITEMS) break;  /* BACK */
 
-      bool confirmed = resetConfirm(rowNames[sel - 1]);
+      char confirmLabel[16];
+      formatResetRowLabel(rowNames[sel - 1], confirmLabel, sizeof(confirmLabel));
+      bool confirmed = resetConfirm(confirmLabel);
       lastInteraction = millis();
       screensaverActive = false;
       if (confirmed) {
@@ -446,7 +459,9 @@ void showResetSubmenu() {
       for (uint8_t idx = 0; idx < RS_ITEMS; idx++) {
         uint8_t yPx     = idx * HEIGHT8x8;
         bool isSelected = (sel == idx + 1);
-        obdWriteString(&g_obd, 0, 0, yPx, (char *)rowNames[idx], FONT_8x8,
+        char rowBuf[16];
+        formatResetRowLabel(rowNames[idx], rowBuf, sizeof(rowBuf));
+        obdWriteString(&g_obd, 0, 0, yPx, rowBuf, FONT_8x8,
                        isSelected ? OBD_WHITE : OBD_BLACK, 1);
       }
     }
