@@ -308,16 +308,15 @@ static bool isSensiEditTarget() {
 }
 
 /**
- * Default profile name: CAR0..CAR9, then CR10..CR19, so every name fits the 4-character carName.
+ * Default profile name: CAR0..CAR19.
  */
 void setDefaultCarName(CarParam_type& car, uint8_t index) {
-  snprintf(car.carName, sizeof(car.carName), (index < 10) ? "CAR%u" : "CR%u", (unsigned)index);
+  snprintf(car.carName, sizeof(car.carName), "CAR%u", (unsigned)index);
 }
 
 /**
- * Terminate every car name inside carName[]. Older firmware stored the defaults CAR10..CAR19 as
- * 5 characters with the NUL in the struct padding; those become CR10..CR19, any other unterminated
- * name is cut to 4 characters.
+ * Make sure every car name is terminated inside carName[]. The last byte was struct padding
+ * before carName grew to 6 bytes, so an old blob or a long restored name may lack the NUL.
  * @return true if any name was changed
  */
 bool normalizeStoredCarNames(StoredVar_type* storedVar) {
@@ -326,16 +325,10 @@ bool normalizeStoredCarNames(StoredVar_type* storedVar) {
   bool changed = false;
   for (uint8_t i = 0; i < CAR_MAX_COUNT; i++) {
     CarParam_type& car = storedVar->carParam[i];
-    if (memchr(car.carName, '\0', sizeof(car.carName)) != nullptr) continue;
-    char legacyDefault[8];
-    snprintf(legacyDefault, sizeof(legacyDefault), "CAR%u", (unsigned)i);
-    if (strlen(legacyDefault) == sizeof(car.carName) &&
-        memcmp(car.carName, legacyDefault, sizeof(car.carName)) == 0) {
-      setDefaultCarName(car, i);
-    } else {
+    if (memchr(car.carName, '\0', sizeof(car.carName)) == nullptr) {
       car.carName[sizeof(car.carName) - 1] = '\0';
+      changed = true;
     }
-    changed = true;
   }
   return changed;
 }

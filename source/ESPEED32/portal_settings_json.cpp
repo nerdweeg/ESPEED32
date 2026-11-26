@@ -614,8 +614,8 @@ bool parseAndValidateJson(const String& json, StoredVar_type* sv, uint16_t* anti
 
     CarParam_type& c = sv->carParam[i];
 
-    /* Name - parse into a wider buffer; normalizeStoredCarNames() below maps legacy 5-char
-       defaults (CAR10..CAR19) and terminates anything longer at 4 chars */
+    /* Name - parse into a wider buffer; normalizeStoredCarNames() below terminates anything
+       longer than CAR_NAME_MAX_SIZE - 1 chars */
     char tempName[16];
     if (!parseJsonStr(carJson, "name", tempName, sizeof(tempName))) {
       *errorMsg = "Error: missing name in car " + String(i); return false;

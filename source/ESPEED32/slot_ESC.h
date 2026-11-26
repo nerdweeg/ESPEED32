@@ -331,7 +331,7 @@ void applyAdcVoltageRangeMilliVolts(uint16_t range_mV);
 
 /* Car Configuration */
 #define CAR_MAX_COUNT       20  /* Maximum number of car profiles */
-#define CAR_NAME_MAX_SIZE   5   /* Car name length (4 chars + null terminator) */
+#define CAR_NAME_MAX_SIZE   6   /* Car name length (5 chars + null terminator) */
 #define SCREENSAVER_TEXT_MAX 22  /* Screensaver text max length (21 chars + null, fits FONT_6x8 line) */
 #define SCREENSAVER_LINE1_DEFAULT "ESPEED32"   /* Default screensaver line 1 */
 #define SCREENSAVER_LINE2_DEFAULT "Controller" /* Default screensaver line 2 */
@@ -454,7 +454,7 @@ typedef struct {
   ThrottleCurveVertex_type throttleCurveVertex;  /* Throttle response curve */
   uint16_t fade;                            /* [%] Initial trigger zone that ramps from 0 to SENSI */
   uint16_t antiSpin;                        /* [ms] Anti-spin ramp time (0-999ms) */
-  char carName[CAR_NAME_MAX_SIZE];          /* Car profile name (4 chars + null) */
+  char carName[CAR_NAME_MAX_SIZE];          /* Car profile name (5 chars + null); uses the byte that was padding before v6.15 */
   uint16_t carNumber;                       /* Profile index in array */
   uint16_t freqPWM;                         /* [100*Hz] Motor PWM frequency */
   uint16_t brakeButtonReduction;            /* [%] Alternate brake value when button pressed (0-100%) */
@@ -462,6 +462,10 @@ typedef struct {
   uint16_t quickBrakeThreshold;            /* [%] Release-brake zone near trigger release */
   uint16_t quickBrakeStrength;             /* [%] Release-brake level (quick or drag) */
 } CarParam_type;
+
+/* carName[6] fills the padding byte that followed carName[5], so the stored layout is unchanged. */
+static_assert(sizeof(CarParam_type) == 32, "CarParam_type layout is stored in NVS and backups");
+static_assert(offsetof(CarParam_type, carNumber) == 20, "carName must not move the fields after it");
 
 /**
  * @brief Non-volatile stored variables
