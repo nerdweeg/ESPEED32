@@ -4,28 +4,11 @@
 #include "ui_strings.h"
 #include "ui_text_access.h"
 #include "settings_display_submenus.h"
-
-extern StoredVar_type g_storedVar;
-extern ESC_type g_escVar;
-extern OBDISP g_obd;
-extern AiEsp32RotaryEncoder g_rotaryEncoder;
-extern Menu_type g_settingsMenu;
-extern uint16_t g_advancedMenuEnabled;
-extern char msgStr[50];
-
-extern bool consumeScreensaverWakeInput(bool wakeTriggered);
-extern bool refreshIdleInteractionFromControls(uint32_t* lastInteraction, bool* screensaverActive, uint16_t* lastEncoderPos);
-extern bool serviceIdlePowerTransitions(uint32_t* lastInteraction, bool* screensaverActive);
-extern bool checkRaceModeEscape();
-extern void requestEscapeToMain();
-extern bool isEscapeToMainRequested();
-
-extern void showScreensaver();
-extern void saveEEPROM(StoredVar_type toSave);
-extern void applyAdvancedMenuSetting(uint16_t enabled);
-extern void initMenuItems();
-extern void initSettingsMenuItems();
-extern void initDisplayMenuItems();
+#include "app_globals.h"
+#include "app_init.h"
+#include "power_ui.h"
+#include "ui_render.h"
+#include "menu_input.h"
 
 /**
  * Display settings submenu: VIEW, LANG, CASE, FSIZE, ADVANCED, STEPS, STATUS, BACK.
@@ -213,39 +196,26 @@ void showDisplaySettings() {
     }
 
     /* Brake button = cancel edit or back */
-    static bool brakeBtnInDisplay = false;
-    static uint32_t lastBrakeBtnDisplayTime = 0;
-    if (digitalRead(BUTT_PIN) == BUTTON_PRESSED) {
-      if (!brakeBtnInDisplay && millis() - lastBrakeBtnDisplayTime > BUTTON_SHORT_PRESS_DEBOUNCE_MS) {
-        brakeBtnInDisplay = true;
-        lastBrakeBtnDisplayTime = millis();
-        lastInteraction = millis();
-        if (menuState == VALUE_SELECTION) {
-          if (isEditingLanguage) { tempLanguage = originalValue; g_storedVar.language = originalValue; isEditingLanguage = false; }
-          else if (valuePtr != NULL) { *valuePtr = originalValue; }
-          menuState = ITEM_SELECTION;
-          g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
-          setUiEncoderBoundaries(1, DISPLAY_ITEMS_COUNT, false);
-          resetUiEncoder(sel);
-          obdFill(&g_obd, OBD_WHITE, 1);
-        } else {
-          while (digitalRead(BUTT_PIN) == BUTTON_PRESSED) { vTaskDelay(5); }
-          break;
-        }
+    static BrakeButtonEdge brakeBtnInDisplay;
+    if (brakeBtnInDisplay.pressed()) {
+      lastInteraction = millis();
+      if (menuState == VALUE_SELECTION) {
+        if (isEditingLanguage) { tempLanguage = originalValue; g_storedVar.language = originalValue; isEditingLanguage = false; }
+        else if (valuePtr != NULL) { *valuePtr = originalValue; }
+        menuState = ITEM_SELECTION;
+        g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
+        setUiEncoderBoundaries(1, DISPLAY_ITEMS_COUNT, false);
+        resetUiEncoder(sel);
+        obdFill(&g_obd, OBD_WHITE, 1);
+      } else {
+        waitForBrakeButtonRelease();
+        break;
       }
-    } else {
-      brakeBtnInDisplay = false;
     }
 
     /* Frame scrolling */
     if (menuState == ITEM_SELECTION) {
-      if (sel > frameLower) {
-        frameLower = sel;
-        frameUpper = frameLower - visibleLines + 1;
-        obdFill(&g_obd, OBD_WHITE, 1);
-      } else if (sel < frameUpper) {
-        frameUpper = sel;
-        frameLower = frameUpper + visibleLines - 1;
+      if (scrollMenuFrame(sel, visibleLines, frameUpper, frameLower)) {
         obdFill(&g_obd, OBD_WHITE, 1);
       }
     }
@@ -268,20 +238,20 @@ void showDisplaySettings() {
         uint16_t value = *(uint16_t *)(g_settingsMenu.item[itemIdx].value);
 
         if (itemIdx == DISPLAY_ITEM_VIEW_IDX) {
-          sprintf(msgStr, "%6s", getViewModeLabel(g_storedVar.language, value));
+          snprintf(msgStr, sizeof(msgStr), "%6s", getViewModeLabel(g_storedVar.language, value));
         } else if (itemIdx == DISPLAY_ITEM_LANG_IDX) {
           uint16_t dispLang = (isEditingLanguage && isValueSel) ? tempLanguage : value;
-          sprintf(msgStr, "%3s", LANG_LABELS[dispLang]);
+          snprintf(msgStr, sizeof(msgStr), "%3s", LANG_LABELS[dispLang]);
         } else if (itemIdx == DISPLAY_ITEM_CASE_IDX) {
-          sprintf(msgStr, "%6s", TEXT_CASE_LABELS[g_storedVar.language][value]);
+          snprintf(msgStr, sizeof(msgStr), "%6s", TEXT_CASE_LABELS[g_storedVar.language][value]);
         } else if (itemIdx == DISPLAY_ITEM_FSIZE_IDX) {
-          sprintf(msgStr, "%5s", FONT_SIZE_LABELS[g_storedVar.language][value]);
+          snprintf(msgStr, sizeof(msgStr), "%5s", FONT_SIZE_LABELS[g_storedVar.language][value]);
         } else if (itemIdx == DISPLAY_ITEM_ADVANCED_IDX) {
           snprintf(msgStr, sizeof(msgStr), "%3s", getOnOffLabel(g_storedVar.language, g_advancedMenuEnabled ? 1 : 0));
         } else if (g_settingsMenu.item[itemIdx].unit[0] != '\0') {
           snprintf(msgStr, sizeof(msgStr), "%2d %s", value, g_settingsMenu.item[itemIdx].unit);
         } else {
-          sprintf(msgStr, "%3d", value);
+          snprintf(msgStr, sizeof(msgStr), "%3d", value);
         }
 
         int textWidth = strlen(msgStr) * charWidth;

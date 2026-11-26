@@ -17,7 +17,7 @@
 
 /* Firmware Version */
 #define SW_MAJOR_VERSION 6
-#define SW_MINOR_VERSION 13
+#define SW_MINOR_VERSION 14
 #define SW_PATCH_VERSION 0
 
 /* Stored Variable Version */
@@ -29,7 +29,7 @@
 #define POWER_ITEMS_COUNT    6    /* Number of items in power submenu (SCRSV, SLEEP, D-SLEEP, STARTUP, VIN CAL., BACK) */
 #define DISPLAY_ITEMS_COUNT  8    /* Number of items in display submenu (VIEW, LANG, CASE, FSIZE, ADVANCED, STEPS, STATUS, BACK) */
 #define STEPS_ITEMS_COUNT    4    /* Number of items in steps submenu (ANTISPIN, BRAKE STEP, SENSI STEP, BACK) */
-#define HARDWARE_ITEMS_COUNT 6    /* Number of items in hardware submenu (ENC INV, EXT POT, TRIGGER, PWM MAX, TEST, BACK) */
+#define HARDWARE_ITEMS_COUNT 6    /* Number of items in hardware submenu (ENC INV, EXT POT, TRIGGER, PWM_F MAX, TEST, BACK) */
 #define MAIN_MENU_BASE_TUNING_ITEMS 4 /* BRAKE, SENSI, ANTIS, CURVE always stay before optional advanced items */
 #define MAIN_MENU_ADVANCED_ITEMS    3 /* FADE, PWM_F and BRAKE+ are hidden when ADVANCED is OFF */
 #define POWER_SAVE_TIMEOUT_DEFAULT 5    /* [min] Default auto power save delay (0=manual only) */
@@ -73,7 +73,9 @@
 #define LANG_ITA            6     /* Italian language */
 #define LANG_NLD            7     /* Dutch language */
 #define LANG_POR            8     /* Portuguese language */
-#define LANG_MAX            LANG_POR
+#define LANG_SWE            9     /* Swedish language */
+#define LANG_MAX            LANG_SWE
+#define LANG_COUNT          (LANG_MAX + 1)  /* Rows in every language-indexed string table */
 #define LANG_DEFAULT        LANG_ENG
 
 /* Default Parameter Values */
@@ -299,7 +301,7 @@ void applyAdcVoltageRangeMilliVolts(uint16_t range_mV);
 #define LOCK_MENU_ENABLED_DEFAULT  0  /* Hide LOCK menu item by default */
 #define LOCK_SHORTCUT_IDX_DEFAULT  5  /* Default shortcut: 5s (index = seconds) */
 #define LOCK_CONFIRM_DEFAULT       0  /* Hide fullscreen confirmation flash by default */
-#define GRID_CAR_SELECT_DEFAULT 1  /* Grid car select (RACESWP): 0=OFF, 1=ON */
+#define GRID_CAR_SELECT_DEFAULT 0  /* Grid car select (RACESWP): 0=OFF, 1=ON. Off so a mid-race encoder turn cannot swap car profile */
 #define STATS_ENABLED_DEFAULT    0  /* Hide STATS menu item by default */
 #define EXT_POT_COUNT            2  /* Two optional external ADC pots: GPIO39 and GPIO35 */
 #define EXT_POT_TARGET_OFF       0
@@ -355,10 +357,11 @@ void applyAdcVoltageRangeMilliVolts(uint16_t range_mV);
 #define STATUS_CURRENT_MA  6   /* Legacy stored value; normalized to STATUS_CURRENT */
 #define STATUS_ACTIVE_BRAKE 7   /* Active brake type/value (5 chars, e.g. "Q060%") */
 #define STATUS_BATTERY  8   /* Battery voltage (5 chars, e.g. "4.1VB") */
+#define STATUS_DEVICE_ID 9  /* Device ID: last 4 hex digits of the MAC, as in the WiFi SSID (5 chars, e.g. "#A3B4") */
 
 static inline uint16_t normalizeStatusSlotValue(uint16_t slotValue) {
   if (slotValue == STATUS_CURRENT_MA) return STATUS_CURRENT;
-  return (slotValue <= STATUS_BATTERY) ? slotValue : STATUS_BLANK;
+  return (slotValue <= STATUS_DEVICE_ID) ? slotValue : STATUS_BLANK;
 }
 /* Default slot assignments: OUTPUT | THROTTLE | CAR | VOLTAGE */
 #define STATUS_SLOT0_DEFAULT STATUS_OUTPUT
@@ -484,6 +487,8 @@ typedef struct {
 } StoredVar_type;
 
 bool clampStoredVarCarPwmFreqsToProfile(StoredVar_type* storedVar, uint16_t profile);
+void setDefaultCarName(CarParam_type& car, uint8_t index);
+bool normalizeStoredCarNames(StoredVar_type* storedVar);
 uint16_t getConfiguredPwmFreqMaxProfile();
 uint16_t getConfiguredPwmFreqMaxRaw();
 uint16_t getConfiguredPwmFreqMaxKHz();
@@ -539,6 +544,20 @@ typedef struct {
   MenuItem_type item[MAX_ITEMS];  /* Array of menu items */
   uint16_t lines;                 /* Number of visible lines */
 } Menu_type;
+
+/* CS/ACD call LIMIT "choke", which runs the opposite way: CHOKE = 100 - LIMIT.
+ * Storage always uses LIMIT; only the displayed/edited value is inverted. */
+static inline bool isLimitShownAsChoke(uint16_t lang) {
+  return (lang == LANG_CS) || (lang == LANG_ACD);
+}
+
+static inline uint16_t limitPctToChokePct(uint16_t limitPct) {
+  return (limitPct >= MAX_SPEED_DEFAULT) ? 0U : (uint16_t)(MAX_SPEED_DEFAULT - limitPct);
+}
+
+static inline uint16_t chokePctToLimitPct(uint16_t chokePct) {
+  return (chokePct >= MAX_SPEED_DEFAULT) ? 0U : (uint16_t)(MAX_SPEED_DEFAULT - chokePct);
+}
 
 /* 0.1% conversion helpers */
 static inline uint16_t pctX10ToWholePctRounded(uint16_t pctX10) {

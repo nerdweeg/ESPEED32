@@ -58,5 +58,6 @@ jobs:
             --fqbn esp32:esp32:esp32 \
             --board-options "JTAGAdapter=default,PSRAM=disabled,PartitionScheme=default,CPUFreq=240,FlashMode=qio,FlashFreq=80,FlashSize=4M,UploadSpeed=115200,LoopCore=1,EventsCore=1,DebugLevel=none,EraseFlash=none,ZigbeeMode=default" \
             --build-path /tmp/build-check-as5600 \
-            --build-property build.extra_flags="-DTRIGGER_SENSOR_FAMILY=TRIGGER_SENSOR_FAMILY_AS5600" \
+            --build-property compiler.cpp.extra_flags="-DTRIGGER_SENSOR_FAMILY=TRIGGER_SENSOR_FAMILY_AS5600" \
+            --build-property compiler.c.extra_flags="-DTRIGGER_SENSOR_FAMILY=TRIGGER_SENSOR_FAMILY_AS5600" \
             source/ESPEED32

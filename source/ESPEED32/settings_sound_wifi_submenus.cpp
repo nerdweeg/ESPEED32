@@ -4,35 +4,11 @@
 #include "ui_text_access.h"
 #include "connectivity_portal.h"
 #include "telemetry_logging.h"
-
-extern StoredVar_type g_storedVar;
-extern ESC_type g_escVar;
-extern OBDISP g_obd;
-extern AiEsp32RotaryEncoder g_rotaryEncoder;
-extern char msgStr[50];
-extern uint16_t g_antiSpinStepMs;
-extern uint16_t g_encoderInvertEnabled;
-extern uint16_t g_adcVoltageRange_mV;
-extern uint16_t g_carSel;
-
-extern bool consumeScreensaverWakeInput(bool wakeTriggered);
-extern bool refreshIdleInteractionFromControls(uint32_t* lastInteraction, bool* screensaverActive, uint16_t* lastEncoderPos);
-extern bool serviceIdlePowerTransitions(uint32_t* lastInteraction, bool* screensaverActive);
-extern bool checkRaceModeEscape();
-extern void requestEscapeToMain();
-
-extern void showScreensaver();
-extern void saveEEPROM(StoredVar_type toSave);
-
-extern void serviceTimedWiFiPortal();
-extern void startTimedWiFiPortal(uint16_t minutes);
-extern void stopTimedWiFiPortal();
-extern uint16_t getWiFiTimedMinutes();
-extern void setWiFiTimedMinutes(uint16_t minutes);
-extern void startTimedTelemetryLogging(uint16_t minutes);
-extern void stopTimedTelemetryLogging();
-extern uint16_t getTelemetryTimedMinutes();
-extern void setTelemetryTimedMinutes(uint16_t minutes);
+#include "HAL.h"
+#include "app_globals.h"
+#include "power_ui.h"
+#include "ui_render.h"
+#include "menu_input.h"
 
 static void showTelemetryLoggingStartFailed() {
   obdFill(&g_obd, OBD_WHITE, 1);
@@ -152,17 +128,10 @@ void showSoundSettings() {
     }
 
     /* Brake button = back */
-    static bool brakeBtnInSound = false;
-    static uint32_t lastBrakeBtnSoundTime = 0;
-    if (digitalRead(BUTT_PIN) == BUTTON_PRESSED) {
-      if (!brakeBtnInSound && millis() - lastBrakeBtnSoundTime > BUTTON_SHORT_PRESS_DEBOUNCE_MS) {
-        brakeBtnInSound = true;
-        lastBrakeBtnSoundTime = millis();
-        while (digitalRead(BUTT_PIN) == BUTTON_PRESSED) { vTaskDelay(5); }
-        break;
-      }
-    } else {
-      brakeBtnInSound = false;
+    static BrakeButtonEdge brakeBtnInSound;
+    if (brakeBtnInSound.pressed()) {
+      waitForBrakeButtonRelease();
+      break;
     }
 
     /* Long press = escape to main for race mode toggle */
@@ -180,7 +149,7 @@ void showSoundSettings() {
         /* Show ON/OFF value on right for BOOT (i=0) and RACE (i=1) */
         if (i < 2) {
           uint16_t state = (i == 0) ? g_storedVar.soundBoot : g_storedVar.soundRace;
-          sprintf(msgStr, "%3s", getOnOffLabel(lang, state));
+          snprintf(msgStr, sizeof(msgStr), "%3s", getOnOffLabel(lang, state));
           uint8_t vx = OLED_WIDTH - (uint8_t)(strlen(msgStr) * WIDTH8x8);
           obdWriteString(&g_obd, 0, vx, i * lineH, msgStr,
                          menuFont, isSelected ? OBD_WHITE : OBD_BLACK, 1);
@@ -221,18 +190,18 @@ static void showWiFiClientSetupRequiredScreen() {
 void showWiFiSettings() {
   uint16_t lang = g_storedVar.language;
 
-  const char* lblOpenUpper[9]  = {"INFO SIDE", "INFO PAGE", "INFO PAGE", "INFO PAGE", "PAG INFO", "INFOSITE", "PAG INFO", "INFO PAG", "PAG INFO"};
-  const char* lblOpenPascal[9] = {"Info side", "Info page", "Info page", "Info page", "Pag info", "Infosite", "Pag info", "Info pag", "Pag info"};
-  const char* lblTimerUpper[9] = {"AUTO AV",   "AUTO OFF",  "AUTO OFF",  "AUTO OFF",  "AUTO OFF", "AUTO AUS", "AUTO OFF", "AUTO UIT", "AUTO OFF"};
-  const char* lblTimerPascal[9]= {"Auto av",   "Auto off",  "Auto off",  "Auto off",  "Auto off", "Auto aus", "Auto off", "Auto uit", "Auto off"};
-  const char* lblModeUpper[9]  = {"MODUS",     "MODE",      "MODE",      "MODE",      "MODO",      "MODUS",    "MODO",      "MODE",     "MODO"};
-  const char* lblModePascal[9] = {"Modus",     "Mode",      "Mode",      "Mode",      "Modo",      "Modus",    "Modo",      "Mode",     "Modo"};
-  const char* lblStartUpper[9] = {"START WIFI", "START WIFI", "START WIFI", "START WIFI", "INIC WIFI", "START WIFI", "AVVIA WIFI", "START WIFI", "INIC WIFI"};
-  const char* lblStartPascal[9]= {"Start WiFi", "Start WiFi", "Start WiFi", "Start WiFi", "Inic WiFi", "Start WiFi", "Avvia WiFi", "Start WiFi", "Inic WiFi"};
-  const char* lblStopUpper[9]  = {"STOPP WIFI", "STOP WIFI",  "STOP WIFI",  "STOP WIFI",  "STOP WIFI", "STOP WIFI",  "STOP WIFI",  "STOP WIFI",  "STOP WIFI"};
-  const char* lblStopPascal[9] = {"Stopp WiFi", "Stop WiFi",  "Stop WiFi",  "Stop WiFi",  "Stop WiFi", "Stop WiFi",  "Stop WiFi",  "Stop WiFi",  "Stop WiFi"};
-  const char* lblQrUpper[9]    = {"VIS QR",     "SHOW QR",    "SHOW QR",    "SHOW QR",    "VER QR",    "ZEIG QR",    "MOSTRA QR",  "TOON QR",    "VER QR"};
-  const char* lblQrPascal[9]   = {"Vis QR",     "Show QR",    "Show QR",    "Show QR",    "Ver QR",    "Zeig QR",    "Mostra QR",  "Toon QR",    "Ver QR"};
+  const char* lblOpenUpper[LANG_COUNT]  = {"INFO SIDE", "INFO PAGE", "INFO PAGE", "INFO PAGE", "PAG INFO", "INFOSITE", "PAG INFO", "INFO PAG", "PAG INFO", "INFO SIDA"};
+  const char* lblOpenPascal[LANG_COUNT] = {"Info side", "Info page", "Info page", "Info page", "Pag info", "Infosite", "Pag info", "Info pag", "Pag info", "Info sida"};
+  const char* lblTimerUpper[LANG_COUNT] = {"AUTO AV",   "AUTO OFF",  "AUTO OFF",  "AUTO OFF",  "AUTO OFF", "AUTO AUS", "AUTO OFF", "AUTO UIT", "AUTO OFF", "AUTO AV"};
+  const char* lblTimerPascal[LANG_COUNT]= {"Auto av",   "Auto off",  "Auto off",  "Auto off",  "Auto off", "Auto aus", "Auto off", "Auto uit", "Auto off", "Auto av"};
+  const char* lblModeUpper[LANG_COUNT]  = {"MODUS",     "MODE",      "MODE",      "MODE",      "MODO",      "MODUS",    "MODO",      "MODE",     "MODO", "LAGE"};
+  const char* lblModePascal[LANG_COUNT] = {"Modus",     "Mode",      "Mode",      "Mode",      "Modo",      "Modus",    "Modo",      "Mode",     "Modo", "Lage"};
+  const char* lblStartUpper[LANG_COUNT] = {"START WIFI", "START WIFI", "START WIFI", "START WIFI", "INIC WIFI", "START WIFI", "AVVIA WIFI", "START WIFI", "INIC WIFI", "START WIFI"};
+  const char* lblStartPascal[LANG_COUNT]= {"Start WiFi", "Start WiFi", "Start WiFi", "Start WiFi", "Inic WiFi", "Start WiFi", "Avvia WiFi", "Start WiFi", "Inic WiFi", "Start WiFi"};
+  const char* lblStopUpper[LANG_COUNT]  = {"STOPP WIFI", "STOP WIFI",  "STOP WIFI",  "STOP WIFI",  "STOP WIFI", "STOP WIFI",  "STOP WIFI",  "STOP WIFI",  "STOP WIFI", "STOPP WIFI"};
+  const char* lblStopPascal[LANG_COUNT] = {"Stopp WiFi", "Stop WiFi",  "Stop WiFi",  "Stop WiFi",  "Stop WiFi", "Stop WiFi",  "Stop WiFi",  "Stop WiFi",  "Stop WiFi", "Stopp WiFi"};
+  const char* lblQrUpper[LANG_COUNT]    = {"VIS QR",     "SHOW QR",    "SHOW QR",    "SHOW QR",    "VER QR",    "ZEIG QR",    "MOSTRA QR",  "TOON QR",    "VER QR", "VISA QR"};
+  const char* lblQrPascal[LANG_COUNT]   = {"Vis QR",     "Show QR",    "Show QR",    "Show QR",    "Ver QR",    "Zeig QR",    "Mostra QR",  "Toon QR",    "Ver QR", "Visa QR"};
   const char* const* lblOpen   = (g_storedVar.textCase == TEXT_CASE_PASCAL) ? lblOpenPascal : lblOpenUpper;
   const char* const* lblTimer  = (g_storedVar.textCase == TEXT_CASE_PASCAL) ? lblTimerPascal : lblTimerUpper;
   const char* const* lblMode   = (g_storedVar.textCase == TEXT_CASE_PASCAL) ? lblModePascal : lblModeUpper;
@@ -394,26 +363,21 @@ void showWiFiSettings() {
       delay(120);
     }
 
-    static bool brakeBtnInWifi = false;
-    static uint32_t lastBrakeBtnWifiTime = 0;
+    static BrakeButtonEdge brakeBtnInWifi;
     if (digitalRead(BUTT_PIN) == BUTTON_PRESSED) {
       lastInteraction = millis();
-      if (!brakeBtnInWifi && millis() - lastBrakeBtnWifiTime > BUTTON_SHORT_PRESS_DEBOUNCE_MS) {
-        brakeBtnInWifi = true;
-        lastBrakeBtnWifiTime = millis();
-        if (editing) {
-          editing = false;
-          g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
-          updateMenuLayout();
-          resetUiEncoder(itemTimer);
-          needRedraw = true;
-        } else {
-          while (digitalRead(BUTT_PIN) == BUTTON_PRESSED) { vTaskDelay(5); }
-          break;
-        }
+    }
+    if (brakeBtnInWifi.pressed()) {
+      if (editing) {
+        editing = false;
+        g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
+        updateMenuLayout();
+        resetUiEncoder(itemTimer);
+        needRedraw = true;
+      } else {
+        waitForBrakeButtonRelease();
+        break;
       }
-    } else {
-      brakeBtnInWifi = false;
     }
 
     if (needRedraw) {
@@ -464,12 +428,12 @@ void showWiFiSettings() {
 void showLoggingSettings() {
   uint16_t lang = g_storedVar.language;
 
-  const char* lblTimerUpper[9]    = {"AUTO AV",   "AUTO OFF",  "AUTO OFF",  "AUTO OFF",  "AUTO OFF", "AUTO AUS", "AUTO OFF", "AUTO UIT", "AUTO OFF"};
-  const char* lblTimerPascal[9]   = {"Auto av",   "Auto off",  "Auto off",  "Auto off",  "Auto off", "Auto aus", "Auto off", "Auto uit", "Auto off"};
-  const char* lblStartUpper[9]    = {"START NA",  "START NOW", "START NOW", "START NOW", "INIC AHOR", "START NOW", "AVVIA ORA", "START NU", "INIC AGORA"};
-  const char* lblStartPascal[9]   = {"Start nå",  "Start now", "Start now", "Start now", "Inic ahor", "Start now", "Avvia ora", "Start nu", "Inic agora"};
-  const char* lblStopUpper[9]     = {"STOPP NA",  "STOP NOW",  "STOP NOW",  "STOP NOW",  "PARA AHOR", "STOP NOW",  "STOP ORA",  "STOP NU",  "STOP AGORA"};
-  const char* lblStopPascal[9]    = {"Stopp nå",  "Stop now",  "Stop now",  "Stop now",  "Para ahor", "Stop now",  "Stop ora",  "Stop nu",  "Stop agora"};
+  const char* lblTimerUpper[LANG_COUNT]    = {"AUTO AV",   "AUTO OFF",  "AUTO OFF",  "AUTO OFF",  "AUTO OFF", "AUTO AUS", "AUTO OFF", "AUTO UIT", "AUTO OFF", "AUTO AV"};
+  const char* lblTimerPascal[LANG_COUNT]   = {"Auto av",   "Auto off",  "Auto off",  "Auto off",  "Auto off", "Auto aus", "Auto off", "Auto uit", "Auto off", "Auto av"};
+  const char* lblStartUpper[LANG_COUNT]    = {"START NA",  "START NOW", "START NOW", "START NOW", "INIC AHOR", "START NOW", "AVVIA ORA", "START NU", "INIC AGORA", "START NU"};
+  const char* lblStartPascal[LANG_COUNT]   = {"Start nå",  "Start now", "Start now", "Start now", "Inic ahor", "Start now", "Avvia ora", "Start nu", "Inic agora", "Start nu"};
+  const char* lblStopUpper[LANG_COUNT]     = {"STOPP NA",  "STOP NOW",  "STOP NOW",  "STOP NOW",  "PARA AHOR", "STOP NOW",  "STOP ORA",  "STOP NU",  "STOP AGORA", "STOPP NU"};
+  const char* lblStopPascal[LANG_COUNT]    = {"Stopp nå",  "Stop now",  "Stop now",  "Stop now",  "Para ahor", "Stop now",  "Stop ora",  "Stop nu",  "Stop agora", "Stopp nu"};
   const char* const* lblTimer     = (g_storedVar.textCase == TEXT_CASE_PASCAL) ? lblTimerPascal : lblTimerUpper;
   const char* const* lblStartNow  = (g_storedVar.textCase == TEXT_CASE_PASCAL) ? lblStartPascal : lblStartUpper;
   const char* const* lblStopNow   = (g_storedVar.textCase == TEXT_CASE_PASCAL) ? lblStopPascal : lblStopUpper;
@@ -578,26 +542,21 @@ void showLoggingSettings() {
       delay(120);
     }
 
-    static bool brakeBtnInLogging = false;
-    static uint32_t lastBrakeBtnLoggingTime = 0;
+    static BrakeButtonEdge brakeBtnInLogging;
     if (digitalRead(BUTT_PIN) == BUTTON_PRESSED) {
       lastInteraction = millis();
-      if (!brakeBtnInLogging && millis() - lastBrakeBtnLoggingTime > BUTTON_SHORT_PRESS_DEBOUNCE_MS) {
-        brakeBtnInLogging = true;
-        lastBrakeBtnLoggingTime = millis();
-        if (editing) {
-          editing = false;
-          g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
-          setUiEncoderBoundaries(0, NUM_ITEMS - 1, false);
-          resetUiEncoder(ITEM_TIMER);
-          needRedraw = true;
-        } else {
-          while (digitalRead(BUTT_PIN) == BUTTON_PRESSED) { vTaskDelay(5); }
-          break;
-        }
+    }
+    if (brakeBtnInLogging.pressed()) {
+      if (editing) {
+        editing = false;
+        g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
+        setUiEncoderBoundaries(0, NUM_ITEMS - 1, false);
+        resetUiEncoder(ITEM_TIMER);
+        needRedraw = true;
+      } else {
+        waitForBrakeButtonRelease();
+        break;
       }
-    } else {
-      brakeBtnInLogging = false;
     }
 
     if (needRedraw) {
@@ -606,7 +565,7 @@ void showLoggingSettings() {
       bool s0 = (!editing && sel == ITEM_ACTIVE);
       const char* actionStr = telemetryIsLoggingActive() ? lblStopNow[lang] : lblStartNow[lang];
       obdWriteString(&g_obd, 0, 0, 0 * lineH, (char*)actionStr, menuFont, s0 ? OBD_WHITE : OBD_BLACK, 1);
-      sprintf(msgStr, "%3s", getOnOffLabel(lang, telemetryIsLoggingActive() ? 1 : 0));
+      snprintf(msgStr, sizeof(msgStr), "%3s", getOnOffLabel(lang, telemetryIsLoggingActive() ? 1 : 0));
       uint8_t ax = OLED_WIDTH - (uint8_t)(strlen(msgStr) * WIDTH8x8);
       obdWriteString(&g_obd, 0, ax, 0 * lineH, msgStr, menuFont, s0 ? OBD_WHITE : OBD_BLACK, 1);
 

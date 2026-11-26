@@ -234,10 +234,11 @@ details.doc-fold>:not(summary){margin-top:8px}
     <h3>Idioma y display</h3>
     <ul>
       <li><code>DISPLAY -&gt; LANGUAGE</code> elige entre etiquetas localizadas y los perfiles de nombres ENG/CS/ACD.</li>
-      <li><code>NOR/ESP/DEU/ITA/NLD/POR</code>: interfaz localizada con los nombres estandar <code>BRAKE/SENSI/ANTIS/CURVE/FADE/LIMIT</code>.</li>
+      <li><code>NOR/ESP/DEU/ITA/NLD/POR/SVE</code>: interfaz localizada con los nombres estandar <code>BRAKE/SENSI/ANTIS/CURVE/FADE/LIMIT</code>.</li>
       <li><code>ENG</code>: nombres genericos (<code>BRAKE/SENSI/ANTIS/CURVE/FADE/LIMIT</code>).</li>
-      <li><code>CS</code>: estilo CarSteen (<code>ATTACK/CHOKE2/PROFIL/CHOKE1</code>).</li>
+      <li><code>CS</code>: estilo CarSteen (<code>ATTCK/CHOK2/PROFL/CHOK1</code>).</li>
       <li><code>ACD</code>: estilo ACD donde hay equivalencia directa (<code>SENSI</code> y <code>CHOKE</code> para LIMIT).</li>
+      <li><code>CHOK1</code> (CS) y <code>CHOKE</code> (ACD) van al reves que <code>LIMIT</code>: <code>CHOKE = 100 - LIMIT</code>. <code>CHOKE 0</code> significa sin estrangulamiento (velocidad maxima) y un valor mayor estrangula mas. Se guarda como LIMIT, asi que cambiar de idioma mantiene la misma velocidad maxima.</li>
       <li><code>DISPLAY -&gt; CASE</code> decide si las etiquetas se muestran en <code>UPPER</code> o <code>Pascal</code>.</li>
       <li><code>DISPLAY -&gt; FONT SIZE</code> cambia la vista de listas y menus entre <code>LARGE</code> y <code>small</code>.</li>
       <li><code>PANTALLA -&gt; AVANZADO</code> decide si <code>FADE</code>, <code>PWM_F</code> y <code>FRENO+</code> se muestran en el menu principal. En <code>OFF</code> se ocultan esas filas para dejar un menu mas simple, pero los valores guardados del coche siguen activos.</li>
@@ -262,8 +263,9 @@ details.doc-fold>:not(summary){margin-top:8px}
     </figure>
     <h3>Barra de estado y ABOUT</h3>
     <ul>
-      <li><code>STATUS BAR</code>: 4 slots fijos. Cada slot puede mostrar <code>OUT%</code>, <code>THRO</code>, <code>CAR</code>, <code>CURR</code>, <code>VOLT</code>, <code>VBAT</code>, <code>FRENO</code> o vacio. <code>CURR</code> muestra mA por debajo de 1000 y A por encima.</li>
+      <li><code>STATUS BAR</code>: 4 slots fijos. Cada slot puede mostrar <code>OUT%</code>, <code>THRO</code>, <code>CAR</code>, <code>CURR</code>, <code>VOLT</code>, <code>VBAT</code>, <code>ID</code>, <code>FRENO</code> o vacio. <code>CURR</code> muestra mA por debajo de 1000 y A por encima.</li>
       <li><code>VBAT</code> muestra el voltaje de la bateria interna opcional. En el perfil de placa estandar usa <code>GPIO15</code> / ADC2, asi que la lectura puede dejar de refrescarse mientras WiFi esta activo.</li>
+      <li><code>ID</code> muestra el ID del controlador, por ejemplo <code>#A3B4</code>. Son los 4 ultimos digitos hex de la direccion MAC, los mismos que en el nombre WiFi (<code>ESPEED32_A3B4</code>), para distinguir controladores en la pista y en la lista WiFi.</li>
       <li><code>FRENO</code> en la barra de estado muestra el tipo/valor de freno activo en tiempo real: <code>Bxxx%</code> = <code>BRAKE</code> normal, <code>Axxx%</code> = <code>Alt.Brake</code>, <code>Qxxx%</code> = <code>Rel.Brake QUICK</code>, <code>Dxxx%</code> = <code>Rel.Brake DRAG</code>, <code>NONE</code> = ningun freno activo en ese momento. El codigo puede cambiar rapido mientras conduces.</li>
       <li>Cuando WiFi esta activo, la barra de estado muestra <code>WIFI</code>. Primero usa un slot libre; si no hay ninguno, el slot 4 se sobreescribe temporalmente.</li>
       <li><code>ABOUT</code> muestra version de firmware/datos, sensor de trigger detectado, informacion del chip, flash/heap, direcciones MAC y fecha/hora de compilacion.</li>
@@ -276,7 +278,7 @@ details.doc-fold>:not(summary){margin-top:8px}
     <ul>
       <li><code>SELECT</code>: elegir perfil activo (0-19).</li>
       <li><code>RENAME</code>: editor de 4 caracteres (ASCII 32-122). Ver <a href="https://slatecave.net/notebook/ascii/" target="_blank" rel="noopener noreferrer">tabla ASCII</a>.</li>
-      <li><code>RACESWP</code>: ON permite cambio de perfil directo desde GRID.</li>
+      <li><code>RACESWP</code>: ON permite cambio de perfil directo desde GRID. Por defecto: OFF.</li>
       <li><code>COPY</code>: copiar de un perfil a otro o a todos.</li>
       <li><code>RESET</code>: reset de perfiles de coche (con confirmacion).</li>
     </ul>
@@ -342,7 +344,7 @@ details.doc-fold>:not(summary){margin-top:8px}
         <tr><td><code>ANTIS</code></td><td>0-999 ms</td><td>30</td><td>Tiempo de rampa anti-spin por encima del bypass de baja salida. Valor alto = subida de potencia mas larga/lenta. No es un delay puro del trigger. Unidad de visualizacion y paso del encoder se configuran en <code>PANTALLA -&gt; PASOS -&gt; ANTISPIN</code> (MS / % / TEXT).</td></tr>
         <tr><td><code>CURVE</code></td><td>10-90 %</td><td>50</td><td>Mapa de trigger. 50 = lineal.</td></tr>
         <tr><td><code>FADE</code></td><td>0-30 %</td><td>0</td><td>Zona de salida suave. 0 = desactivado / comportamiento antiguo. Por encima de 0, la primera parte del trigger sube de 0 a SENSI antes de que siga la CURVE normal.</td></tr>
-        <tr><td><code>PWM_F</code></td><td>1.0-5.0 / 10.0 / 20.0 / 25.0 kHz</td><td>4.0</td><td>Frecuencia PWM del motor. El rango sigue <code>SETTINGS -&gt; HARDWARE -&gt; PWM MAX</code> (5/10/20/25 kHz).</td></tr>
+        <tr><td><code>PWM_F</code></td><td>1.0-5.0 / 10.0 / 20.0 / 25.0 kHz</td><td>4.0</td><td>Frecuencia PWM del motor. El rango sigue <code>SETTINGS -&gt; HARDWARE -&gt; PWM_F MAX</code> (5/10/20/25 kHz).</td></tr>
         <tr><td><code>FRENO+ / Alt.Freno</code></td><td>0-100 %</td><td>0</td><td>Valor alternativo de freno con boton de freno + trigger suelto.</td></tr>
         <tr><td><code>FRENO+ / Rel.Freno</code></td><td>OFF/QUICK(zona+nivel)/DRAG(nivel)</td><td>OFF</td><td>Ayuda de frenado al soltar trigger. QUICK usa zona a salida cero; DRAG anade drag sin zona.</td></tr>
         <tr><td><code>LIMIT</code></td><td>(SENSI+5)-100 %</td><td>100</td><td>Salida maxima del motor.</td></tr>
@@ -456,7 +458,7 @@ details.doc-fold>:not(summary){margin-top:8px}
       <li><code>ENC INV</code>: invierte globalmente la direccion del encoder si el menu gira al reves.</li>
       <li><code>POT EXT</code>: asigna <code>POT 1</code> y <code>POT 2</code> a <code>OFF</code>, <code>FRENO</code> o <code>SENSI</code> como overrides en vivo.</li>
       <li><code>TRIGGER</code>: muestra la familia del sensor trigger y el tipo activo. En builds <code>TLE493D</code> tambien puedes cambiar <code>TYPE</code> entre <code>AUTO</code>, <code>W2B6</code>, <code>W2B6_A0</code> y <code>P3B6</code>.</li>
-      <li><code>PWM MAX</code>: maximo global para <code>PWM_F</code>. Elige 5, 10, 20 o 25 kHz. <code>PWM_F</code> se ajusta luego en pasos de 0.1 kHz hasta ese tope. Si lo bajas, todos los perfiles se limitan a ese tope. Desventaja de un PWM alto (por encima de unos 20 kHz): el driver del motor conmuta mas veces, asi que aumentan las perdidas y se calienta mas. Los flancos de conmutacion ocupan ademas una parte mayor de cada periodo, por lo que la respuesta con muy poco y con mucho gatillo es menos lineal. Usa la frecuencia mas baja que te resulte comoda y vigila la temperatura del driver por encima de 20 kHz.</li>
+      <li><code>PWM_F MAX</code>: maximo global para <code>PWM_F</code>. Elige 5, 10, 20 o 25 kHz. <code>PWM_F</code> se ajusta luego en pasos de 0.1 kHz hasta ese tope. Si lo bajas, todos los perfiles se limitan a ese tope. Desventaja de un PWM alto (por encima de unos 20 kHz): el driver del motor conmuta mas veces, asi que aumentan las perdidas y se calienta mas. Los flancos de conmutacion ocupan ademas una parte mayor de cada periodo, por lo que la respuesta con muy poco y con mucho gatillo es menos lineal. Usa la frecuencia mas baja que te resulte comoda y vigila la temperatura del driver por encima de 20 kHz.</li>
       <li><code>TEST</code>: ejecuta el self-test de 9 pasos para OLED, botones, trigger y salidas.</li>
     </ul>
     <h3>Consumo estimado (electronica del controlador)</h3>
@@ -597,7 +599,7 @@ details.doc-fold>:not(summary){margin-top:8px}
 |  |  `- BACK
 |  |- DISPLAY
 |  |  |- RACE MODE (OFF/FULL/SIMPLE)
-|  |  |- LANGUAGE (NOR/ENG/CS/ACD/ESP/DEU/ITA/NLD/POR)
+|  |  |- LANGUAGE (NOR/ENG/CS/ACD/ESP/DEU/ITA/NLD/POR/SVE)
 |  |  |- CASE (UPPER/Pascal)
 |  |  |- FONT SIZE (LARGE/small)
 |  |  |- AVANZADO (OFF/ON)
@@ -632,7 +634,7 @@ details.doc-fold>:not(summary){margin-top:8px}
 |  |  |  |- ACTIVO
 |  |  |  |- TYPE (AUTO/W2B6/W2B6_A0/P3B6) [solo TLE493D]
 |  |  |  `- ATRAS
-|  |  |- PWM MAX (5/10/20/25 kHz)
+|  |  |- PWM_F MAX (5/10/20/25 kHz)
 |  |  |- TEST (Self-Test, 9 steps)
 |  |  `- ATRAS
 |  |- STATS (OFF/ON, default OFF)
@@ -689,6 +691,7 @@ details.doc-fold>:not(summary){margin-top:8px}
   else if (path.indexOf("/docs/es") !== -1) activeLang = "es";
   else if (path.indexOf("/docs/de") !== -1) activeLang = "de";
   else if (path.indexOf("/docs/it") !== -1) activeLang = "it";
+  else if (path.indexOf("/docs/sv") !== -1) activeLang = "sv";
 
   var languageOptions = [
     { value: "no", label: "\uD83C\uDDF3\uD83C\uDDF4 Norsk" },
@@ -697,7 +700,8 @@ details.doc-fold>:not(summary){margin-top:8px}
     { value: "pt", label: "\uD83C\uDDF5\uD83C\uDDF9 Portugues" },
     { value: "es", label: "\uD83C\uDDEA\uD83C\uDDF8 Espa\u00F1ol" },
     { value: "de", label: "\uD83C\uDDE9\uD83C\uDDEA Deutsch" },
-    { value: "it", label: "\uD83C\uDDEE\uD83C\uDDF9 Italiano" }
+    { value: "it", label: "\uD83C\uDDEE\uD83C\uDDF9 Italiano" },
+    { value: "sv", label: "\uD83C\uDDF8\uD83C\uDDEA Svenska" }
   ];
 
   function apply(mode){
@@ -725,7 +729,8 @@ details.doc-fold>:not(summary){margin-top:8px}
     pt: "Link para este titulo",
     es: "Enlace a este titulo",
     de: "Link zu dieser Uberschrift",
-    it: "Link a questo titolo"
+    it: "Link a questo titolo",
+    sv: "L\u00E4nk till denna rubrik"
   };
 
   function slugify(text){

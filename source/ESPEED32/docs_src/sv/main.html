@@ -1,0 +1,530 @@
+<main>
+  <header>
+    <h1>ESPEED32 Bruksanvisning</h1>
+    <p class="lead">Användarguide för bilbana: uppstart, de viktigaste körreglagen, menyer samt säkerhetskopiering och återställning.</p>
+    <nav class="top">
+      <a class="btn primary" href="../../ui/index.html">Öppna kontrollens webbgränssnitt</a>
+      <div class="lang-tools">
+        <label for="lang-select">Språk</label>
+        <select id="lang-select" aria-label="Språk"></select>
+      </div>
+    </nav>
+    <div class="theme-tools">
+      <label for="theme-select">Tema</label>
+      <select id="theme-select">
+        <option value="system">System</option>
+        <option value="light">Ljust</option>
+        <option value="dark">Mörkt</option>
+      </select>
+    </div>
+    <ul class="sources">
+      <li>Källkod för firmware: ESPEED32 (<code>source/ESPEED32/</code>).</li>
+      <li>Lokala manualer i repot: Quick Start + Extended Guide (DOC-mappen, DOCX/PDF).</li>
+      <li>ACD-referens: <a href="https://www.yatronic.com/ACD_PRO_Manual_11_E.pdf" target="_blank" rel="noopener">ACD PRO Manual 11E</a>.</li>
+      <li>CarSteen-referens: <a href="https://abslotsport.biz/CS-4.2%20Owners%20GuideENG.pdf" target="_blank" rel="noopener">CS 4.2 Owner's Guide</a>.</li>
+    </ul>
+    <p class="small">Användardokumentationen på <code>espeed32.com</code> visar alltid den senast publicerade versionen. Kopian som ligger i kontrollen följer den firmware som faktiskt är installerad och uppdateras tillsammans med den.</p>
+  </header>
+
+  <section>
+    <h2>1. Snabbstart</h2>
+    <ol>
+      <li>Starta kontrollen som vanligt.</li>
+      <li>Vrid encodern för att bläddra mellan menyvalen.</li>
+      <li>Kort tryck på encodern: börja/avsluta redigering av ett värde eller öppna en undermeny.</li>
+      <li>Kort tryck på bromsknappen under redigering: avbryt (det ursprungliga värdet återställs).</li>
+      <li>Långt tryck på encodern (~1 s): växla mellan LIST och race-vyn GRID (när race-vyn inte är OFF).</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>2. Uppstart, kalibrering och självtest</h2>
+    <ul>
+      <li>Kalibrera om avtryckaren efter en firmwareuppdatering, eller om avtryckarens mekanik har ändrats.</li>
+      <li><code>Ström PÅ</code>: normal uppstart, därefter RUNNING.</li>
+      <li>I <code>TLE493D</code>-byggen känns sensorvariant och adress av automatiskt vid uppstart (ingen manuell adressändring behövs).</li>
+      <li>Sensorfamiljen för avtryckaren väljs när firmware kompileras. Standardreleaser och -byggen använder <code>TLE493D</code>. Kontroller byggda med <code>AS5600</code>, <code>AS5600L</code>, <code>MT6701</code> eller <code>ANALOG</code> måste använda en firmware byggd för rätt sensorfamilj.</li>
+      <li>Håll <code>encoderknappen</code> intryckt vid uppstart: kalibrering av avtryckaren.</li>
+      <li>Håll <code>bromsknappen</code> intryckt vid uppstart: självtest (9 steg).</li>
+      <li>Håll <code>bromsknappen</code> intryckt i 5 s vid uppstart: nöd-WiFi (AP). Hotspoten startar i AP-läge även om WiFi är inställt på HOME, så att kontrollen kan konfigureras från en mobil när encodern inte går att vrida.</li>
+    </ul>
+    <h3>Kalibrering steg för steg</h3>
+    <ol>
+      <li>Håll encodern intryckt vid uppstart tills kalibreringsskärmen visas.</li>
+      <li>Tryck in och släpp avtryckaren helt flera gånger.</li>
+      <li>Tryck en gång på encodern för att spara kalibreringen.</li>
+      <li>Kontrollera att gasen visar 0 % med släppt avtryckare och 100 % med helt intryckt avtryckare.</li>
+    </ol>
+    <figure class="doc-media">
+      <img src="../assets/trig_cal.png" alt="Kalibrering av avtryckaren">
+      <figcaption>Kalibrering: för avtryckaren genom hela slaglängden flera gånger för korrekt 0-100 %.</figcaption>
+    </figure>
+    <h3>Avtryckarens mekanik</h3>
+    <ul>
+      <li>Slaglängden kan ändras mekaniskt med stoppskruven baktill.</li>
+      <li>Hur avtryckaren fjädrar tillbaka beror på fjäderns förspänning. Justera fjäderfästet eller spännreglaget försiktigt.</li>
+      <li>Kalibrera om avtryckaren innan du kör efter att du har ändrat slaglängd eller fjäderspänning, eller efter att kontrollen har varit öppnad.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>3. Skärm, race-vy och INFO</h2>
+    <p class="small">Det här avsnittet samlar det du ser på OLED-skärmen: språk, textstil, race-layout, statusrad och systeminformation.</p>
+    <h3>Språk och skärm</h3>
+    <ul>
+      <li><code>SKARM -&gt; SPRAK</code> väljer mellan översatta etiketter och namnprofilerna ENG/CS/ACD.</li>
+      <li><code>NOR/ESP/DEU/ITA/NLD/POR/SVE</code>: översatt gränssnitt med standardnamnen <code>BRAKE/SENSI/ANTIS/CURVE/FADE/LIMIT</code>. På svenska heter de <code>BROMS/SENSI/ANTIS/KURVA/FADE/GRANS</code>.</li>
+      <li><code>ENG</code>: generiska namn (<code>BRAKE/SENSI/ANTIS/CURVE/FADE/LIMIT</code>).</li>
+      <li><code>CS</code>: CarSteen-termer (<code>ATTCK/CHOK2/PROFL/CHOK1</code>).</li>
+      <li><code>ACD</code>: ACD-termer där det finns en direkt motsvarighet (<code>SENSI</code> och <code>CHOKE</code> för gräns). <code>ANTIS</code> behålls som antispinn eftersom ACD-manualen inte har någon egen Choke2-term.</li>
+      <li><code>CHOK1</code> (CS) och <code>CHOKE</code> (ACD) går åt motsatt håll mot <code>LIMIT</code>: <code>CHOKE = 100 - LIMIT</code>. <code>CHOKE 0</code> betyder ingen strypning (full fart), och ett högre värde stryper mer. Inställningen sparas som LIMIT, så byte av språk ger samma toppfart.</li>
+      <li><code>SKARM -&gt; STIL</code> väljer om etiketterna visas som <code>UPPER</code> eller <code>Pascal</code>.</li>
+      <li><code>SKARM -&gt; TEXTSTRL</code> växlar textstorleken i listor och menyer mellan <code>STOR</code> och <code>liten</code>.</li>
+      <li><code>SKARM -&gt; AVANCER.</code> styr om <code>FADE</code>, <code>PWM_F</code> och <code>BROMS+</code> visas i huvudmenyn. Med <code>AV</code> döljs raderna för en enklare meny, men de sparade bilvärdena gäller fortfarande.</li>
+      <li><code>SKARM -&gt; STEG</code> öppnar undermenyn för stegstorlekar med ANTISPIN, BROMSSTEG och SENSISTEG.</li>
+      <li><code>SKARM -&gt; STEG -&gt; ANTISPIN</code> öppnar inställningarna för hur antispinn visas: välj enhet (<code>MS</code> / <code>%</code> / <code>TEXT</code>) och encoderns stegstorlek för varje enhet.</li>
+      <li><code>SKARM -&gt; STEG -&gt; BROMSSTEG</code> anger hur många procent encodern ändrar BROMS per klick (0,1–50,0 %, standard 1,0 %). Ställs in under <code>INSTALLN → SKARM → STEG → BROMSSTEG</code>.</li>
+      <li><code>SKARM -&gt; STEG -&gt; SENSISTEG</code> anger encoderns stegstorlek för SENSI i steg om 0,1 % (0,1–5,0 %, standard 1,0 %). Ställs in under <code>INSTALLN → SKARM → STEG → SENSISTEG</code>.</li>
+      <li>Motorns PWM-utgång använder 10 bitars upplösning, så steg på 0,1 % för BROMS/SENSI behålls hela vägen genom beräkningarna och PWM-hårdvaran.</li>
+    </ul>
+    <h3>Race-vy (LIST eller GRID)</h3>
+    <ul>
+      <li><span class="badge">LIST</span> klassisk meny med alla huvudval.</li>
+      <li><span class="badge">GRID</span> race-skärm för snabba ändringar under körning.</li>
+      <li><code>SKARM -> RACELAGE</code>: AV / FULL / ENKEL.</li>
+      <li>FULL: BROMS, SENSI, ANTIS, KURVA (+ BIL om <code>RACESWP</code> är PA).</li>
+      <li>ENKEL: BROMS, SENSI (+ BIL om <code>RACESWP</code> är PA).</li>
+      <li>Långt tryck på encodern växlar mellan LIST och GRID.</li>
+    </ul>
+    <figure class="doc-media">
+      <img src="../assets/display_modes.svg" alt="Skiss av OLED-skärmen i listvy och race-vy (grid)">
+      <figcaption>Exempel: LIST visar hela menyn, medan GRID håller de viktigaste race-parametrarna synliga för snabba ändringar på banan.</figcaption>
+    </figure>
+    <h3>Statusrad och INFO</h3>
+    <ul>
+      <li><code>STATUSRAD</code>: 4 fasta fält. Varje fält kan visa <code>OUT%</code>, <code>GAS</code>, <code>BIL</code>, <code>AMP</code>, <code>VOLT</code>, <code>VBAT</code>, <code>ID</code>, <code>BROMS</code> eller vara tomt. <code>AMP</code> visar mA under 1000 och A däröver.</li>
+      <li><code>BROMS</code> i statusraden visar aktivt bromsläge och värde i realtid: <code>Bxxx%</code> = vanlig <code>BROMS</code>, <code>Axxx%</code> = <code>Alt.broms</code>, <code>Qxxx%</code> = <code>Rel.broms QUICK</code>, <code>Dxxx%</code> = <code>Rel.broms DRAG</code>, <code>NONE</code> = ingen broms aktiv just nu. Koden kan ändras snabbt under körning.</li>
+      <li><code>VBAT</code> visar spänningen på det valfria interna batteriet. I standardprofilen för kortet mäts den på <code>GPIO15</code> / ADC2, så värdet kan sluta uppdateras medan WiFi är aktivt.</li>
+      <li><code>ID</code> visar kontrollens enhets-ID, till exempel <code>#A3B4</code>. Det är de 4 sista hex-tecknen i MAC-adressen, samma som i WiFi-namnet (<code>ESPEED32_A3B4</code>), så att du kan skilja kontroller åt på banan och i WiFi-listan.</li>
+      <li>Medan WiFi är aktivt visar statusraden <code>WIFI</code>. Det använder det första tomma fältet om det finns, annars tar det tillfälligt över fält 4.</li>
+      <li><code>INFO</code> visar firmware- och dataversion, identifierad avtryckarsensor, chipdetaljer, flash/heap, MAC-adresser samt byggdatum och -tid.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>4. BIL-menyn och bilparametrar</h2>
+    <p class="small">Menyn <code>*BIL*</code> hanterar bilprofilerna. Varje profil har egna <code>Car Params</code>: <code>BROMS</code>, <code>SENSI</code>, <code>ANTIS</code>, <code>KURVA</code>, <code>FADE</code>, <code>PWM_F</code>, <code>BROMS+</code> och <code>GRANS</code>. Det är samma parametergrupp som du senare möter i <code>Advanced Config Editor</code>. Om <code>SKARM -&gt; AVANCER.</code> är <code>AV</code> döljs <code>FADE</code>, <code>PWM_F</code> och <code>BROMS+</code> i huvudmenyn, men de sparade profilvärdena gäller fortfarande.</p>
+    <ul>
+      <li><code>VALJ</code>: välj aktiv bilprofil (0-19).</li>
+      <li><code>NAMNGE</code>: namneditor med 4 tecken (ASCII 32-122). Se <a href="https://slatecave.net/notebook/ascii/" target="_blank" rel="noopener noreferrer">ASCII-tabell</a>.</li>
+      <li><code>RACESWP</code>: PA gör att du kan byta profil direkt i GRID-vyn. Standard: AV.</li>
+      <li><code>KOPIA</code>: kopiera från en profil till en annan, eller till ALLA profiler.</li>
+      <li><code>ATERSTALL</code>: återställ alla bilprofiler (med bekräftelse).</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>5. Körparametrar</h2>
+    <p class="small">Det här avsnittet samlar de viktigaste inställningarna som avgör hur kontrollen känns på banan. De längre förklaringarna ligger i hopfällbara paneler så att avsnittet blir lättare att överblicka.</p>
+    <h3>BROMS och BROMS+</h3>
+    <h4>BROMS</h4>
+    <p>När avtryckaren är helt släppt bromsar kontrollen med värdet <code>BROMS</code>.</p>
+    <p class="small"><code>BROMS+</code> i huvudmenyn öppnar undermenyn för avancerad broms. Där finns <code>Alt.broms</code> och <code>Rel.broms</code>.</p>
+    <h4>Alternativ broms (<code>Alt.broms</code>)</h4>
+    <ul>
+      <li><code>Alt.broms</code> är en alternativ bromsprocent (0-100 %), inte en relativ minskning.</li>
+      <li>Den används bara när avtryckaren står på 0 och du håller in bromsknappen.</li>
+      <li>Om statusraden visar OUTPUT visas <code>Bxxx%</code> medan bromsknappen hålls in.</li>
+      <li>Typisk användning: tillfälligt hårdare eller mjukare inbromsning inför kurvor utan att ändra grundinställningen.</li>
+      <li>Vissa förare vill ha <code>Alt.broms</code> lägre än vanlig <code>BROMS</code> för en mjukare knappbroms, andra vill ha den högre för en hårdare broms. Det är mest en fråga om smak och hur bilen känns.</li>
+    </ul>
+    <figure class="doc-media">
+      <img src="../assets/alt_brake.svg" alt="Principgrafer där Alt.broms är lägre respektive högre än BROMS">
+      <figcaption>Exempel på alternativ broms: <code>Alt.broms</code> kan tillfälligt vara mjukare eller hårdare än vanlig BROMS, beroende på vad föraren föredrar.</figcaption>
+    </figure>
+    <h4>Släppbroms (<code>Rel.broms</code>)</h4>
+    <ul>
+      <li><code>Rel.broms</code> är släppbromsen och har tre lägen: <code>AV</code>, <code>QUICK</code> och <code>DRAG</code>.</li>
+      <li><code>QUICK</code> är den gamla förbromszonen: under vald <code>Zon</code> bryter kontrollen drivningen och bromsar med <code>Level</code>.</li>
+      <li><code>DRAG</code> verkar bara medan du aktivt släpper avtryckaren. Gasen är kvar, men det läggs till motståndsbroms under släppet. Det känns mjukare än QUICK.</li>
+      <li><code>Zon</code> används bara av <code>QUICK</code>. Där är det en verklig nollzon nära släppt avtryckare.</li>
+      <li>Med <code>QUICK</code> aktivt är det alltså normalt att skärmen visar några <code>%T</code> medan utgången fortfarande är <code>0%</code>, tills avtryckaren kommer över vald zon.</li>
+      <li>Den viktigaste skillnaden: <code>QUICK</code> bryter helt inne i zonen, medan <code>DRAG</code> behåller gasen och bara lägger till broms medan avtryckaren rör sig mot släppt läge.</li>
+      <li>Typisk användning av QUICK: banor eller bilar som behöver en tydlig tidig broms. Exempel: <code>Zon</code> 6-10 % och <code>Level</code> 70-100 % för en stark och upprepbar broms när du börjar släppa den sista delen av slaglängden.</li>
+      <li>Typisk användning av DRAG: nervösa bilar som blir för ryckiga med QUICK. Exempel: <code>Level</code> 20-50 % för mjuk inbromsning under släppet, utan känslan av att allt bryts till noll.</li>
+      <li>Område för <code>QUICK Zon</code>: 0-50 %. Område för <code>Level</code>: 0-100 %.</li>
+      <li>Använd QUICK för en tydlig tidig broms. Använd DRAG för mjukare hjälp vid släpp utan den abrupta känslan av full quick-broms.</li>
+    </ul>
+    <figure class="doc-media">
+      <img src="../assets/rel_brake.svg" alt="Principgrafer för QUICK och DRAG i Rel.broms">
+      <figcaption>Exempel på släppbroms: QUICK skapar en nollzon med broms under vald zon, medan DRAG lägger till mjukare broms bara under själva släppet.</figcaption>
+    </figure>
+    <h3>Snabbreferens för huvudmenyn</h3>
+    <table>
+      <thead>
+        <tr><th>Val</th><th>Område</th><th>Standard</th><th>Beskrivning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>BROMS</code></td><td>0,0-100,0 %</td><td>95,0</td><td>Bromskraft när avtryckaren är släppt.</td></tr>
+        <tr><td><code>SENSI</code></td><td>0,0-90,0 % (och &lt;= GRANS)</td><td>20,0</td><td>Lägsta motoreffekt vid första mätbara rörelse på avtryckaren.</td></tr>
+        <tr><td><code>ANTIS</code></td><td>0-999 ms</td><td>30</td><td>Ramptid för antispinn över gränsen för låg effekt. Högre värde = längre/långsammare effektuppbyggnad. Det är ingen ren fördröjning av avtryckaren. Visningsenhet och encodersteg ställs in under <code>SKARM -&gt; STEG -&gt; ANTISPIN</code> (MS / % / TEXT).</td></tr>
+        <tr><td><code>KURVA</code></td><td>10-90 %</td><td>50</td><td>Gaskurva. 50 = linjär. &lt;50 mjukare start, &gt;50 skarpare start.</td></tr>
+        <tr><td><code>FADE</code></td><td>0-30 %</td><td>0</td><td>Mjukstartzon. 0 = avstängd / gammalt beteende. Över 0 rampar den första delen av slaglängden från 0 upp till SENSI innan den vanliga KURVA tar över.</td></tr>
+        <tr><td><code>PWM_F</code></td><td>1,0-5,0 / 10,0 / 20,0 / 25,0 kHz</td><td>4,0</td><td>Motorns PWM-frekvens. Området följer <code>INSTALLN -&gt; HARDWARE -&gt; PWM_F MAX</code> (5/10/20/25 kHz). Högre värde ger ofta mjukare respons på låg gas.</td></tr>
+        <tr><td><code>BROMS+ / Alt.broms</code></td><td>0-100 %</td><td>0</td><td>Alternativt bromsvärde som används medan bromsknappen hålls in och avtryckaren är släppt.</td></tr>
+        <tr><td><code>BROMS+ / Rel.broms</code></td><td>AV/QUICK(zon+level)/DRAG(level)</td><td>AV</td><td>Hjälp vid släpp av avtryckaren. QUICK använder en nollzon, DRAG lägger till broms vid släpp utan zon.</td></tr>
+        <tr><td><code>GRANS</code></td><td>(SENSI+5)-100 %</td><td>100</td><td>Högsta motoreffekt. &lt;100 visar varningen BEGRANS.</td></tr>
+        <tr><td><code>STATS</code></td><td>-</td><td>-</td><td>Varvräknare, bästa varv och rullbar varvhistorik. Encodern bläddrar. Kort tryck på bromsknappen går ut, långt tryck nollställer statistiken.</td></tr>
+        <tr><td><code>LAS</code></td><td>-</td><td>Olåst</td><td>Låser eller låser upp inställningarna. När de är låsta blockeras alla ändringar av parametrar, och bara <code>LAS</code> själv fungerar. Låset är tillfälligt och försvinner vid omstart. Synlighet och genvägens hålltid ställs in under <code>INSTALLN → LAS</code>. Statusraden visar <code>LOCK</code> (inverterat) när låset är aktivt.</td></tr>
+        <tr><td><code>*BIL*</code></td><td>0-19 profiler</td><td>CAR0</td><td>Välj och hantera profiler, kopiera inställningar, återställ bilparametrar.</td></tr>
+      </tbody>
+    </table>
+    <h3>ANTIS i praktiken</h3>
+    <ul>
+      <li><code>ANTIS</code> är ingen full fördröjning av avtryckaren. Bilen ska fortfarande reagera när du börjar trycka in avtryckaren.</li>
+      <li>Vid låg effekt kopplas antispinn förbi, så den allra första delen kan fortfarande kännas direkt.</li>
+      <li>När effekten är tillräckligt hög begränsar <code>ANTIS</code> hur snabbt effekten får öka.</li>
+      <li>Högre <code>ANTIS</code> = längre/långsammare ramp från startpunkten för antispinn upp mot begärd effekt.</li>
+      <li>Den verkar bara när effekten ökar. Att släppa avtryckaren, rulla och bromsa sker fortfarande direkt.</li>
+    </ul>
+    <h3>Typiska startvärden</h3>
+    <p class="small">Det här är utgångspunkter, inte regler. Använd dem för att komma nära, och finjustera sedan en parameter i taget.</p>
+    <p class="small">Rätt värden beror fortfarande mycket på bilen, motorn, däcken, banans grepp och din egen körstil.</p>
+    <table>
+      <thead>
+        <tr><th>Uppsättning</th><th>SENSI</th><th>BROMS</th><th>ANTIS</th><th>KURVA</th><th>FADE</th><th>PWM_F</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1/32 balanserad</td><td>28-35%</td><td>90-95%</td><td>40-90 ms</td><td>40-50%</td><td>0-6%</td><td>4.0 kHz</td></tr>
+        <tr><td>1/32 lågt grepp</td><td>22-30%</td><td>90-95%</td><td>100-150 ms</td><td>30-45%</td><td>5-12%</td><td>4.0 kHz</td></tr>
+        <tr><td>1/24 balanserad</td><td>35-45%</td><td>95-100%</td><td>0-30 ms</td><td>50-60%</td><td>0-5%</td><td>4.0 kHz</td></tr>
+        <tr><td>1/24 högt grepp</td><td>40-50%</td><td>95-100%</td><td>0-15 ms</td><td>55-70%</td><td>0-3%</td><td>4.0 kHz</td></tr>
+      </tbody>
+    </table>
+    <p class="small">Låt <code>Rel.broms</code> stå på <code>AV</code> vid de första testerna. Lägg till <code>QUICK</code> eller <code>DRAG</code> först när grundinställningen för gas och broms känns rätt.</p>
+    <details class="doc-fold">
+      <summary>Från CarSteen/ACD-termer till ESPEED32</summary>
+      <table>
+        <thead>
+          <tr><th>Gammal term</th><th>Motsvarighet i ESPEED32</th><th>Praktisk effekt</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Attack</td><td><code>SENSI</code></td><td>Hur hårt bilen drar iväg vid första rörelsen på avtryckaren.</td></tr>
+          <tr><td>Choke / Choke2</td><td><code>GRANS</code> + <code>ANTIS</code></td><td>Begränsar toppnivån och styr hur mjukt effekten byggs upp.</td></tr>
+          <tr><td>Profile</td><td><code>KURVA</code></td><td>Formen på avtryckarens respons (aggressiv tidigt eller sent).</td></tr>
+          <tr><td>Brake</td><td><code>BROMS</code> + <code>BROMS+</code></td><td>Grundbroms plus inställningarna för bromsknapp och släppbroms.</td></tr>
+        </tbody>
+      </table>
+      <p class="small">Exempel från äldre guider: för en mjuk och kontrollerad känsla, börja runt <code>SENSI 40</code>, <code>ANTIS 130 ms</code>, <code>KURVA 30</code> och justera därifrån.</p>
+    </details>
+    <details class="doc-fold">
+      <summary>FADE i praktiken</summary>
+      <ul>
+        <li><code>FADE</code> skapar en mjuk ramp <code>0 -&gt; SENSI</code> i den första delen av slaglängden.</li>
+        <li><code>FADE = 0%</code> stänger av den och behåller den gamla direkta känslan.</li>
+        <li>Prova <code>5-15%</code> om bilen känns för ryckig precis när SENSI börjar verka.</li>
+        <li>Tänk på <code>FADE</code> som en extra första punkt i grafen: den ändrar bara den allra lägsta delen, medan <code>KURVA</code> fortfarande formar resten.</li>
+      </ul>
+      <figure class="doc-media">
+        <img src="../assets/fade_examples.svg" alt="Grafexempel med FADE av och på">
+        <figcaption>FADE-exempel: AV behåller det gamla direkta steget till SENSI, medan PA lägger till en mjuk första ramp innan den vanliga KURVA fortsätter.</figcaption>
+      </figure>
+    </details>
+    <details class="doc-fold">
+      <summary>Om linjäritet</summary>
+      <ul>
+        <li><code>GRANS</code>: linjärt tak för begärd effekt i %. Den verkliga toppfarten på banan är inte helt linjär.</li>
+        <li><code>BROMS</code>: linjärt broms-/motståndskommando i %. Den verkliga bromskänslan beror på motor, däck och banans grepp.</li>
+        <li><code>SENSI</code>: linjärt golv för lägsta effekt i %, men ingen linjär förstärkning över hela slaglängden eftersom <code>KURVA</code> formar resten.</li>
+        <li><code>FADE</code>: linjär i % av slaglängden. Den påverkar bara den första delen av avtryckaren och lämnar sedan över till <code>KURVA</code>.</li>
+        <li><code>ANTIS</code>: främst en tidsinställning i ms, ingen ren fördröjning. När antispinn är aktivt ger ett högre värde en längre/svagare ramp, men den totala känslan är inte helt linjär eftersom gränsen för förbikoppling vid låg fart också flyttas med inställningen.</li>
+      </ul>
+    </details>
+    <details class="doc-fold">
+      <summary>Exempel på KURVA</summary>
+      <p class="small">Figurerna visar själva formen på responsen, innan PWM-frekvens och duty-gränser kommer in.</p>
+      <figure class="doc-media">
+        <img src="../assets/curve_examples.svg" alt="Exempel på linjär, mjuk och hård kurva">
+        <figcaption>KURVA-exempel: Linjär (50 %), Mjuk (lägre värde) och Hård (högre värde).</figcaption>
+      </figure>
+      <figure class="doc-media">
+        <img src="../assets/fade_curve.svg" alt="Exempel med FADE kombinerat med linjär och hård kurva">
+        <figcaption>FADE plus KURVA: FADE kan mjuka upp själva starten medan resten av responsen är linjär eller inställd hårdare.</figcaption>
+      </figure>
+    </details>
+    <details class="doc-fold">
+      <summary>GRANS i praktiken</summary>
+      <ul>
+        <li><code>GRANS 100</code> låter kontrollen nå full duty när avtryckaren och kurvan kräver det.</li>
+        <li><code>GRANS 70</code> begränsar högsta duty till cirka 70 %, även med helt intryckt avtryckare.</li>
+      </ul>
+      <figure class="doc-media">
+        <img src="../assets/limit_examples.svg" alt="Exempel med LIMIT 100 och LIMIT 70">
+        <figcaption>Exempel: GRANS ändrar den högsta duty som kontrollen får nå.</figcaption>
+      </figure>
+    </details>
+    <details class="doc-fold">
+      <summary>PWM_F i praktiken</summary>
+      <ul>
+        <li><code>PWM_F</code> ändrar hur ofta utgången slår om, inte själva begärda duty.</li>
+        <li>Med <code>GRANS 100</code> kan delgas fortfarande ge delvis duty. Med <code>GRANS 70</code> stannar full avtryckare vid cirka 70 % duty.</li>
+        <li>Vid samma duty använder <code>1 kHz</code> färre och bredare pulser, medan <code>5 kHz</code> använder fler och smalare pulser under samma tid.</li>
+      </ul>
+      <h4>Scenario 1: delgas med GRANS 100</h4>
+      <p class="small">Jämför de två bilderna horisontellt. Båda visar samma effektiva nivå, 50 % duty, så den enda skillnaden är pulstätheten. Den streckade linjen visar medelnivån, alltså den effektiva nivån.</p>
+      <figure class="doc-media">
+        <img src="../assets/pwm_part.svg" alt="PWM-exempel som jämför 1 kHz och 5 kHz vid delgas med LIMIT 100">
+        <figcaption>Vid 50 % duty använder <code>1 kHz</code> färre och bredare pulser, medan <code>5 kHz</code> använder fler och smalare pulser under samma tid.</figcaption>
+      </figure>
+      <h4>Scenario 2: full avtryckare med GRANS 70</h4>
+      <p class="small">Jämför även de här två bilderna horisontellt. Båda visar full avtryckare, men <code>GRANS 70</code> håller den effektiva nivån på 70 % duty. Den streckade linjen visar återigen den effektiva nivån.</p>
+      <figure class="doc-media">
+        <img src="../assets/pwm_cap.svg" alt="PWM-exempel som jämför 1 kHz och 5 kHz vid full avtryckare med LIMIT 70">
+        <figcaption>Här är duty begränsad till 70 % i båda bilderna. <code>PWM_F</code> ändrar hur ofta pulserna kommer, inte själva taket från GRANS.</figcaption>
+      </figure>
+    </details>
+  </section>
+
+  <section>
+    <h2>6. INSTALLN, STROM och strömförbrukning</h2>
+    <p class="small"><code>INSTALLN</code> samlar de globala systeminställningarna som inte hör till en enskild bilprofil.</p>
+    <h3>Undermenyn STROM</h3>
+    <ul>
+      <li><code>SKSPR</code>: skärmsläckarens text för rad 1/rad 2, tidsgräns och visa nu.</li>
+      <li><code>VILA</code>: automatisk viloläge efter en tid + manuell vila nu (väck med encoderknappen).</li>
+      <li><code>DJUP VILA</code>: automatisk djup vila (0 eller 2-30 min) + manuell.</li>
+      <li><code>UPPSTART</code>: välkomstfördröjning 0-990 ms i steg om 10 ms.</li>
+      <li><code>VIN KAL.</code>: mät den verkliga banspänningen med en multimeter, ställ in samma värde på kontrollen och klicka för att kalibrera ADC-spänningsskalan. Används bara om VIN-värdet är märkbart fel.</li>
+    </ul>
+    <h3>Val i INSTALLN</h3>
+    <ul>
+      <li><code>HARDWARE</code>: encoderns riktning, externa potentiometrar, information och åsidosättning för avtryckarsensorn samt självtest.</li>
+      <li><code>STATS</code>: visa eller dölj STATS i huvudmenyn. Standard AV.</li>
+      <li><code>WIFI</code>: WiFi i bakgrunden, direkt infosida, QR-kod och automatisk avstängning av WiFi.</li>
+      <li><code>LOGGING</code>: start/stopp av lokal telemetriloggning samt en egen tidsgräns för automatisk avstängning (standard 30 min).</li>
+      <li><code>LAS</code>: ställ in låset för inställningar. Slå på menyvalet LAS i huvudmenyn (standard AV), ange hålltiden för genvägen med bromsknappen (AV eller 1–10 s, standard 5 s) och välj om bekräftelserutan <code>LOCKED</code>/<code>UNLOCKED</code> ska visas.</li>
+    </ul>
+    <h3>Undermenyn HARDWARE</h3>
+    <ul>
+      <li><code>ENC.INVERT</code>: vänd encoderns riktning globalt om menyn känns baklänges på din hårdvara.</li>
+      <li><code>EXT.POT.</code>: koppla <code>POT 1</code> och <code>POT 2</code> till <code>AV</code>, <code>BROMS</code> eller <code>SENSI</code> som direkt åsidosättning.</li>
+      <li><code>TRIGGER</code>: visar avtryckarsensorns familj och aktiva typ. I <code>TLE493D</code>-byggen kan du också åsidosätta <code>TYP</code> mellan <code>AUTO</code>, <code>W2B6</code>, <code>W2B6_A0</code> och <code>P3B6</code>.</li>
+      <li><code>PWM_F MAX</code>: globalt tak för <code>PWM_F</code>. Välj 5, 10, 20 eller 25 kHz. <code>PWM_F</code> kan sedan ställas in i steg om 0,1 kHz upp till taket. Sänker du taket begränsas alla bilprofiler till det. Nackdelen med hög PWM (över cirka 20 kHz): motordrivaren slår om oftare per sekund, så omslagsförlusterna ökar och drivaren blir varmare. Omslagsflankerna tar också en större del av varje period, så responsen allra längst ner och allra högst upp på gasen blir mindre linjär. Använd den lägsta frekvensen som känns bra, och kontrollera drivarens temperatur om du går över 20 kHz.</li>
+      <li><code>TEST</code>: kör självtestet i 9 steg för OLED, knappar, avtryckare och utgångar.</li>
+    </ul>
+    <h3>Uppskattad strömförbrukning (kontrollens elektronik)</h3>
+    <table>
+      <thead>
+        <tr><th>Tillstånd</th><th>Uppskattning</th><th>Kommentar</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Uppstart</td><td>120 mA</td><td>Kort fas för start och initiering.</td></tr>
+        <tr><td>Normal drift</td><td>100 mA</td><td>Typisk meny-/race-drift utan WiFi.</td></tr>
+        <tr><td>WiFi aktivt</td><td>150 mA</td><td>AP-läge och webbserver aktiva.</td></tr>
+        <tr><td>Skärmsläckare</td><td>80 mA</td><td>Skärmen på, lite aktivitet.</td></tr>
+        <tr><td>VILA (mjuk)</td><td>55 mA (uppskattat)</td><td>OLED av, CPU 80 MHz, motoruppgiften pausad.</td></tr>
+        <tr><td>DJUP VILA</td><td>10 mA (uppskattat)</td><td>Nästan som avstängd, väcks genom att bryta strömmen.</td></tr>
+      </tbody>
+    </table>
+    <p class="small">Värdena är uppskattningar och beror på matningsspänning, hårdvaruvariant och mätuppställning. Bilens motorlast tillkommer. Siffrorna är uppmätta på 5 V-sidan efter spänningsregulatorn. Mäter du i stället på 12 V-sidan blir strömmen en annan och kan inte jämföras direkt, jämför sambandet mellan spänning och ström (U = R * I).</p>
+    <h3>Internt batteri (valfritt)</h3>
+    <p>Vissa hårdvaruvarianter kan ha ett litet litiumbatteri med en cell för inställningar när kontrollen inte är ansluten till banan. Det laddas när kontrollen får ström från banan eller via USB. Batteriet är tänkt för menyändringar, förberedelser före race, justeringar vid filbyte eller för att slippa vänta på uppstart innan banan får ström. Det är inte tänkt för lång drift på egen hand.</p>
+    <p class="small">Drifttiden nedan avser användning av kontrollen när den inte är ansluten till banan. Laddströmmen varierar med laddare och kort, men om laddningen ligger nära 200 mA och kontrollen drar runt 100 mA blir drifttiden utanför banan ofta ungefär dubbelt så lång som laddtiden. Verklig laddtid för litium är ändå lite längre än den enkla räkningen, eftersom den sista delen av laddningen går långsammare nära fullt.</p>
+    <table>
+      <thead>
+        <tr><th>Batteri</th><th>Typisk laddtid</th><th>Typisk drifttid utanför banan</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1S Li-ion/LiPo 250 mAh</td><td>cirka 1,4-1,8 timmar</td><td>cirka 2,0-2,5 timmar</td></tr>
+        <tr><td>1S Li-ion/LiPo 500 mAh</td><td>cirka 2,8-3,6 timmar</td><td>cirka 4,0-5,0 timmar</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>7. Körtips</h2>
+    <ul>
+      <li>Ändra en parameter i taget och kör 5-10 varv före nästa ändring.</li>
+      <li>Justera i den här ordningen: <code>SENSI</code>, sedan <code>FADE</code>, sedan <code>BROMS</code>, <code>ANTIS</code>, <code>KURVA</code> och sist <code>PWM_F</code>.</li>
+      <li>1/32-bilar på banor med lågt grepp: prova högre <code>ANTIS</code> (runt 100-150 ms) och mjukare <code>KURVA</code> (&lt;50).</li>
+      <li>1/24-bilar på banor med högt grepp: ofta lägre <code>ANTIS</code> (0-40 ms) och mer direkt <code>KURVA</code> (50-70).</li>
+      <li>Använd <code>BROMS+ -> Alt.broms</code> som ett tillfälligt kurvverktyg i stället för att ändra BROMS mellan heaten.</li>
+      <li>Använd <code>BROMS+ -> Rel.broms QUICK</code> med låg zon (5-12 %) och medelhög nivå (40-70 %) för tydligare tidig broms. Prova <code>DRAG</code> runt 20-50 % om du vill ha hjälp vid släpp utan nollzon.</li>
+      <li>Om bilen tar i för hårt precis när avtryckaren börjar verka: behåll <code>SENSI</code> där du vill ha den och lägg först till lite <code>FADE</code>.</li>
+      <li>Om bilen spinner tidigt i slaglängden: sänk <code>SENSI</code> eller öka <code>ANTIS</code>.</li>
+      <li>Om bilen känns slö ut ur kurvor: höj <code>SENSI</code> något eller minska <code>ANTIS</code>.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>8. Loggning, WiFi/USB-säkerhetskopia, återställning och OTA</h2>
+    <h3>Loggning</h3>
+    <ol>
+      <li>Öppna <code>INSTALLN -> LOGGING</code>.</li>
+      <li><code>START NU</code>/<code>STOPP NU</code>: startar eller stoppar lokal telemetriloggning direkt.</li>
+      <li><code>AUTO AV</code>: ställ in tidsgränsen för loggning (1-120 min, standard 30 min).</li>
+      <li>Själva loggningen kräver inte WiFi. Du kan ha WiFi avstängt och använda USB/WebSerial senare, eller slå på WiFi separat för att följa loggningen live i webbläsaren.</li>
+      <li>Om WiFi redan är aktivt när loggningen startar, förblir WiFi på så länge loggningen pågår.</li>
+    </ol>
+    <h3>WiFi</h3>
+    <ol>
+      <li>Öppna <code>INSTALLN -> WIFI</code> för att komma till WiFi-undermenyn.</li>
+      <li><code>START WIFI</code>/<code>STOPP WIFI</code>: startar eller stoppar WiFi i bakgrunden direkt.</li>
+      <li><code>LAGE</code>: växlar mellan <code>AP</code> och <code>CLIENT</code>.</li>
+      <li><code>INFO SIDA</code>: öppnar WiFi-sidan direkt och startar WiFi automatiskt. När du lämnar infosidan stoppas WiFi igen (om inte bakgrundsläget startades först).</li>
+      <li>I <code>AP</code>-läge sänder kontrollen <code>ESPEED32_XXXX</code> med lösenordet <code>espeed32</code>. <code>VISA QR</code> finns bara i <code>AP</code>-läge.</li>
+      <li>I <code>CLIENT</code>-läge måste du först ange WiFi-namn (SSID) och lösenord under <code>Advanced Config Editor -> Network</code>. Klientläget får adress via DHCP från din router/ditt nätverk och visar ingen QR-kod.</li>
+      <li>Om anslutningen i klientläge misslyckas går kontrollen automatiskt tillbaka till <code>AP</code>, så att du kan komma in igen och rätta inställningarna.</li>
+      <li><code>AUTO AV</code>: ställ in tidsgränsen för WiFi i bakgrunden (1-120 min, standard 10 min).</li>
+      <li>Öppna IP-adressen som visas på OLED-skärmen i webbläsaren. I <code>AP</code>-läge är det oftast <code>192.168.4.1</code>. I <code>CLIENT</code>-läge är det adressen som din router har delat ut via DHCP.</li>
+      <li>Första sidan är kontrollens öppna startsida. Känsliga verktyg som <code>Controller Panel</code>, <code>Backup</code>, <code>Restore</code>, telemetri, OTA och <code>Advanced Config Editor</code> skyddas av kontrollens inloggning.</li>
+      <li>Standardinloggning är användarnamnet <code>espeed32</code> och lösenordet <code>espeed32</code>. Den aktuella inloggningen visas också på kontrollens WiFi-infosida.</li>
+      <li>Säkerhetskopior innehåller inte lösenordet för klient-WiFi eller kontrollens inloggning. Vid återställning behålls de WiFi- och inloggningsuppgifter som redan finns sparade i kontrollen.</li>
+    </ol>
+    <figure class="doc-media">
+      <img src="../assets/wifi_examples.svg" alt="Kontrollens WiFi-infosida på OLED och QR-kod i helskärm">
+      <figcaption>WiFi-exempel i AP-läge: till vänster kontrollens INFO SIDA med SSID, lösenord och IP för webbläsaren. Till höger VISA QR i helskärm, bara i AP-läge, för snabb anslutning från mobil eller surfplatta.</figcaption>
+    </figure>
+    <p class="small">WiFi ökar strömförbrukningen för kontrollens elektronik från cirka 100 mA till 150 mA, ungefär 50 % mer. På enheter med internt batteri bör du använda WiFi sparsamt och stänga av det när du är klar.</p>
+    <p class="small">Statusraden medan WiFi är aktivt: <code>WIFI</code> använder det första tomma fältet. Finns inget tomt fält visas fält 4 som <code>WIFI</code> tills WiFi stängs av.</p>
+    <h3>Advanced Config Editor</h3>
+    <ul>
+      <li>Webbportalen har också en <code>Advanced Config Editor</code> för ändringar live.</li>
+      <li><code>Global Config</code> ändrar inställningar för hela kontrollen. <code>Car Params</code> ändrar vald bilprofil.</li>
+      <li>Under <code>Global Config</code> kan du också ställa in SSID/lösenord för klient-WiFi och kontrollens inloggningslösenord.</li>
+      <li>I <code>Car Params</code> kan du läsa in och ändra valfri bilprofil direkt från listan, även om en annan profil är aktiv i kontrollen.</li>
+      <li><code>Refresh from device</code> läser in de aktuella värdena från kontrollen igen.</li>
+      <li><code>Apply (RAM only)</code> låter dig testa ändringar live utan att först skriva till flash. Det passar bra för att prova broms, gas, antispinn, kurva, fade och släppbroms på banan.</li>
+      <li><code>Apply + Save to flash</code> sparar samma värden permanent när du är nöjd med testet.</li>
+      <li>På kontrollens WiFi-sida fungerar editorn direkt i webbläsaren via WiFi. På <code>espeed32.com</code> kräver samma editor en USB-anslutning via WebSerial.</li>
+    </ul>
+    <figure class="doc-media">
+      <img src="../assets/car_params.png" alt="Skärmbild av Advanced Config Editor med val av profil och gas- och effektfält som kan ändras live">
+      <figcaption>Exempel på Advanced Config Editor: skärmbilden visar fliken <code>Car Params</code> med val av profil och bilinställningar som kan ändras live. Editorn visas på engelska här, men arbetsflödet är detsamma i alla manualer.</figcaption>
+    </figure>
+    <h3>USB</h3>
+    <ol>
+      <li>Öppna <code>INSTALLN -> USB INFO</code>.</li>
+      <li>Använd Chrome/Edge (WebSerial).</li>
+      <li>Säkerhetskopiering och återställning fungerar via USB. OTA kräver WiFi.</li>
+      <li>Automatisk parad OTA installerar det officiella standardparet, som använder standardbygget för <code>TLE493D</code>.</li>
+      <li>Om din kontroll använder en annan sensorfamilj för avtryckaren, ladda upp rätt sensorspecifik firmwarefil manuellt tillsammans med SPIFFS-filen från samma release.</li>
+      <li>På Windows innebär <code>flash_all.sh</code> oftast Git Bash eller WSL. Arduino IDE kan fortfarande ladda upp sketchen, men sensorfamiljen för avtryckaren väljs fortfarande vid kompilering.</li>
+    </ol>
+    <p class="warn">Bryt aldrig strömmen under en OTA-uppladdning.</p>
+  </section>
+
+  <section>
+    <h2>9. Menyträd (komplett karta över gränssnittet)</h2>
+<pre>ROT (huvudmeny)
+|- BROMS
+|- SENSI
+|- ANTIS
+|- KURVA (grafvy)
+|- FADE (grafvy, AVANCER.=PA)
+|- PWM_F (AVANCER.=PA)
+|- BROMS+ (AVANCER.=PA)
+|  |- Alt.broms (%)
+|  |- Rel.broms (AV/QUICK/DRAG)
+|  |- Zon (%) [bara QUICK]
+|  |- Quick (%) [QUICK-läge]
+|  |- Drag (%) [DRAG-läge]
+|  `- Tillbaka
+|- GRANS
+|- INSTALLN
+|  |- STROM
+|  |  |- SKSPR
+|  |  |  |- NU
+|  |  |  |- RAD1
+|  |  |  |- RAD2
+|  |  |  |- TID (0-240 s, 0=AV)
+|  |  |  `- TILLBAKA
+|  |  |- VILA
+|  |  |  |- SOV NU
+|  |  |  |- INTERV. (0-10 min, 0=AV)
+|  |  |  `- TILLBAKA
+|  |  |- DJUP VILA
+|  |  |  |- SLACK NU (stäng av)
+|  |  |  |- INTERV. (0 eller 2-30 min)
+|  |  |  `- TILLBAKA
+|  |  |- UPPSTART (0-99 x 10ms)
+|  |  |- VIN KAL.
+|  |  `- TILLBAKA
+|  |- SKARM
+|  |  |- RACELAGE (AV/FULL/ENKEL)
+|  |  |- SPRAK (NOR/ENG/CS/ACD/ESP/DEU/ITA/NLD/POR/SVE)
+|  |  |- STIL (UPPER/Pascal)
+|  |  |- TEXTSTRL (STOR/liten)
+|  |  |- AVANCER. (AV/PA)
+|  |  |- STEG
+|  |  |  |- ANTISPIN
+|  |  |  |  |- REG.TYP (MS / % / TEXT, standard MS)
+|  |  |  |  |- STEG MS (1-50 ms, standard 5)  [dold i TEXT-läge]
+|  |  |  |  |- STEG % (1-100 %, standard 1)   [visas bara i %-läge]
+|  |  |  |  `- TILLBAKA
+|  |  |  |- BROMSSTEG (0.1-50.0 %, standard 1.0%)
+|  |  |  |- SENSISTEG (0.1-5.0 % i steg om 0.1%, standard 1.0%)
+|  |  |  `- TILLBAKA
+|  |  |- STATUSRAD
+|  |  |  |- FALT 1
+|  |  |  |- FALT 2
+|  |  |  |- FALT 3
+|  |  |  |- FALT 4
+|  |  |  `- TILLBAKA
+|  |  `- TILLBAKA
+|  |- LJUD
+|  |  |- UPPSTART (PA/AV)
+|  |  |- RACE (PA/AV)
+|  |  `- TILLBAKA
+|  |- HARDWARE
+|  |  |- ENC.INVERT (PA/AV)
+|  |  |- EXT.POT.
+|  |  |  |- POT 1 (AV/BROMS/SENSI)
+|  |  |  |- POT 2 (AV/BROMS/SENSI)
+|  |  |  `- TILLBAKA
+|  |  |- TRIGGER
+|  |  |  |- FAMILJ
+|  |  |  |- AKTIV
+|  |  |  |- TYP (AUTO/W2B6/W2B6_A0/P3B6) [bara TLE493D]
+|  |  |  `- TILLBAKA
+|  |  |- PWM_F MAX (5/10/20/25 kHz)
+|  |  |- TEST (självtest, 9 steg)
+|  |  `- TILLBAKA
+|  |- STATS (PA/AV, standard AV)
+|  |- WIFI
+|  |  |- START/STOPP WIFI
+|  |  |- LAGE
+|  |  |- INFO SIDA
+|  |  |- VISA QR [bara AP]
+|  |  |- AUTO AV (1-120 min, standard 10)
+|  |  `- TILLBAKA
+|  |- LOGGING
+|  |  |- START/STOPP NU
+|  |  |- AUTO AV (1-120 min, standard 30)
+|  |  `- TILLBAKA
+|  |- LAS
+|  |  |- MENYVAL (PA/AV, standard AV)
+|  |  |- GENVAG (AV / 1-10 s, standard 5 s)
+|  |  |- BEKRAFTA (PA/AV, standard AV)
+|  |  `- TILLBAKA
+|  |- USB INFO
+|  |- ATERSTALL
+|  |  |- Bil
+|  |  |- Installningar
+|  |  |- Kalibrering
+|  |  |- Allt
+|  |  `- TILLBAKA
+|  |- INFO
+|  `- TILLBAKA
+|- STATS [om aktiverad]
+|- LAS [om aktiverad]
+`- *BIL*
+   |- VALJ
+   |- NAMNGE
+   |- RACESWP (bilval i grid PA/AV)
+   |- KOPIA
+   |- ATERSTALL
+   `- TILLBAKA</pre>
+  </section>
+
+</main>

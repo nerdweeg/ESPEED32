@@ -3,21 +3,8 @@
 #include "HAL.h"
 #include "slot_ESC.h"
 #include "ui_render.h"
-
-extern StoredVar_type g_storedVar;
-extern ESC_type g_escVar;
-extern portMUX_TYPE g_lapStatsMux;
-extern OBDISP g_obd;
-extern AiEsp32RotaryEncoder g_rotaryEncoder;
-extern char msgStr[50];
-
-extern bool consumeScreensaverWakeInput(bool wakeTriggered);
-extern bool refreshIdleInteractionFromControls(uint32_t* lastInteraction, bool* screensaverActive, uint16_t* lastEncoderPos);
-extern bool serviceIdlePowerTransitions(uint32_t* lastInteraction, bool* screensaverActive);
-extern bool checkRaceModeEscape();
-extern void requestEscapeToMain();
-extern uint8_t getMainMenuSelector();
-extern uint8_t getMainMenuItemsCount();
+#include "app_globals.h"
+#include "power_ui.h"
 
 /**
  * Show the Lap Stats screen
@@ -143,12 +130,12 @@ void showLapStats() {
     bool lapCountChanged = (totalLaps != prevLapCount);
     if (lapCountChanged || g_escVar.bestLapTime_ms != prevBestLap) {
       if (totalLaps > 0) {
-        sprintf(msgStr, "Laps:%-3d Best:%d.%02ds",
+        snprintf(msgStr, sizeof(msgStr), "Laps:%-3d Best:%d.%02ds",
                 totalLaps,
                 (int)(g_escVar.bestLapTime_ms / 1000),
                 (int)((g_escVar.bestLapTime_ms % 1000) / 10));
       } else {
-        sprintf(msgStr, "Laps:0              ");
+        snprintf(msgStr, sizeof(msgStr), "Laps:0              ");
       }
       obdWriteString(&g_obd, 0, 0, 8, msgStr, FONT_6x8, OBD_BLACK, 1);
       prevLapCount = totalLaps;
@@ -166,18 +153,18 @@ void showLapStats() {
     if ((currentLapTime / 200) != (prevCurrentLap / 200) || motorCurrent != prevMotorCurrent) {
       if (g_escVar.lapStartTime_ms > 0) {
         if (hasCurrentSense) {
-          sprintf(msgStr, "Curr:%d.%ds  mA:%-4d",
+          snprintf(msgStr, sizeof(msgStr), "Curr:%d.%ds  mA:%-4d",
                   (int)(currentLapTime / 1000),
                   (int)((currentLapTime % 1000) / 100),
                   motorCurrent);
         } else {
-          sprintf(msgStr, "Curr:%d.%ds  mA:N/A ",
+          snprintf(msgStr, sizeof(msgStr), "Curr:%d.%ds  mA:N/A ",
                   (int)(currentLapTime / 1000),
                   (int)((currentLapTime % 1000) / 100));
         }
       } else {
-        if (hasCurrentSense) sprintf(msgStr, "Curr:---   mA:%-4d ", motorCurrent);
-        else sprintf(msgStr, "Curr:---   mA:N/A ");
+        if (hasCurrentSense) snprintf(msgStr, sizeof(msgStr), "Curr:---   mA:%-4d ", motorCurrent);
+        else snprintf(msgStr, sizeof(msgStr), "Curr:---   mA:N/A ");
       }
       obdWriteString(&g_obd, 0, 0, 16, msgStr, FONT_6x8, OBD_BLACK, 1);
       prevCurrentLap = currentLapTime;
@@ -194,7 +181,7 @@ void showLapStats() {
           uint8_t bufIdx = lapIdx % LAP_MAX_COUNT;
           uint32_t t = g_escVar.lapTimes[bufIdx];
           bool isBest = (t == g_escVar.bestLapTime_ms && t > 0);
-          sprintf(msgStr, "#%-3d %d.%02ds %s       ",
+          snprintf(msgStr, sizeof(msgStr), "#%-3d %d.%02ds %s       ",
                   lapIdx + 1,
                   (int)(t / 1000),
                   (int)((t % 1000) / 10),

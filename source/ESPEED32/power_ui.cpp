@@ -2,15 +2,7 @@
 #include <Arduino.h>
 #include "slot_ESC.h"
 #include "connectivity_portal.h"
-
-extern TaskHandle_t Task2;
-extern StoredVar_type g_storedVar;
-extern ESC_type g_escVar;
-extern OBDISP g_obd;
-extern AiEsp32RotaryEncoder g_rotaryEncoder;
-extern uint32_t g_lastEncoderInteraction;
-
-extern void stopTimedWiFiPortal();
+#include "app_globals.h"
 
 /**
  * @brief Count live controller input as user activity for idle timers.
@@ -18,7 +10,7 @@ extern void stopTimedWiFiPortal();
  *          resets the inactivity timer. If screensaver is already active, the same
  *          inputs wake it and let the caller redraw the current menu.
  */
-bool refreshIdleInteractionFromControls(uint32_t* lastInteraction, bool* screensaverActive, uint16_t* lastEncoderPos) {
+bool refreshIdleInteractionFromControls(volatile uint32_t* lastInteraction, bool* screensaverActive, uint16_t* lastEncoderPos) {
   if (lastInteraction == NULL || lastEncoderPos == NULL) return false;
 
   if (isOtaInProgress()) {
@@ -118,9 +110,9 @@ void showPowerSave(uint32_t inactivityStartMs) {
   }
 
   uint16_t lang = g_storedVar.language;
-  const char* sleepMsg[] = {
+  static const char* const sleepMsg[LANG_COUNT] = {
     "SOVER...", "SLEEPING...", "SLEEPING...", "SLEEPING...",
-    "DURMIENDO...", "SCHLAFEN...", "RIPOSO...", "SLAPEN...", "DORMIR..."
+    "DURMIENDO...", "SCHLAFEN...", "RIPOSO...", "SLAPEN...", "DORMIR...", "SOVER..."
   };
 
   /* Brief sleep message */
@@ -171,9 +163,9 @@ void showDeepSleep() {
   }
 
   uint16_t lang = g_storedVar.language;
-  const char* powerOffMsg[] = {
+  static const char* const powerOffMsg[LANG_COUNT] = {
     "SLUKKER...", "POWER OFF...", "POWER OFF...", "POWER OFF...",
-    "APAGANDO...", "AUSSCHALT.", "SPEGNENDO...", "UITSCHAK.", "DESLIGAR."
+    "APAGANDO...", "AUSSCHALT.", "SPEGNENDO...", "UITSCHAK.", "DESLIGAR.", "SLACKER..."
   };
 
   /* Brief power-off message */

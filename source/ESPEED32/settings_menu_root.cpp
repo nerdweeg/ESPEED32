@@ -11,29 +11,10 @@
 #include "settings_reset_menu.h"
 #include "settings_about_screen.h"
 #include "ui_render.h"
-
-extern StoredVar_type g_storedVar;
-extern uint16_t g_statsEnabled;
-extern uint16_t g_antiSpinStepMs;
-extern ESC_type g_escVar;
-extern OBDISP g_obd;
-extern AiEsp32RotaryEncoder g_rotaryEncoder;
-extern Menu_type g_settingsMenu;
-extern char msgStr[50];
-extern uint32_t g_lastEncoderInteraction;
-
-extern void initSettingsMenuItems();
-extern void initMenuItems();
-extern void saveEEPROM(StoredVar_type toSave);
-extern bool consumeScreensaverWakeInput(bool wakeTriggered);
-extern bool refreshIdleInteractionFromControls(uint32_t* lastInteraction, bool* screensaverActive, uint16_t* lastEncoderPos);
-extern bool serviceIdlePowerTransitions(uint32_t* lastInteraction, bool* screensaverActive);
-extern bool checkRaceModeEscape();
-extern void setInSettingsMenu(bool active);
-extern void requestEscapeToMain();
-extern bool isEscapeToMainRequested();
-extern uint8_t getMainMenuSelector();
-extern uint8_t getMainMenuItemsCount();
+#include "app_globals.h"
+#include "app_init.h"
+#include "power_ui.h"
+#include "menu_input.h"
 
 void showSettingsMenu() {
   initSettingsMenuItems();
@@ -211,42 +192,38 @@ void showSettingsMenu() {
     }
 
     /* Brake button = cancel edit or exit */
-    static bool brakeBtnInSettings = false;
-    static uint32_t lastBrakeBtnSettingsTime = 0;
-    if (digitalRead(BUTT_PIN) == BUTTON_PRESSED) {
-      if (!brakeBtnInSettings && millis() - lastBrakeBtnSettingsTime > BUTTON_SHORT_PRESS_DEBOUNCE_MS) {
-        brakeBtnInSettings = true;
-        lastBrakeBtnSettingsTime = millis();
-        lastSettingsInteraction = millis();
-        if (settingsMenuState == VALUE_SELECTION) {
-          if (settingsValuePtr != NULL) {
-            *settingsValuePtr = originalSettingsValue;
-          }
-          settingsMenuState = ITEM_SELECTION;
-          g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
-          setUiEncoderBoundaries(1, SETTINGS_ITEMS_COUNT, false);
-          resetUiEncoder(settingsSelector);
-          obdFill(&g_obd, OBD_WHITE, 1);
-        } else {
-          break;
+    static BrakeButtonEdge brakeBtnInSettings;
+    if (brakeBtnInSettings.pressed()) {
+      lastSettingsInteraction = millis();
+      if (settingsMenuState == VALUE_SELECTION) {
+        if (settingsValuePtr != NULL) {
+          *settingsValuePtr = originalSettingsValue;
         }
+        settingsMenuState = ITEM_SELECTION;
+        g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
+        setUiEncoderBoundaries(1, SETTINGS_ITEMS_COUNT, false);
+        resetUiEncoder(settingsSelector);
+        obdFill(&g_obd, OBD_WHITE, 1);
+      } else {
+        break;
       }
-    } else {
-      brakeBtnInSettings = false;
     }
 
     /* Long press encoder button = escape to main + race mode toggle */
     if (checkRaceModeEscape()) { requestEscapeToMain(); break; }
 
+    /* Font size can change in a child menu (DISPLAY): re-fit the frame to the new line count */
+    uint8_t currentVisibleLines = getMenuLines();
+    if (currentVisibleLines != visibleLines) {
+      visibleLines = currentVisibleLines;
+      frameUpper = 1;
+      frameLower = visibleLines;
+      obdFill(&g_obd, OBD_WHITE, 1);
+    }
+
     /* Frame scrolling */
     if (settingsMenuState == ITEM_SELECTION) {
-      if (settingsSelector > frameLower) {
-        frameLower = settingsSelector;
-        frameUpper = frameLower - visibleLines + 1;
-        obdFill(&g_obd, OBD_WHITE, 1);
-      } else if (settingsSelector < frameUpper) {
-        frameUpper = settingsSelector;
-        frameLower = frameUpper + visibleLines - 1;
+      if (scrollMenuFrame(settingsSelector, visibleLines, frameUpper, frameLower)) {
         obdFill(&g_obd, OBD_WHITE, 1);
       }
     }
@@ -271,7 +248,7 @@ void showSettingsMenu() {
         } else if (g_settingsMenu.item[itemIndex].unit[0] != '\0') {
           snprintf(msgStr, sizeof(msgStr), "%2d%s", value, g_settingsMenu.item[itemIndex].unit);
         } else {
-          sprintf(msgStr, "%3d", value);
+          snprintf(msgStr, sizeof(msgStr), "%3d", value);
         }
         int textWidth = strlen(msgStr) * charWidth;
         obdWriteString(&g_obd, 0, OLED_WIDTH - textWidth, i * lineHeight, msgStr,

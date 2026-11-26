@@ -72,10 +72,11 @@
     <h3>Taal en display</h3>
     <ul>
       <li><code>DISPLAY -&gt; LANGUAGE</code> kiest tussen gelokaliseerde labels en de naamprofielen ENG/CS/ACD.</li>
-      <li><code>NOR/ESP/DEU/ITA/NLD/POR</code>: gelokaliseerde UI met de standaardset <code>BRAKE/SENSI/ANTIS/CURVE/FADE/LIMIT</code>.</li>
+      <li><code>NOR/ESP/DEU/ITA/NLD/POR/SVE</code>: gelokaliseerde UI met de standaardset <code>BRAKE/SENSI/ANTIS/CURVE/FADE/LIMIT</code>.</li>
       <li><code>ENG</code>: algemene benamingen (<code>BRAKE/SENSI/ANTIS/CURVE/FADE/LIMIT</code>).</li>
-      <li><code>CS</code>: termen in CarSteen-stijl (<code>ATTACK/CHOKE2/PROFIL/CHOKE1</code>).</li>
+      <li><code>CS</code>: termen in CarSteen-stijl (<code>ATTCK/CHOK2/PROFL/CHOK1</code>).</li>
       <li><code>ACD</code>: ACD-termen waar direct van toepassing, met <code>SENSI</code> en <code>CHOKE</code> voor limit. <code>ANTIS</code> blijft anti-spin omdat de ACD-handleiding geen aparte Choke2-term definieert.</li>
+      <li><code>CHOK1</code> (CS) en <code>CHOKE</code> (ACD) werken omgekeerd aan <code>LIMIT</code>: <code>CHOKE = 100 - LIMIT</code>. <code>CHOKE 0</code> betekent geen choke (volle snelheid) en een hogere waarde knijpt meer af. De waarde wordt als LIMIT opgeslagen, dus van taal wisselen houdt dezelfde topsnelheid.</li>
       <li><code>DISPLAY -&gt; CASE</code> bepaalt of labels in <code>UPPER</code> of <code>Pascal</code> worden getoond.</li>
       <li><code>DISPLAY -&gt; FONT SIZE</code> verandert de tekstdichtheid van lijsten/menu's tussen <code>LARGE</code> en <code>small</code>.</li>
       <li><code>DISPLAY -&gt; GEAVANCEERD</code> bepaalt of <code>FADE</code>, <code>PWM_F</code> en <code>BRAKE+</code> in het hoofdmenu zichtbaar zijn. Op <code>UIT</code> worden die regels verborgen voor een eenvoudiger menu, maar de opgeslagen autowaarden blijven actief.</li>
@@ -100,8 +101,9 @@
     </figure>
     <h3>Statusbalk en ABOUT</h3>
     <ul>
-      <li><code>STATUS BAR</code>: 4 vaste slots. Elke slot kan <code>OUT%</code>, <code>THRO</code>, <code>CAR</code>, <code>CURR</code>, <code>VOLT</code>, <code>VBAT</code>, <code>REM</code> of leeg tonen. <code>CURR</code> toont mA onder 1000 en A daarboven.</li>
+      <li><code>STATUS BAR</code>: 4 vaste slots. Elke slot kan <code>OUT%</code>, <code>THRO</code>, <code>CAR</code>, <code>CURR</code>, <code>VOLT</code>, <code>VBAT</code>, <code>ID</code>, <code>REM</code> of leeg tonen. <code>CURR</code> toont mA onder 1000 en A daarboven.</li>
       <li><code>VBAT</code> toont de spanning van de optionele interne batterij. In het standaard boardprofiel gebruikt deze meting <code>GPIO15</code> / ADC2, dus de waarde kan stoppen met verversen terwijl WiFi actief is.</li>
+      <li><code>ID</code> toont de apparaat-ID van de controller, bijvoorbeeld <code>#A3B4</code>. Dat zijn de laatste 4 hex-tekens van het MAC-adres, dezelfde als in de WiFi-naam (<code>ESPEED32_A3B4</code>), zodat je controllers op de baan en in de WiFi-lijst uit elkaar houdt.</li>
       <li><code>REM</code> in de statusbalk toont het actieve remtype en de waarde in real time: <code>Bxxx%</code> = normale <code>BRAKE</code>, <code>Axxx%</code> = <code>Alt.Brake</code>, <code>Qxxx%</code> = <code>Rel.Brake QUICK</code>, <code>Dxxx%</code> = <code>Rel.Brake DRAG</code>, <code>NONE</code> = op dat moment geen rem actief. De code kan tijdens het rijden snel wisselen.</li>
       <li>Wanneer WiFi actief is toont de statusbalk <code>WIFI</code>. Hiervoor wordt de eerste lege slot gebruikt; als er geen lege slot is, wordt slot 4 tijdelijk overschreven.</li>
       <li><code>ABOUT</code> toont firmware-/dataversie, gedetecteerde triggersensor, chipdetails, flash/heap, MAC-adressen en builddatum/-tijd.</li>
@@ -114,7 +116,7 @@
     <ul>
       <li><code>SELECT</code>: kies actief autoprofiel (0-19).</li>
       <li><code>RENAME</code>: editor voor een naam van 4 tekens (ASCII 32-122). Zie <a href="https://slatecave.net/notebook/ascii/" target="_blank" rel="noopener noreferrer">ASCII-tabel</a>.</li>
-      <li><code>RACESWP</code>: ON maakt profielwissel direct vanuit GRID-modus mogelijk.</li>
+      <li><code>RACESWP</code>: ON maakt profielwissel direct vanuit GRID-modus mogelijk. Standaard: OFF.</li>
       <li><code>COPY</code>: kopieer van een profiel naar een ander, of naar ALL profiles.</li>
       <li><code>RESET</code>: reset alle autoprofilen met bevestiging.</li>
     </ul>
@@ -167,7 +169,7 @@
         <tr><td><code>ANTIS</code></td><td>0-999 ms</td><td>30</td><td>Tijd van de anti-spin-ramp boven de low-output-bypass. Hogere waarde = langere/langzamere opbouw van vermogen. Het is geen pure trigger-delay. Weergave-eenheid en encoderstap worden ingesteld in <code>DISPLAY -&gt; STAPPEN -&gt; ANTISPIN</code> (MS / % / TEXT).</td></tr>
         <tr><td><code>CURVE</code></td><td>10-90 %</td><td>50</td><td>Throttle-mapping. 50 = lineair. &lt;50 zachtere start, &gt;50 scherpere start.</td></tr>
         <tr><td><code>FADE</code></td><td>0-30 %</td><td>0</td><td>Soft-start-zone. 0 = uitgeschakeld / oud gedrag. Boven 0 loopt het eerste deel van de triggerslag van 0 naar SENSI voordat normale CURVE het overneemt.</td></tr>
-        <tr><td><code>PWM_F</code></td><td>1.0-5.0 / 10.0 / 20.0 / 25.0 kHz</td><td>4.0</td><td>PWM-frequentie van de motor. Het bereik volgt <code>SETTINGS -&gt; HARDWARE -&gt; PWM MAX</code> (5/10/20/25 kHz). Een hogere waarde maakt de respons onderin vaak zachter.</td></tr>
+        <tr><td><code>PWM_F</code></td><td>1.0-5.0 / 10.0 / 20.0 / 25.0 kHz</td><td>4.0</td><td>PWM-frequentie van de motor. Het bereik volgt <code>SETTINGS -&gt; HARDWARE -&gt; PWM_F MAX</code> (5/10/20/25 kHz). Een hogere waarde maakt de respons onderin vaak zachter.</td></tr>
         <tr><td><code>BRAKE+ / Alt.Brake</code></td><td>0-100 %</td><td>0</td><td>Alternatieve remwaarde die wordt gebruikt terwijl de remknop is ingedrukt en de trigger los is.</td></tr>
         <tr><td><code>BRAKE+ / Rel.Brake</code></td><td>OFF/QUICK(zone+level)/DRAG(level)</td><td>OFF</td><td>Hulpfunctie voor remmen bij loslaten van de trigger. QUICK gebruikt een zone met nul output; DRAG voegt loslaatdrag toe zonder zone.</td></tr>
         <tr><td><code>LIMIT</code></td><td>(SENSI+5)-100 %</td><td>100</td><td>Maximale motoroutput. &lt;100 activeert de LIMITER-waarschuwing.</td></tr>
@@ -306,7 +308,7 @@
       <li><code>ENC INV</code>: draai de encoderrichting globaal om als het menu op jouw hardware achterstevoren aanvoelt.</li>
       <li><code>EXT POT</code>: wijs <code>POT 1</code> en <code>POT 2</code> toe aan live overrides voor <code>OFF</code>, <code>BRAKE</code> of <code>SENSI</code>.</li>
       <li><code>TRIGGER</code>: toont triggersensorfamilie en actief type. Op <code>TLE493D</code>-builds kun je ook <code>TYPE</code> overriden tussen <code>AUTO</code>, <code>W2B6</code>, <code>W2B6_A0</code> en <code>P3B6</code>.</li>
-      <li><code>PWM MAX</code>: globale bovengrens voor <code>PWM_F</code>. Kies 5, 10, 20 of 25 kHz. <code>PWM_F</code> stel je daarna in stappen van 0.1 kHz in tot die limiet. Verlaag je deze, dan worden alle autoprofielen tot die limiet begrensd. Nadeel van hoge PWM (boven ongeveer 20 kHz): de motordriver schakelt vaker, dus de schakelverliezen stijgen en de driver wordt warmer. De schakelflanken nemen ook een groter deel van elke periode in, waardoor de respons bij heel weinig en heel veel gas minder lineair wordt. Gebruik de laagste frequentie die goed voelt en controleer de drivertemperatuur boven 20 kHz.</li>
+      <li><code>PWM_F MAX</code>: globale bovengrens voor <code>PWM_F</code>. Kies 5, 10, 20 of 25 kHz. <code>PWM_F</code> stel je daarna in stappen van 0.1 kHz in tot die limiet. Verlaag je deze, dan worden alle autoprofielen tot die limiet begrensd. Nadeel van hoge PWM (boven ongeveer 20 kHz): de motordriver schakelt vaker, dus de schakelverliezen stijgen en de driver wordt warmer. De schakelflanken nemen ook een groter deel van elke periode in, waardoor de respons bij heel weinig en heel veel gas minder lineair wordt. Gebruik de laagste frequentie die goed voelt en controleer de drivertemperatuur boven 20 kHz.</li>
       <li><code>TEST</code>: voert de 9-stappen zelftest uit voor OLED, knoppen, trigger en outputs.</li>
     </ul>
     <h3>Geschat stroomverbruik van de controller-elektronica</h3>
@@ -449,7 +451,7 @@
 |  |  `- BACK
 |  |- DISPLAY
 |  |  |- RACE MODE (OFF/FULL/SIMPLE)
-|  |  |- LANGUAGE (NOR/ENG/CS/ACD/ESP/DEU/ITA/NLD/POR)
+|  |  |- LANGUAGE (NOR/ENG/CS/ACD/ESP/DEU/ITA/NLD/POR/SVE)
 |  |  |- CASE (UPPER/Pascal)
 |  |  |- FONT SIZE (LARGE/small)
 |  |  |- GEAVANCEERD (UIT/AAN)
@@ -484,7 +486,7 @@
 |  |  |  |- ACTIVE
 |  |  |  |- TYPE (AUTO/W2B6/W2B6_A0/P3B6) [TLE493D only]
 |  |  |  `- BACK
-|  |  |- PWM MAX (5/10/20/25 kHz)
+|  |  |- PWM_F MAX (5/10/20/25 kHz)
 |  |  |- TEST (Self-Test, 9 steps)
 |  |  `- BACK
 |  |- STATS (ON/OFF, default OFF)

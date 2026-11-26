@@ -73,10 +73,11 @@
     <h3>Språk og display</h3>
     <ul>
       <li><code>DISPLAY -&gt; LANGUAGE</code> velger mellom lokaliserte etiketter og navneprofilene ENG/CS/ACD.</li>
-      <li><code>NOR/ESP/DEU/ITA/NLD/POR</code>: lokalisert UI med standardnavnene <code>BRAKE/SENSI/ANTIS/CURVE/FADE/LIMIT</code>.</li>
+      <li><code>NOR/ESP/DEU/ITA/NLD/POR/SVE</code>: lokalisert UI med standardnavnene <code>BRAKE/SENSI/ANTIS/CURVE/FADE/LIMIT</code>.</li>
       <li><code>ENG</code>: generiske navn (<code>BRAKE/SENSI/ANTIS/CURVE/FADE/LIMIT</code>).</li>
-      <li><code>CS</code>: CarSteen-stil (<code>ATTACK/CHOKE2/PROFIL/CHOKE1</code>).</li>
+      <li><code>CS</code>: CarSteen-stil (<code>ATTCK/CHOK2/PROFL/CHOK1</code>).</li>
       <li><code>ACD</code>: ACD-stil der det finnes direkte treff (<code>SENSI</code> og <code>CHOKE</code> for limit). <code>ANTIS</code> beholdes som antispinn siden ACD-manualen ikke bruker en egen Choke2-term.</li>
+      <li><code>CHOK1</code> (CS) og <code>CHOKE</code> (ACD) går motsatt vei av <code>LIMIT</code>: <code>CHOKE = 100 - LIMIT</code>. <code>CHOKE 0</code> betyr ingen kvelning (full fart), og høyere verdi kveler mer. Innstillingen lagres som LIMIT, så bytte av språk gir samme toppfart.</li>
       <li><code>DISPLAY -&gt; CASE</code> velger om etiketter vises i <code>UPPER</code> eller <code>Pascal</code>.</li>
       <li><code>DISPLAY -&gt; FONT SIZE</code> velger mellom <code>LARGE</code> og <code>small</code> for liste- og menyvisning.</li>
       <li><code>SKJERM -&gt; AVANSERT</code> velger om <code>FADE</code>, <code>PWM_F</code> og <code>BREMS+</code> vises i hovedmenyen. Setter du den til <code>AV</code>, skjules disse radene for en enklere meny, men de lagrede bilverdiene er fortsatt aktive.</li>
@@ -101,8 +102,9 @@
     </figure>
     <h3>Statuslinje og ABOUT</h3>
     <ul>
-      <li><code>STATUS BAR</code>: 4 faste felter. Hvert felt kan vise <code>OUT%</code>, <code>GASS</code>, <code>BIL</code>, <code>AMPE</code>, <code>VOLT</code>, <code>VBAT</code>, <code>BREMS</code> eller blankt. <code>AMPE</code> viser mA under 1000 og A over.</li>
+      <li><code>STATUS BAR</code>: 4 faste felter. Hvert felt kan vise <code>OUT%</code>, <code>GASS</code>, <code>BIL</code>, <code>AMPE</code>, <code>VOLT</code>, <code>VBAT</code>, <code>ID</code>, <code>BREMS</code> eller blankt. <code>AMPE</code> viser mA under 1000 og A over.</li>
       <li><code>VBAT</code> viser spenningen paa det valgfrie interne batteriet. I standard board-profil bruker denne maalingen <code>GPIO15</code> / ADC2, saa verdien kan slutte aa oppdatere mens WiFi er aktiv.</li>
+      <li><code>ID</code> viser kontrollerens enhets-ID, for eksempel <code>#A3B4</code>. Det er de 4 siste hex-tegnene i MAC-adressen, de samme som i WiFi-navnet (<code>ESPEED32_A3B4</code>), slik at du kan skille kontrollere fra hverandre på banen og i WiFi-listen.</li>
       <li><code>BREMS</code> i statuslinjen viser aktiv bremsetype og verdi i sanntid: <code>Bxxx%</code> = vanlig <code>BRAKE</code>, <code>Axxx%</code> = <code>Alt.Brake</code>, <code>Qxxx%</code> = <code>Rel.Brake QUICK</code>, <code>Dxxx%</code> = <code>Rel.Brake DRAG</code>, <code>NONE</code> = ingen brems er aktiv akkurat da. Koden kan veksle raskt mens du kjorer.</li>
       <li>Når WiFi er aktivt vises <code>WIFI</code> i statuslinjen. Først brukes ledig felt; hvis ingen er ledige overstyres felt 4 midlertidig.</li>
       <li><code>ABOUT</code> viser firmware/data-versjon, detektert trigger-sensor, chip-info, flash/heap, MAC-adresser og build-dato/tid.</li>
@@ -115,7 +117,7 @@
     <ul>
       <li><code>SELECT</code>: velg aktiv bilprofil (0-19).</li>
       <li><code>RENAME</code>: 4-tegns navn (ASCII 32-122), redigert tegn for tegn. Se <a href="https://slatecave.net/notebook/ascii/" target="_blank" rel="noopener noreferrer">ASCII-tabell</a>.</li>
-      <li><code>RACESWP</code>: ON gir mulighet for car-select direkte i GRID-view.</li>
+      <li><code>RACESWP</code>: ON gir mulighet for car-select direkte i GRID-view. Standard: OFF.</li>
       <li><code>COPY</code>: kopier fra en profil til en annen eller til ALL.</li>
       <li><code>RESET</code>: nullstill alle bilprofiler (krever bekreftelse).</li>
     </ul>
@@ -168,7 +170,7 @@
         <tr><td><code>ANTIS</code></td><td>0-999 ms</td><td>30</td><td>Antispinn-rampetid over lavfarts-bypass. Høyere verdi = lengre/tregere effektoppbygging. Det er ikke ren trigger-delay. Visningsenhet og encoder-steg konfigureres i <code>SKJERM -&gt; STEG -&gt; ANTISPINN</code> (MS / % / TEXT).</td></tr>
         <tr><td><code>CURVE</code></td><td>10-90 %</td><td>50</td><td>Gasskurve. 50 = lineær. &lt;50 mykere start, &gt;50 skarpere start.</td></tr>
         <tr><td><code>FADE</code></td><td>0-30 %</td><td>0</td><td>Myk startsone. 0 = av / gammel oppføring. Over 0 rampes første del av triggeren fra 0 opp til SENSI før vanlig CURVE tar over.</td></tr>
-        <tr><td><code>PWM_F</code></td><td>1.0-5.0 / 10.0 / 20.0 / 25.0 kHz</td><td>4.0</td><td>PWM-frekvens til motor. Området følger <code>SETTINGS -&gt; HARDWARE -&gt; PWM MAX</code> (5/10/20/25 kHz). Høyere frekvens gir ofte mykere lavgass.</td></tr>
+        <tr><td><code>PWM_F</code></td><td>1.0-5.0 / 10.0 / 20.0 / 25.0 kHz</td><td>4.0</td><td>PWM-frekvens til motor. Området følger <code>SETTINGS -&gt; HARDWARE -&gt; PWM_F MAX</code> (5/10/20/25 kHz). Høyere frekvens gir ofte mykere lavgass.</td></tr>
         <tr><td><code>BREMS+ / Alt.brems</code></td><td>0-100 %</td><td>0</td><td>Alternativ brems som brukes mens bremseknapp holdes inne og trigger er sluppet.</td></tr>
         <tr><td><code>BREMS+ / Rel.brems</code></td><td>OFF/QUICK(sone+nivå)/DRAG(nivå)</td><td>OFF</td><td>Release-brems når trigger slippes. QUICK bruker null-output-sone; DRAG legger inn drag uten sone.</td></tr>
         <tr><td><code>LIMIT</code></td><td>(SENSI+5)-100 %</td><td>100</td><td>Maks motoreffekt. Ved &lt;100 vises LIMITER-varsling.</td></tr>
@@ -307,7 +309,7 @@
       <li><code>ENC INV</code>: snur encoder-retningen globalt hvis menyen føles bakvendt.</li>
       <li><code>EKST POT</code>: tildel <code>POT 1</code> og <code>POT 2</code> til <code>AV</code>, <code>BREMS</code> eller <code>SENSI</code> som live-overstyringer.</li>
       <li><code>TRIGGER</code>: viser trigger-sensorfamilie og aktiv type. På <code>TLE493D</code>-builds kan du også overstyre <code>TYPE</code> mellom <code>AUTO</code>, <code>W2B6</code>, <code>W2B6_A0</code> og <code>P3B6</code>.</li>
-      <li><code>PWM MAX</code>: global maks for <code>PWM_F</code>. Velg 5, 10, 20 eller 25 kHz. <code>PWM_F</code> kan da settes i steg på 0.1 kHz opp til denne grensen. Senker du den, begrenses alle bilprofiler ned til denne grensen. Ulempen med høy PWM (over ca. 20 kHz): motordriveren slår av og på oftere, så tapene øker og driveren blir varmere. Av/på-flankene tar også en større del av hver periode, så responsen helt nederst og helt øverst på gassen blir mindre lineær. Bruk laveste frekvens som føles bra, og sjekk temperaturen på driveren hvis du går over 20 kHz.</li>
+      <li><code>PWM_F MAX</code>: global maks for <code>PWM_F</code>. Velg 5, 10, 20 eller 25 kHz. <code>PWM_F</code> kan da settes i steg på 0.1 kHz opp til denne grensen. Senker du den, begrenses alle bilprofiler ned til denne grensen. Ulempen med høy PWM (over ca. 20 kHz): motordriveren slår av og på oftere, så tapene øker og driveren blir varmere. Av/på-flankene tar også en større del av hver periode, så responsen helt nederst og helt øverst på gassen blir mindre lineær. Bruk laveste frekvens som føles bra, og sjekk temperaturen på driveren hvis du går over 20 kHz.</li>
       <li><code>TEST</code>: kjører 9-trinns selvtest for OLED, knapper, trigger og utganger.</li>
     </ul>
     <h3>Anslått strømforbruk (kontroller-elektronikk)</h3>
@@ -450,7 +452,7 @@
 |  |  `- BACK
 |  |- DISPLAY
 |  |  |- RACE MODE (OFF/FULL/SIMPLE)
-|  |  |- LANGUAGE (NOR/ENG/CS/ACD/ESP/DEU/ITA/NLD/POR)
+|  |  |- LANGUAGE (NOR/ENG/CS/ACD/ESP/DEU/ITA/NLD/POR/SVE)
 |  |  |- CASE (UPPER/Pascal)
 |  |  |- FONT SIZE (LARGE/small)
 |  |  |- AVANSERT (AV/PA)
@@ -485,7 +487,7 @@
 |  |  |  |- AKTIV
 |  |  |  |- TYPE (AUTO/W2B6/W2B6_A0/P3B6) [kun TLE493D]
 |  |  |  `- TILBAKE
-|  |  |- PWM MAX (5/10/20/25 kHz)
+|  |  |- PWM_F MAX (5/10/20/25 kHz)
 |  |  |- TEST (Self-Test, 9 steg)
 |  |  `- TILBAKE
 |  |- STATS (AV/PÅ, default AV)

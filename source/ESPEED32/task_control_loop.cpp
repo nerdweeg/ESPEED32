@@ -5,18 +5,8 @@
 #include "connectivity_portal.h"
 #include "ext_pot.h"
 #include "telemetry_logging.h"
-
-extern StateMachine_enum g_currState;
-extern StoredVar_type g_storedVar;
-extern ESC_type g_escVar;
-extern uint16_t g_carSel;
-extern uint32_t g_lastEncoderInteraction;
-extern portMUX_TYPE g_lapStatsMux;
-
-extern uint16_t normalizeAndClamp(uint16_t raw, uint16_t minIn, uint16_t maxIn, uint16_t normalizedMax, bool isReversed);
-extern uint16_t addDeadBand(uint16_t inputVal, uint16_t minVal, uint16_t maxVal, uint16_t deadBand);
-extern uint16_t throttleCurve2(uint16_t inputThrottleNorm);
-extern uint16_t throttleAntiSpin3(uint16_t requestedSpeedX10);
+#include "app_globals.h"
+#include "throttle_processing.h"
 
 void Task2code(void *pvParameters) {
   static unsigned long prevCallTime_uS = 0;
@@ -155,8 +145,17 @@ void Task2code(void *pvParameters) {
       }
 
       /* Apply motor control (skip if in calibration or init state) */
-      if (!(g_currState == CALIBRATION || g_currState == INIT)) {
-        static uint16_t prevTriggerNorm = 0;
+      static uint16_t prevTriggerNorm = 0;
+      if (isOtaUploadActive()) {
+        /* Flash writes stall both cores, so never leave a drive duty latched in LEDC during OTA: coast. */
+        HalfBridge_SetPwmDragX10(0, 0);
+        g_escVar.outputSpeed_pct = 0;
+        g_escVar.activeBrakeKind = ACTIVE_BRAKE_NONE;
+        g_escVar.activeBrake_pct = 0;
+        /* Keep the anti-spin ramp and release detection current, so an aborted upload resumes from 0. */
+        throttleAntiSpin3(0);
+        prevTriggerNorm = g_escVar.trigger_norm;
+      } else if (!(g_currState == CALIBRATION || g_currState == INIT)) {
         bool triggerReleasing = g_escVar.trigger_norm < prevTriggerNorm;
         uint16_t releaseBrakeMode = g_storedVar.carParam[g_carSel].quickBrakeEnabled;
         uint16_t releaseZone_norm = (uint32_t)g_storedVar.carParam[g_carSel].quickBrakeThreshold

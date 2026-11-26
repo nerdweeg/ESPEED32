@@ -235,10 +235,11 @@ details.doc-fold>:not(summary){margin-top:8px}
     <h3>Idioma e display</h3>
     <ul>
       <li><code>DISPLAY -&gt; LANGUAGE</code> escolhe entre etiquetas localizadas e os perfis de nomes ENG/CS/ACD.</li>
-      <li><code>NOR/ESP/DEU/ITA/NLD/POR</code>: UI localizada com o conjunto de nomes padrao <code>BRAKE/SENSI/ANTIS/CURVE/FADE/LIMIT</code>.</li>
+      <li><code>NOR/ESP/DEU/ITA/NLD/POR/SVE</code>: UI localizada com o conjunto de nomes padrao <code>BRAKE/SENSI/ANTIS/CURVE/FADE/LIMIT</code>.</li>
       <li><code>ENG</code>: nomenclatura generica (<code>BRAKE/SENSI/ANTIS/CURVE/FADE/LIMIT</code>).</li>
-      <li><code>CS</code>: termos ao estilo CarSteen (<code>ATTACK/CHOKE2/PROFIL/CHOKE1</code>).</li>
+      <li><code>CS</code>: termos ao estilo CarSteen (<code>ATTCK/CHOK2/PROFL/CHOK1</code>).</li>
       <li><code>ACD</code>: termos ACD quando aplicavel diretamente, com <code>SENSI</code> e <code>CHOKE</code> para limit. <code>ANTIS</code> continua como anti-spin porque o manual ACD nao define um termo separado para Choke2.</li>
+      <li><code>CHOK1</code> (CS) e <code>CHOKE</code> (ACD) funcionam ao contrario de <code>LIMIT</code>: <code>CHOKE = 100 - LIMIT</code>. <code>CHOKE 0</code> significa sem estrangulamento (velocidade maxima) e um valor mais alto estrangula mais. O valor e guardado como LIMIT, por isso mudar de idioma mantem a mesma velocidade maxima.</li>
       <li><code>DISPLAY -&gt; CASE</code> define se as etiquetas aparecem em <code>UPPER</code> ou <code>Pascal</code>.</li>
       <li><code>DISPLAY -&gt; FONT SIZE</code> altera a densidade do texto entre <code>LARGE</code> e <code>small</code>.</li>
       <li><code>ECRA -&gt; AVANCADO</code> define se <code>FADE</code>, <code>PWM_F</code> e <code>BRAKE+</code> aparecem no menu principal. Em <code>OFF</code> essas linhas ficam ocultas para um menu mais simples, mas os valores guardados do carro continuam ativos.</li>
@@ -263,8 +264,9 @@ details.doc-fold>:not(summary){margin-top:8px}
     </figure>
     <h3>Barra de estado e ABOUT</h3>
     <ul>
-      <li><code>STATUS BAR</code>: 4 posicoes fixas. Cada posicao pode mostrar <code>OUT%</code>, <code>THRO</code>, <code>CAR</code>, <code>CURR</code>, <code>VOLT</code>, <code>VBAT</code>, <code>FREIO</code> ou vazio. <code>CURR</code> mostra mA abaixo de 1000 e A acima disso.</li>
+      <li><code>STATUS BAR</code>: 4 posicoes fixas. Cada posicao pode mostrar <code>OUT%</code>, <code>THRO</code>, <code>CAR</code>, <code>CURR</code>, <code>VOLT</code>, <code>VBAT</code>, <code>ID</code>, <code>FREIO</code> ou vazio. <code>CURR</code> mostra mA abaixo de 1000 e A acima disso.</li>
       <li><code>VBAT</code> mostra a tensao da bateria interna opcional. No perfil de board standard usa <code>GPIO15</code> / ADC2, por isso o valor pode deixar de atualizar enquanto o WiFi estiver ativo.</li>
+      <li><code>ID</code> mostra o ID do controlador, por exemplo <code>#A3B4</code>. Sao os ultimos 4 digitos hex do endereco MAC, os mesmos do nome WiFi (<code>ESPEED32_A3B4</code>), para distinguir controladores na pista e na lista WiFi.</li>
       <li><code>FREIO</code> na barra de estado mostra o tipo/valor de travagem ativo em tempo real: <code>Bxxx%</code> = <code>BRAKE</code> normal, <code>Axxx%</code> = <code>Alt.Brake</code>, <code>Qxxx%</code> = <code>Rel.Brake QUICK</code>, <code>Dxxx%</code> = <code>Rel.Brake DRAG</code>, <code>NONE</code> = nenhuma travagem ativa nesse momento. O codigo pode mudar rapidamente enquanto conduz.</li>
       <li>Enquanto o WiFi esta ativo, a barra de estado mostra <code>WIFI</code>. Usa a primeira posicao vazia; se nao existir, substitui temporariamente a posicao 4.</li>
       <li><code>ABOUT</code> mostra a versao de firmware/dados, o sensor de gatilho detetado, detalhes do chip, flash/heap, enderecos MAC e data/hora da build.</li>
@@ -277,7 +279,7 @@ details.doc-fold>:not(summary){margin-top:8px}
     <ul>
       <li><code>SELECT</code>: escolher o perfil de carro ativo (0-19).</li>
       <li><code>RENAME</code>: editor de nome com 4 caracteres (ASCII 32-122). Ver <a href="https://slatecave.net/notebook/ascii/" target="_blank" rel="noopener noreferrer">tabela ASCII</a>.</li>
-      <li><code>RACESWP</code>: ON permite trocar de perfil diretamente a partir do modo GRID.</li>
+      <li><code>RACESWP</code>: ON permite trocar de perfil diretamente a partir do modo GRID. Predefinicao: OFF.</li>
       <li><code>COPY</code>: copiar de um perfil para outro ou para ALL profiles.</li>
       <li><code>RESET</code>: repor todos os perfis de carro com confirmacao.</li>
     </ul>
@@ -330,7 +332,7 @@ details.doc-fold>:not(summary){margin-top:8px}
         <tr><td><code>ANTIS</code></td><td>0-999 ms</td><td>30</td><td>Tempo da rampa anti-spin acima do bypass de baixa saida. Valor mais alto = subida de potencia mais longa/lenta. Nao e um delay puro do gatilho. Unidade de visualizacao e passo do encoder configuram-se em <code>ECRA -&gt; PASSOS -&gt; ANTISPIN</code> (MS / % / TEXT).</td></tr>
         <tr><td><code>CURVE</code></td><td>10-90 %</td><td>50</td><td>Mapeamento da throttle. 50 = linear. &lt;50 arranque mais suave, &gt;50 arranque mais agressivo.</td></tr>
         <tr><td><code>FADE</code></td><td>0-30 %</td><td>0</td><td>Zona de soft-start. 0 = desligado / comportamento antigo. Acima de 0, a primeira parte do curso sobe de 0 ate SENSI antes de CURVE assumir o controlo.</td></tr>
-        <tr><td><code>PWM_F</code></td><td>1.0-5.0 / 10.0 / 20.0 / 25.0 kHz</td><td>4.0</td><td>Frequencia PWM do motor. O intervalo segue <code>SETTINGS -&gt; HARDWARE -&gt; PWM MAX</code> (5/10/20/25 kHz). Um valor mais alto costuma suavizar a resposta em baixa.</td></tr>
+        <tr><td><code>PWM_F</code></td><td>1.0-5.0 / 10.0 / 20.0 / 25.0 kHz</td><td>4.0</td><td>Frequencia PWM do motor. O intervalo segue <code>SETTINGS -&gt; HARDWARE -&gt; PWM_F MAX</code> (5/10/20/25 kHz). Um valor mais alto costuma suavizar a resposta em baixa.</td></tr>
         <tr><td><code>BRAKE+ / Alt.Brake</code></td><td>0-100 %</td><td>0</td><td>Valor alternativo de travagem usado enquanto o botao de travao esta premido e o gatilho esta solto.</td></tr>
         <tr><td><code>BRAKE+ / Rel.Brake</code></td><td>OFF/QUICK(zone+level)/DRAG(level)</td><td>OFF</td><td>Ajuda de travagem perto da libertacao do gatilho. QUICK usa uma zona de output zero; DRAG adiciona arrasto sem zona.</td></tr>
         <tr><td><code>LIMIT</code></td><td>(SENSI+5)-100 %</td><td>100</td><td>Output maximo do motor. &lt;100 ativa o aviso LIMITER.</td></tr>
@@ -469,7 +471,7 @@ details.doc-fold>:not(summary){margin-top:8px}
       <li><code>ENC INV</code>: inverter globalmente a rotacao do encoder se o menu parecer invertido no seu hardware.</li>
       <li><code>EXT POT</code>: atribuir <code>POT 1</code> e <code>POT 2</code> a overrides live de <code>OFF</code>, <code>BRAKE</code> ou <code>SENSI</code>.</li>
       <li><code>TRIGGER</code>: mostra a familia do sensor do gatilho e o tipo ativo. Em builds <code>TLE493D</code> tambem pode fazer override de <code>TYPE</code> entre <code>AUTO</code>, <code>W2B6</code>, <code>W2B6_A0</code> e <code>P3B6</code>.</li>
-      <li><code>PWM MAX</code>: limite global para <code>PWM_F</code>. Escolhe 5, 10, 20 ou 25 kHz. <code>PWM_F</code> ajusta-se depois em passos de 0.1 kHz ate esse teto. Se baixares este valor, todos os perfis de carro ficam limitados a esse teto. Desvantagem de PWM alto (acima de cerca de 20 kHz): o driver do motor comuta mais vezes, por isso as perdas aumentam e aquece mais. As transicoes de comutacao ocupam tambem uma parte maior de cada periodo, pelo que a resposta com muito pouco e com muito gatilho fica menos linear. Usa a frequencia mais baixa que te agrade e verifica a temperatura do driver acima de 20 kHz.</li>
+      <li><code>PWM_F MAX</code>: limite global para <code>PWM_F</code>. Escolhe 5, 10, 20 ou 25 kHz. <code>PWM_F</code> ajusta-se depois em passos de 0.1 kHz ate esse teto. Se baixares este valor, todos os perfis de carro ficam limitados a esse teto. Desvantagem de PWM alto (acima de cerca de 20 kHz): o driver do motor comuta mais vezes, por isso as perdas aumentam e aquece mais. As transicoes de comutacao ocupam tambem uma parte maior de cada periodo, pelo que a resposta com muito pouco e com muito gatilho fica menos linear. Usa a frequencia mais baixa que te agrade e verifica a temperatura do driver acima de 20 kHz.</li>
       <li><code>TEST</code>: executa o auto-teste de 9 passos para OLED, botoes, gatilho e outputs.</li>
     </ul>
     <h3>Consumo estimado de corrente (eletronica do controlador)</h3>
@@ -612,7 +614,7 @@ details.doc-fold>:not(summary){margin-top:8px}
 |  |  `- BACK
 |  |- DISPLAY
 |  |  |- RACE MODE (OFF/FULL/SIMPLE)
-|  |  |- LANGUAGE (NOR/ENG/CS/ACD/ESP/DEU/ITA/NLD/POR)
+|  |  |- LANGUAGE (NOR/ENG/CS/ACD/ESP/DEU/ITA/NLD/POR/SVE)
 |  |  |- CASE (UPPER/Pascal)
 |  |  |- FONT SIZE (LARGE/small)
 |  |  |- AVANCADO (OFF/ON)
@@ -647,7 +649,7 @@ details.doc-fold>:not(summary){margin-top:8px}
 |  |  |  |- ACTIVE
 |  |  |  |- TYPE (AUTO/W2B6/W2B6_A0/P3B6) [TLE493D only]
 |  |  |  `- BACK
-|  |  |- PWM MAX (5/10/20/25 kHz)
+|  |  |- PWM_F MAX (5/10/20/25 kHz)
 |  |  |- TEST (Self-Test, 9 steps)
 |  |  `- BACK
 |  |- STATS (ON/OFF, default OFF)
@@ -704,6 +706,7 @@ details.doc-fold>:not(summary){margin-top:8px}
   else if (path.indexOf("/docs/es") !== -1) activeLang = "es";
   else if (path.indexOf("/docs/de") !== -1) activeLang = "de";
   else if (path.indexOf("/docs/it") !== -1) activeLang = "it";
+  else if (path.indexOf("/docs/sv") !== -1) activeLang = "sv";
 
   var languageOptions = [
     { value: "no", label: "\uD83C\uDDF3\uD83C\uDDF4 Norsk" },
@@ -712,7 +715,8 @@ details.doc-fold>:not(summary){margin-top:8px}
     { value: "pt", label: "\uD83C\uDDF5\uD83C\uDDF9 Portugues" },
     { value: "es", label: "\uD83C\uDDEA\uD83C\uDDF8 Espa\u00F1ol" },
     { value: "de", label: "\uD83C\uDDE9\uD83C\uDDEA Deutsch" },
-    { value: "it", label: "\uD83C\uDDEE\uD83C\uDDF9 Italiano" }
+    { value: "it", label: "\uD83C\uDDEE\uD83C\uDDF9 Italiano" },
+    { value: "sv", label: "\uD83C\uDDF8\uD83C\uDDEA Svenska" }
   ];
 
   function apply(mode){
@@ -740,7 +744,8 @@ details.doc-fold>:not(summary){margin-top:8px}
     pt: "Link para este titulo",
     es: "Enlace a este titulo",
     de: "Link zu dieser Uberschrift",
-    it: "Link a questo titolo"
+    it: "Link a questo titolo",
+    sv: "L\u00E4nk till denna rubrik"
   };
 
   function slugify(text){

@@ -71,10 +71,11 @@
     <h3>Sprache und Anzeige</h3>
     <ul>
       <li><code>DISPLAY -&gt; LANGUAGE</code> waehlt zwischen lokalisierten Labels und den Namensprofilen ENG/CS/ACD.</li>
-      <li><code>NOR/ESP/DEU/ITA/NLD/POR</code>: lokalisierte UI mit den Standardnamen <code>BRAKE/SENSI/ANTIS/CURVE/FADE/LIMIT</code>.</li>
+      <li><code>NOR/ESP/DEU/ITA/NLD/POR/SVE</code>: lokalisierte UI mit den Standardnamen <code>BRAKE/SENSI/ANTIS/CURVE/FADE/LIMIT</code>.</li>
       <li><code>ENG</code>: generische Namen (<code>BRAKE/SENSI/ANTIS/CURVE/FADE/LIMIT</code>).</li>
-      <li><code>CS</code>: CarSteen-Stil (<code>ATTACK/CHOKE2/PROFIL/CHOKE1</code>).</li>
+      <li><code>CS</code>: CarSteen-Stil (<code>ATTCK/CHOK2/PROFL/CHOK1</code>).</li>
       <li><code>ACD</code>: ACD-Stil, wo es direkte Entsprechungen gibt (<code>SENSI</code> und <code>CHOKE</code> fuer LIMIT).</li>
+      <li><code>CHOK1</code> (CS) und <code>CHOKE</code> (ACD) laufen umgekehrt zu <code>LIMIT</code>: <code>CHOKE = 100 - LIMIT</code>. <code>CHOKE 0</code> bedeutet keine Drosselung (volle Geschwindigkeit), ein hoeherer Wert drosselt mehr. Gespeichert wird LIMIT, ein Sprachwechsel aendert die Hoechstgeschwindigkeit also nicht.</li>
       <li><code>DISPLAY -&gt; CASE</code> waehlt, ob Labels in <code>UPPER</code> oder <code>Pascal</code> angezeigt werden.</li>
       <li><code>DISPLAY -&gt; FONT SIZE</code> stellt die Listen- und Menueansicht auf <code>LARGE</code> oder <code>small</code>.</li>
       <li><code>ANZEIGE -&gt; ERWEITERT</code> legt fest, ob <code>FADE</code>, <code>PWM_F</code> und <code>BREMSE+</code> im Hauptmenue sichtbar sind. Auf <code>AUS</code> werden diese Zeilen fuer ein einfacheres Menue ausgeblendet, die gespeicherten Fahrzeugwerte bleiben aber aktiv.</li>
@@ -99,8 +100,9 @@
     </figure>
     <h3>Statuszeile und ABOUT</h3>
     <ul>
-      <li><code>STATUS BAR</code>: 4 feste Slots. Jeder Slot kann <code>OUT%</code>, <code>THRO</code>, <code>CAR</code>, <code>CURR</code>, <code>VOLT</code>, <code>VBAT</code>, <code>BREMS</code> oder leer anzeigen. <code>CURR</code> zeigt mA unter 1000 und A darueber.</li>
+      <li><code>STATUS BAR</code>: 4 feste Slots. Jeder Slot kann <code>OUT%</code>, <code>THRO</code>, <code>CAR</code>, <code>CURR</code>, <code>VOLT</code>, <code>VBAT</code>, <code>ID</code>, <code>BREMS</code> oder leer anzeigen. <code>CURR</code> zeigt mA unter 1000 und A darueber.</li>
       <li><code>VBAT</code> zeigt die Spannung der optionalen internen Batterie. Im Standard-Boardprofil nutzt diese Messung <code>GPIO15</code> / ADC2, daher kann der Wert waehrend aktivem WiFi stehen bleiben.</li>
+      <li><code>ID</code> zeigt die Geraete-ID des Controllers, zum Beispiel <code>#A3B4</code>. Das sind die letzten 4 Hex-Stellen der MAC-Adresse, wie im WiFi-Namen (<code>ESPEED32_A3B4</code>), damit du Controller an der Bahn und in der WiFi-Liste unterscheiden kannst.</li>
       <li><code>BREMS</code> in der Statuszeile zeigt Bremsart und Wert in Echtzeit: <code>Bxxx%</code> = normales <code>BRAKE</code>, <code>Axxx%</code> = <code>Alt.Brake</code>, <code>Qxxx%</code> = <code>Rel.Brake QUICK</code>, <code>Dxxx%</code> = <code>Rel.Brake DRAG</code>, <code>NONE</code> = aktuell keine Bremse aktiv. Der Code kann sich waehrend der Fahrt schnell aendern.</li>
       <li>Wenn WiFi aktiv ist, zeigt die Statuszeile <code>WIFI</code>. Zuerst wird ein freier Slot benutzt; wenn keiner frei ist, wird Slot 4 temporaer ueberschrieben.</li>
       <li><code>ABOUT</code> zeigt Firmware-/Datenversion, erkannten Trigger-Sensor, Chip-Infos, Flash/Heap, MAC-Adressen und Build-Datum/-Zeit.</li>
@@ -113,7 +115,7 @@
     <ul>
       <li><code>SELECT</code>: aktives Profil waehlen (0-19).</li>
       <li><code>RENAME</code>: 4-Zeichen Name (ASCII 32-122). Siehe <a href="https://slatecave.net/notebook/ascii/" target="_blank" rel="noopener noreferrer">ASCII-Tabelle</a>.</li>
-      <li><code>RACESWP</code>: ON erlaubt Profilwechsel direkt im GRID.</li>
+      <li><code>RACESWP</code>: ON erlaubt Profilwechsel direkt im GRID. Standard: OFF.</li>
       <li><code>COPY</code>: von einem Profil auf ein anderes oder auf alle kopieren.</li>
       <li><code>RESET</code>: alle Fahrzeugprofile zuruecksetzen (mit Bestaetigung).</li>
     </ul>
@@ -166,7 +168,7 @@
         <tr><td><code>ANTIS</code></td><td>0-999 ms</td><td>30</td><td>Anti-Spin-Rampenzeit oberhalb des Low-Speed-Bypass. Hoeherer Wert = laengerer/langsamerer Leistungsaufbau. Kein reiner Trigger-Delay. Anzeigeeinheit und Encoder-Schritt werden in <code>ANZEIGE -&gt; SCHRITTE -&gt; ANTISPIN</code> eingestellt (MS / % / TEXT).</td></tr>
         <tr><td><code>CURVE</code></td><td>10-90 %</td><td>50</td><td>Trigger-Kennlinie. 50 = linear.</td></tr>
         <tr><td><code>FADE</code></td><td>0-30 %</td><td>0</td><td>Sanfte Startzone. 0 = aus / altes Verhalten. Oberhalb von 0 laeuft der erste Triggerweg von 0 bis SENSI hoch, bevor die normale CURVE uebernimmt.</td></tr>
-        <tr><td><code>PWM_F</code></td><td>1.0-5.0 / 10.0 / 20.0 / 25.0 kHz</td><td>4.0</td><td>PWM-Frequenz des Motors. Der Bereich folgt <code>SETTINGS -&gt; HARDWARE -&gt; PWM MAX</code> (5/10/20/25 kHz).</td></tr>
+        <tr><td><code>PWM_F</code></td><td>1.0-5.0 / 10.0 / 20.0 / 25.0 kHz</td><td>4.0</td><td>PWM-Frequenz des Motors. Der Bereich folgt <code>SETTINGS -&gt; HARDWARE -&gt; PWM_F MAX</code> (5/10/20/25 kHz).</td></tr>
         <tr><td><code>BREMSE+ / Alt.Brems</code></td><td>0-100 %</td><td>0</td><td>Alternativer Bremswert bei gehaltenem Bremsknopf und Trigger=0.</td></tr>
         <tr><td><code>BREMSE+ / Rel.Brems</code></td><td>OFF/QUICK(zone+stufe)/DRAG(stufe)</td><td>OFF</td><td>Bremsunterstuetzung nahe Trigger-Release. QUICK nutzt eine Null-Output-Zone; DRAG mischt Drag ohne Zone hinzu.</td></tr>
         <tr><td><code>LIMIT</code></td><td>(SENSI+5)-100 %</td><td>100</td><td>Maximale Motorleistung.</td></tr>
@@ -303,9 +305,9 @@
     <h3>HARDWARE-Untermenue</h3>
     <ul>
       <li><code>ENC INV</code>: Encoder-Richtung global umkehren, falls sich das Menue verkehrt anfuehlt.</li>
-      <li><code>EXT POT</code>: <code>POT 1</code> und <code>POT 2</code> als Live-Override fuer <code>AUS</code>, <code>BREMSE</code> oder <code>SENSI</code> zuweisen.</li>
+      <li><code>EXT POT</code>: <code>POT 1</code> und <code>POT 2</code> als Live-Override fuer <code>AUS</code>, <code>BREMS</code> oder <code>SENSI</code> zuweisen.</li>
       <li><code>TRIGGER</code>: zeigt Sensorfamilie und aktiven Typ. In <code>TLE493D</code>-Builds laesst sich <code>TYPE</code> auch zwischen <code>AUTO</code>, <code>W2B6</code>, <code>W2B6_A0</code> und <code>P3B6</code> umschalten.</li>
-      <li><code>PWM MAX</code>: globales Maximum fuer <code>PWM_F</code>. Waehle 5, 10, 20 oder 25 kHz. <code>PWM_F</code> laesst sich dann in 0.1-kHz-Schritten bis zu dieser Grenze einstellen. Wenn du ihn senkst, werden alle Fahrzeugprofile auf diese Obergrenze begrenzt. Nachteil hoher PWM (ueber ca. 20 kHz): Der Motortreiber schaltet oefter, dadurch steigen die Schaltverluste und der Treiber wird waermer. Die Schaltflanken nehmen ausserdem einen groesseren Teil jeder Periode ein, sodass das Ansprechen bei sehr wenig und sehr viel Gas weniger linear wird. Nimm die niedrigste Frequenz, die sich gut anfuehlt, und pruefe die Treibertemperatur ueber 20 kHz.</li>
+      <li><code>PWM_F MAX</code>: globales Maximum fuer <code>PWM_F</code>. Waehle 5, 10, 20 oder 25 kHz. <code>PWM_F</code> laesst sich dann in 0.1-kHz-Schritten bis zu dieser Grenze einstellen. Wenn du ihn senkst, werden alle Fahrzeugprofile auf diese Obergrenze begrenzt. Nachteil hoher PWM (ueber ca. 20 kHz): Der Motortreiber schaltet oefter, dadurch steigen die Schaltverluste und der Treiber wird waermer. Die Schaltflanken nehmen ausserdem einen groesseren Teil jeder Periode ein, sodass das Ansprechen bei sehr wenig und sehr viel Gas weniger linear wird. Nimm die niedrigste Frequenz, die sich gut anfuehlt, und pruefe die Treibertemperatur ueber 20 kHz.</li>
       <li><code>TEST</code>: startet den 9-Schritt-Selbsttest fuer OLED, Taster, Trigger und Ausgaenge.</li>
     </ul>
     <h3>Geschaetzter Stromverbrauch (Controller-Elektronik)</h3>
@@ -446,7 +448,7 @@
 |  |  `- BACK
 |  |- DISPLAY
 |  |  |- RACE MODE (OFF/FULL/SIMPLE)
-|  |  |- LANGUAGE (NOR/ENG/CS/ACD/ESP/DEU/ITA/NLD/POR)
+|  |  |- LANGUAGE (NOR/ENG/CS/ACD/ESP/DEU/ITA/NLD/POR/SVE)
 |  |  |- CASE (UPPER/Pascal)
 |  |  |- FONT SIZE (LARGE/small)
 |  |  |- ERWEITERT (AUS/EIN)
@@ -481,7 +483,7 @@
 |  |  |  |- AKTIV
 |  |  |  |- TYPE (AUTO/W2B6/W2B6_A0/P3B6) [nur TLE493D]
 |  |  |  `- BACK
-|  |  |- PWM MAX (5/10/20/25 kHz)
+|  |  |- PWM_F MAX (5/10/20/25 kHz)
 |  |  |- TEST (Self-Test, 9 steps)
 |  |  `- BACK
 |  |- STATS (AUS/EIN, Standard AUS)

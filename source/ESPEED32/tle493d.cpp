@@ -37,7 +37,7 @@ bool g_tleLastAngleValid = false;
  * fault worth surfacing to the user. */
 static constexpr uint16_t TLE493D_FAULT_THRESHOLD = 400;
 static uint16_t g_tleConsecutiveFailures = 0;
-static bool g_tleSustainedFault = false;
+static volatile bool g_tleSustainedFault = false;  /* Set by Task2 reads, polled by Task1 */
 
 static int16_t g_tleXavg = 0;
 static int16_t g_tleYavg = 0;

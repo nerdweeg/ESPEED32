@@ -4,20 +4,10 @@
 #include "ui_text_access.h"
 #include "connectivity_portal.h"
 #include "ext_pot.h"
-
-extern StoredVar_type g_storedVar;
-extern ESC_type g_escVar;
-extern OBDISP g_obd;
-extern AiEsp32RotaryEncoder g_rotaryEncoder;
-extern char msgStr[50];
-
-extern bool consumeScreensaverWakeInput(bool wakeTriggered);
-extern bool refreshIdleInteractionFromControls(uint32_t* lastInteraction, bool* screensaverActive, uint16_t* lastEncoderPos);
-extern bool serviceIdlePowerTransitions(uint32_t* lastInteraction, bool* screensaverActive);
-extern bool checkRaceModeEscape();
-extern void requestEscapeToMain();
-extern void showScreensaver();
-extern void saveEEPROM(StoredVar_type toSave);
+#include "app_globals.h"
+#include "power_ui.h"
+#include "ui_render.h"
+#include "menu_input.h"
 
 static const char* getExtPotTargetLabel(uint8_t lang, uint16_t target) {
   switch (target) {
@@ -30,7 +20,8 @@ static const char* getExtPotTargetLabel(uint8_t lang, uint16_t target) {
   }
 }
 
-static const char* EXT_POT_ITEM_LABELS[9][2] = {
+static const char* EXT_POT_ITEM_LABELS[LANG_COUNT][2] = {
+  {"POT.METER 1", "POT.METER 2"},
   {"POT.METER 1", "POT.METER 2"},
   {"POT.METER 1", "POT.METER 2"},
   {"POT.METER 1", "POT.METER 2"},
@@ -42,7 +33,8 @@ static const char* EXT_POT_ITEM_LABELS[9][2] = {
   {"POT.METER 1", "POT.METER 2"}
 };
 
-static const char* EXT_POT_ITEM_LABELS_PASCAL[9][2] = {
+static const char* EXT_POT_ITEM_LABELS_PASCAL[LANG_COUNT][2] = {
+  {"Pot.meter 1", "Pot.meter 2"},
   {"Pot.meter 1", "Pot.meter 2"},
   {"Pot.meter 1", "Pot.meter 2"},
   {"Pot.meter 1", "Pot.meter 2"},
@@ -178,27 +170,20 @@ void showExtPotSettings() {
       delay(200);
     }
 
-    static bool brakeBtnInMenu = false;
-    static uint32_t lastBrakeBtnTime = 0;
-    if (digitalRead(BUTT_PIN) == BUTTON_PRESSED) {
-      if (!brakeBtnInMenu && millis() - lastBrakeBtnTime > BUTTON_SHORT_PRESS_DEBOUNCE_MS) {
-        brakeBtnInMenu = true;
-        lastBrakeBtnTime = millis();
-        if (epMenuState == VALUE_SELECTION) {
-          /* Cancel */
-          epMenuState = ITEM_SELECTION;
-          g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
-          setUiEncoderBoundaries(0, NUM_ITEMS - 1, false);
-          resetUiEncoder(sel);
-          obdFill(&g_obd, OBD_WHITE, 1);
-          needRedraw = true;
-        } else {
-          while (digitalRead(BUTT_PIN) == BUTTON_PRESSED) { vTaskDelay(5); }
-          break;
-        }
+    static BrakeButtonEdge brakeBtnInMenu;
+    if (brakeBtnInMenu.pressed()) {
+      if (epMenuState == VALUE_SELECTION) {
+        /* Cancel */
+        epMenuState = ITEM_SELECTION;
+        g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
+        setUiEncoderBoundaries(0, NUM_ITEMS - 1, false);
+        resetUiEncoder(sel);
+        obdFill(&g_obd, OBD_WHITE, 1);
+        needRedraw = true;
+      } else {
+        waitForBrakeButtonRelease();
+        break;
       }
-    } else {
-      brakeBtnInMenu = false;
     }
 
     if (checkRaceModeEscape()) { requestEscapeToMain(); break; }

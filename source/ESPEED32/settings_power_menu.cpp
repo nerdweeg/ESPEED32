@@ -4,22 +4,10 @@
 #include "ui_text_access.h"
 #include "settings_display_submenus.h"
 #include "settings_power_sleep_submenus.h"
-
-extern StoredVar_type g_storedVar;
-extern ESC_type g_escVar;
-extern OBDISP g_obd;
-extern AiEsp32RotaryEncoder g_rotaryEncoder;
-
-extern bool consumeScreensaverWakeInput(bool wakeTriggered);
-extern bool refreshIdleInteractionFromControls(uint32_t* lastInteraction, bool* screensaverActive, uint16_t* lastEncoderPos);
-extern bool serviceIdlePowerTransitions(uint32_t* lastInteraction, bool* screensaverActive);
-extern bool checkRaceModeEscape();
-extern void requestEscapeToMain();
-extern bool isEscapeToMainRequested();
-extern void setLastEncoderInteraction(uint32_t interactionMs);
-
-extern void showScreensaver();
-extern void saveEEPROM(StoredVar_type toSave);
+#include "app_globals.h"
+#include "power_ui.h"
+#include "ui_render.h"
+#include "menu_input.h"
 
 static void formatVoltageString(char* buffer, size_t bufferSize, uint16_t millivolts) {
   snprintf(buffer, bufferSize, "%2u.%02uV", millivolts / 1000U, (millivolts % 1000U) / 10U);
@@ -28,11 +16,11 @@ static void formatVoltageString(char* buffer, size_t bufferSize, uint16_t milliv
 static void showVinCalibrationScreen() {
   uint16_t lang = g_storedVar.language;
 
-  const char* lblRead[9]   = {"LES", "READ", "READ", "READ", "LEE", "IST", "LETT", "LEES", "LER"};
-  const char* lblSet[9]    = {"SETT", "SET", "SET", "SET", "SET", "SET", "SET", "SET", "SET"};
-  const char* lblSave[9]   = {"TRYKK=LAGR", "CLICK=SAVE", "CLICK=SAVE", "CLICK=SAVE", "CLICK=SAVE", "CLICK=SAVE", "CLICK=SAVE", "KLIK=OPSL", "CLIQUE=GRAV"};
-  const char* lblCancel[9] = {"BREMS=TILB", "BRAKE=BACK", "BRAKE=BACK", "BRAKE=BACK", "FRENO=ATR", "BREMSE=ZRK", "FRENO=BACK", "REM=TERUG", "TRAV=VOLT"};
-  const char* lblNoVin[9]  = {"INGEN VIN", "NO VIN", "NO VIN", "NO VIN", "SIN VIN", "KEIN VIN", "NO VIN", "GEEN VIN", "SEM VIN"};
+  const char* lblRead[LANG_COUNT]   = {"LES", "READ", "READ", "READ", "LEE", "IST", "LETT", "LEES", "LER", "LAS"};
+  const char* lblSet[LANG_COUNT]    = {"SETT", "SET", "SET", "SET", "SET", "SET", "SET", "SET", "SET", "SATT"};
+  const char* lblSave[LANG_COUNT]   = {"TRYKK=LAGR", "CLICK=SAVE", "CLICK=SAVE", "CLICK=SAVE", "CLICK=SAVE", "CLICK=SAVE", "CLICK=SAVE", "KLIK=OPSL", "CLIQUE=GRAV", "TRYCK=SPAR"};
+  const char* lblCancel[LANG_COUNT] = {"BREMS=TILB", "BRAKE=BACK", "BRAKE=BACK", "BRAKE=BACK", "FRENO=ATR", "BREMSE=ZRK", "FRENO=BACK", "REM=TERUG", "TRAV=VOLT", "BROMS=TILL"};
+  const char* lblNoVin[LANG_COUNT]  = {"INGEN VIN", "NO VIN", "NO VIN", "NO VIN", "SIN VIN", "KEIN VIN", "NO VIN", "GEEN VIN", "SEM VIN", "INGEN VIN"};
 
   const uint8_t menuFont = FONT_8x8;
   const uint8_t lineH = HEIGHT8x8;
@@ -116,17 +104,10 @@ static void showVinCalibrationScreen() {
       }
     }
 
-    static bool brakeBtnInVinCal = false;
-    static uint32_t lastBrakeBtnVinCalTime = 0;
-    if (digitalRead(BUTT_PIN) == BUTTON_PRESSED) {
-      if (!brakeBtnInVinCal && millis() - lastBrakeBtnVinCalTime > BUTTON_SHORT_PRESS_DEBOUNCE_MS) {
-        brakeBtnInVinCal = true;
-        lastBrakeBtnVinCalTime = millis();
-        while (digitalRead(BUTT_PIN) == BUTTON_PRESSED) { vTaskDelay(5); }
-        break;
-      }
-    } else {
-      brakeBtnInVinCal = false;
+    static BrakeButtonEdge brakeBtnInVinCal;
+    if (brakeBtnInVinCal.pressed()) {
+      waitForBrakeButtonRelease();
+      break;
     }
 
     if (needRedraw) {
@@ -287,27 +268,20 @@ void showPowerSettings() {
     }
 
     /* Brake button = cancel edit or back */
-    static bool brakeBtnInPower = false;
-    static uint32_t lastBrakeBtnPowerTime = 0;
-    if (digitalRead(BUTT_PIN) == BUTTON_PRESSED) {
-      if (!brakeBtnInPower && millis() - lastBrakeBtnPowerTime > BUTTON_SHORT_PRESS_DEBOUNCE_MS) {
-        brakeBtnInPower = true;
-        lastBrakeBtnPowerTime = millis();
-        if (editing) {
-          g_storedVar.startupDelay = origDelay;
-          tmpDelay = origDelay;
-          editing = false;
-          g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
-          setUiEncoderBoundaries(0, NUM - 1, false);
-          resetUiEncoder(3);
-          needRedraw = true;
-        } else {
-          while (digitalRead(BUTT_PIN) == BUTTON_PRESSED) { vTaskDelay(5); }
-          break;
-        }
+    static BrakeButtonEdge brakeBtnInPower;
+    if (brakeBtnInPower.pressed()) {
+      if (editing) {
+        g_storedVar.startupDelay = origDelay;
+        tmpDelay = origDelay;
+        editing = false;
+        g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
+        setUiEncoderBoundaries(0, NUM - 1, false);
+        resetUiEncoder(3);
+        needRedraw = true;
+      } else {
+        waitForBrakeButtonRelease();
+        break;
       }
-    } else {
-      brakeBtnInPower = false;
     }
 
     /* Draw menu */

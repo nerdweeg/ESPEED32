@@ -70,7 +70,8 @@ void HAL_InitHW() {
 
 #ifdef TLE493D_MAG
   /* Initialize I2C for TLE493D sensor */
-  Wire1.begin(SDA0_PIN, SCL0_PIN, 100000L);
+  Wire1.begin(SDA0_PIN, SCL0_PIN, TLE493D_I2C_CLOCK_HZ);
+  Wire1.setTimeOut(TLE493D_I2C_TIMEOUT_MS);
   delay(TLE493D_I2C_STABILIZE_MS);  /* Wait for I2C stabilization */
   g_tleOverrideMode = TLE493D_LoadOverrideMode();
   TLE493D_ApplyMode(g_tleOverrideMode);

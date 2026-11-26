@@ -326,7 +326,11 @@ if [[ "$SPIFFS_ONLY" -eq 0 ]]; then
   fi
   if [[ ${#EXTRA_FLAGS[@]} -gt 0 ]]; then
     EXTRA_FLAGS_STRING="${EXTRA_FLAGS[*]}"
-    compile_cmd+=(--build-property "build.extra_flags=$EXTRA_FLAGS_STRING")
+    # compiler.*.extra_flags are the user hooks; build.extra_flags carries the
+    # platform's own defines (ESP32, CORE_DEBUG_LEVEL, USB CDC, loop core) and
+    # must not be overridden.
+    compile_cmd+=(--build-property "compiler.cpp.extra_flags=$EXTRA_FLAGS_STRING")
+    compile_cmd+=(--build-property "compiler.c.extra_flags=$EXTRA_FLAGS_STRING")
   fi
   compile_cmd+=("$SKETCH_DIR")
   run_filtered_cmd "${compile_cmd[@]}"

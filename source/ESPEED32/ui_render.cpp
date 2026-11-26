@@ -5,28 +5,9 @@
 #include "ui_strings.h"
 #include "ui_text_access.h"
 #include "connectivity_portal.h"
-
-extern StoredVar_type g_storedVar;
-extern ESC_type g_escVar;
-extern OBDISP g_obd;
-extern char msgStr[50];
-extern uint16_t g_carSel;
-extern uint16_t g_antiSpinDisplayMode;
-extern uint16_t g_brakeStep;
-extern uint16_t g_sensiStep;
-extern Menu_type g_mainMenu;
-extern AiEsp32RotaryEncoder g_rotaryEncoder;
-extern uint8_t g_encoderMainSelector;
-extern uint32_t g_lastEncoderInteraction;
-extern bool g_forceRaceRedraw;
-
-extern bool refreshIdleInteractionFromControls(uint32_t* lastInteraction, bool* screensaverActive, uint16_t* lastEncoderPos);
-extern void showScreensaver();
-extern void showPowerSave(uint32_t inactivityStartMs);
-extern void showDeepSleep();
-extern void initMenuItems();
-extern uint8_t getMainMenuItemsCount();
-extern bool isSettingsLocked();
+#include "app_globals.h"
+#include "app_init.h"
+#include "power_ui.h"
 
 static void formatExtPotLabel(char* out, size_t outSize, int8_t potIndex) {
   if (!out || outSize == 0) return;
@@ -100,7 +81,6 @@ static void formatActiveBrakeStatus(char* out, size_t outSize, uint8_t activeBra
       break;
   }
 }
-
 
 static void formatAntiSpinValue(char* out, size_t outSize, uint16_t antiSpinMs) {
   if (!out || outSize == 0) return;
@@ -191,15 +171,15 @@ void displayStatusLine() {
     switch (slot) {
       case STATUS_OUTPUT:
         if (digitalRead(BUTT_PIN) == BUTTON_PRESSED && g_escVar.trigger_norm == 0) {
-          sprintf(buf, "B%3d%%", g_storedVar.carParam[g_carSel].brakeButtonReduction);
+          snprintf(buf, sizeof(buf), "B%3d%%", g_storedVar.carParam[g_carSel].brakeButtonReduction);
         } else {
-          sprintf(buf, "%3d%%O", g_escVar.outputSpeed_pct);
+          snprintf(buf, sizeof(buf), "%3d%%O", g_escVar.outputSpeed_pct);
         }
         color = (g_escVar.outputSpeed_pct == 100) ? OBD_WHITE : OBD_BLACK;
         break;
       case STATUS_THROTTLE: {
         uint8_t tpct = (uint8_t)((g_escVar.trigger_norm * 100UL) / THROTTLE_NORMALIZED);
-        sprintf(buf, "%3d%%T", tpct);
+        snprintf(buf, sizeof(buf), "%3d%%T", tpct);
         break;
       }
       case STATUS_CAR:
@@ -222,7 +202,7 @@ void displayStatusLine() {
       }
       case STATUS_VOLTAGE: {
         uint16_t v = g_escVar.Vin_mV;
-        sprintf(buf, "%2d.%01dV", v / 1000, (v % 1000) / 100);
+        snprintf(buf, sizeof(buf), "%2d.%01dV", v / 1000, (v % 1000) / 100);
         break;
       }
       case STATUS_BATTERY: {
@@ -238,6 +218,12 @@ void displayStatusLine() {
       case STATUS_ACTIVE_BRAKE:
         formatActiveBrakeStatus(buf, sizeof(buf), g_escVar.activeBrakeKind, g_escVar.activeBrake_pct);
         break;
+      case STATUS_DEVICE_ID: {
+        char deviceId[5];
+        getDeviceIdSuffix(deviceId, sizeof(deviceId));
+        snprintf(buf, 6, "#%-4s", deviceId);
+        break;
+      }
       default:  /* STATUS_BLANK */
         strcpy(buf, "     ");
         break;
@@ -334,7 +320,6 @@ void displayRaceModeSimple(uint8_t selectedItem, bool isEditing) {
 
   /* Note: Car name, voltage, and LIMITER warning are displayed by displayStatusLine() */
 }
-
 
 /**
  * @brief Display race mode - compact grid showing all key parameters
@@ -452,7 +437,7 @@ void displayRaceMode(uint8_t selectedItem, bool isEditing) {
     uint8_t labelWidth = strlen(curveLabel) * 6;
     obdWriteString(&g_obd, 0, col2_center - (labelWidth / 2) + 1, 24, (char *)curveLabel, FONT_6x8, colorCurve, 1);
     /* Value */
-    sprintf(msgStr, "%3d%%", g_storedVar.carParam[g_carSel].throttleCurveVertex.curveSpeedDiff);
+    snprintf(msgStr, sizeof(msgStr), "%3d%%", g_storedVar.carParam[g_carSel].throttleCurveVertex.curveSpeedDiff);
     obdWriteString(&g_obd, 0, col2_center - 16, 34, msgStr, FONT_8x8, colorCurve, 1);
     lastCurve = g_storedVar.carParam[g_carSel].throttleCurveVertex.curveSpeedDiff;
   }
@@ -700,7 +685,12 @@ void printMainMenu(MenuState_enum currMenuState)
           }
           else {
             /* value is a generic pointer to void, so first cast to uint16_t pointer, then take the pointed value */
-            sprintf(msgStr, "%3d%s", *(uint16_t *)(g_mainMenu.item[menuIndex].value), g_mainMenu.item[menuIndex].unit);
+            uint16_t shownValue = *(uint16_t *)(g_mainMenu.item[menuIndex].value);
+            if (g_mainMenu.item[menuIndex].value == &g_storedVar.carParam[g_carSel].maxSpeed &&
+                isLimitShownAsChoke(g_storedVar.language)) {
+              shownValue = limitPctToChokePct(shownValue);  /* CS/ACD: show LIMIT as CHOKE */
+            }
+            snprintf(msgStr, sizeof(msgStr), "%3d%s", shownValue, g_mainMenu.item[menuIndex].unit);
           }
           /* Right-align: calculate text width and position from right edge */
           if (isBrakeRow) {
@@ -758,17 +748,17 @@ void printMainMenu(MenuState_enum currMenuState)
           if (strcmp(g_mainMenu.item[menuIndex].name, "VIEW") == 0) {
             uint16_t raceViewMode = *(uint16_t *)(g_mainMenu.item[menuIndex].value);
             uint16_t lang = g_storedVar.language;
-            sprintf(msgStr, "%6s", VIEW_MODE_LABELS[lang][raceViewMode]);
+            snprintf(msgStr, sizeof(msgStr), "%6s", VIEW_MODE_LABELS[lang][raceViewMode]);
           }
           /* Special handling for LANG menu item */
           else if (strcmp(g_mainMenu.item[menuIndex].name, "LANG") == 0) {
             uint16_t language = *(uint16_t *)(g_mainMenu.item[menuIndex].value);
             const char* langLabel = (language <= LANG_MAX) ? LANG_LABELS[language] : LANG_LABELS[LANG_ENG];
-            sprintf(msgStr, "%3s", langLabel);
+            snprintf(msgStr, sizeof(msgStr), "%3s", langLabel);
           }
           else {
             /* value is a generic pointer to void, so cast to string pointer */
-            sprintf(msgStr, "%s", (char *)(g_mainMenu.item[menuIndex].value));
+            snprintf(msgStr, sizeof(msgStr), "%s", (char *)(g_mainMenu.item[menuIndex].value));
           }
           /* Right-align: calculate text width and position from right edge */
           int textWidth = strlen(msgStr) * charWidth;

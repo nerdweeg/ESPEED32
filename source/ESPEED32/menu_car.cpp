@@ -4,28 +4,11 @@
 #include "ui_strings.h"
 #include "ui_text_access.h"
 #include "settings_reset_menu.h"
-
-extern StoredVar_type g_storedVar;
-extern ESC_type g_escVar;
-extern OBDISP g_obd;
-extern uint16_t g_carSel;
-extern Menu_type g_carMenu;
-extern AiEsp32RotaryEncoder g_rotaryEncoder;
-extern char msgStr[50];
-extern bool g_isEditingCarSelection;
-
-extern bool consumeScreensaverWakeInput(bool wakeTriggered);
-extern bool refreshIdleInteractionFromControls(uint32_t* lastInteraction, bool* screensaverActive, uint16_t* lastEncoderPos);
-extern bool serviceIdlePowerTransitions(uint32_t* lastInteraction, bool* screensaverActive);
-extern bool checkRaceModeEscape();
-extern void requestEscapeToMain();
-extern bool isEscapeToMainRequested();
-extern uint8_t getMainMenuSelector();
-extern uint8_t getMainMenuItemsCount();
-
-extern void showScreensaver();
-extern void initMenuItems();
-extern void saveEEPROM(StoredVar_type toSave);
+#include "app_globals.h"
+#include "app_init.h"
+#include "power_ui.h"
+#include "ui_render.h"
+#include "menu_input.h"
 
 void showCarSelection() {
   /* "Frame" indicates which items are currently displayed.
@@ -114,7 +97,7 @@ void showCarSelection() {
       if (g_carMenu.item[frameUpper + i].value != ITEM_NO_VALUE)
       {
         /* value is a generic pointer to void, so first cast to uint16_t pointer, then take the pointed value */
-        sprintf(msgStr, "%2d", *(uint16_t *)(g_carMenu.item[frameUpper + i].value));
+        snprintf(msgStr, sizeof(msgStr), "%2d", *(uint16_t *)(g_carMenu.item[frameUpper + i].value));
         /* Print the item value (car number) */
         obdWriteString(&g_obd, 0, OLED_WIDTH - 24, i * HEIGHT12x16, msgStr, FONT_12x16, OBD_BLACK, 1);
       }
@@ -137,7 +120,6 @@ void showCarSelection() {
   /* Reset encoder and clear is done in caller routine */
   return;
 }
-
 
 /**
  * Show the Copy Car Settings screen. Allows copying all parameters from one car to another.
@@ -225,7 +207,7 @@ void showCopyCarSettings() {
       if (g_carMenu.item[frameUpper + i].value != ITEM_NO_VALUE)
       {
         /* Print the item value (car number) */
-        sprintf(msgStr, "%2d", *(uint16_t *)(g_carMenu.item[frameUpper + i].value));
+        snprintf(msgStr, sizeof(msgStr), "%2d", *(uint16_t *)(g_carMenu.item[frameUpper + i].value));
         obdWriteString(&g_obd, 0, OLED_WIDTH - 24, i * HEIGHT12x16, msgStr, FONT_12x16, OBD_BLACK, 1);
       }
     }
@@ -337,7 +319,7 @@ void showCopyCarSettings() {
         if (g_carMenu.item[itemIndex].value != ITEM_NO_VALUE)
         {
           /* Print the item value (car number) */
-          sprintf(msgStr, "%2d", *(uint16_t *)(g_carMenu.item[itemIndex].value));
+          snprintf(msgStr, sizeof(msgStr), "%2d", *(uint16_t *)(g_carMenu.item[itemIndex].value));
           obdWriteString(&g_obd, 0, OLED_WIDTH - 24, i * HEIGHT12x16, msgStr, FONT_12x16, OBD_BLACK, 1);
         }
       }
@@ -408,7 +390,6 @@ void showCopyCarSettings() {
   return;
 }
 
-
 /**
  * Show the options to Select or Rename the Car, called upon selecting the CAR item in the main menu
  */
@@ -468,27 +449,20 @@ void showSelectRenameCar() {
     }
 
     /* Check for brake button press - acts as "back" in CAR menu */
-    static bool brakeBtnInCarMenu = false;
-    static uint32_t lastBrakeBtnCarMenuTime = 0;
-    if (digitalRead(BUTT_PIN) == BUTTON_PRESSED) {
-      if (!brakeBtnInCarMenu && millis() - lastBrakeBtnCarMenuTime > BUTTON_SHORT_PRESS_DEBOUNCE_MS) {
-        brakeBtnInCarMenu = true;
-        lastBrakeBtnCarMenuTime = millis();
-        lastInteraction = millis();
+    static BrakeButtonEdge brakeBtnInCarMenu;
+    if (brakeBtnInCarMenu.pressed()) {
+      lastInteraction = millis();
 
-        if (isEditingRaceswp) {
-          /* Cancel RACESWP editing */
-          isEditingRaceswp = false;
-          g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
-          setUiEncoderBoundaries(0, 5, false);
-          resetUiEncoder(selectedOption);
-        } else {
-          /* Exit CAR menu completely */
-          goto exitCarMenu;
-        }
+      if (isEditingRaceswp) {
+        /* Cancel RACESWP editing */
+        isEditingRaceswp = false;
+        g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
+        setUiEncoderBoundaries(0, 5, false);
+        resetUiEncoder(selectedOption);
+      } else {
+        /* Exit CAR menu completely */
+        goto exitCarMenu;
       }
-    } else {
-      brakeBtnInCarMenu = false;
     }
 
     /* Get encoder value if changed */
@@ -550,7 +524,7 @@ void showSelectRenameCar() {
           obdWriteString(&g_obd, 0, 0, yPos, (char *)getCarMenuOption(lang, 2), menuFont, isSelected ? OBD_WHITE : OBD_BLACK, 1);
           /* Show temp value when editing, stored value otherwise */
           uint16_t displayValue = isEditingRaceswp ? tempRaceswpValue : g_storedVar.gridCarSelectEnabled;
-          sprintf(msgStr, "%3s", getOnOffLabel(lang, displayValue ? 1 : 0));
+          snprintf(msgStr, sizeof(msgStr), "%3s", getOnOffLabel(lang, displayValue ? 1 : 0));
           /* Value is white when editing, follows selection otherwise */
           uint8_t valueColor = isEditingRaceswp ? OBD_WHITE : (isSelected ? OBD_WHITE : OBD_BLACK);
           obdWriteString(&g_obd, 0, OLED_WIDTH - 3 * charWidth, yPos, msgStr, menuFont, valueColor, 1);
@@ -617,7 +591,7 @@ void showSelectRenameCar() {
         uint16_t lang = g_storedVar.language;
 
         obdWriteString(&g_obd, 0, 0, yPos, (char *)getCarMenuOption(lang, 2), menuFont, OBD_WHITE, 1);
-        sprintf(msgStr, "%3s", getOnOffLabel(lang, tempRaceswpValue ? 1 : 0));
+        snprintf(msgStr, sizeof(msgStr), "%3s", getOnOffLabel(lang, tempRaceswpValue ? 1 : 0));
         obdWriteString(&g_obd, 0, OLED_WIDTH - 3 * charWidth, yPos, msgStr, menuFont, OBD_WHITE, 1);
       }
     }
@@ -655,14 +629,13 @@ void showSelectRenameCar() {
   else if (selectedOption == CAR_OPTION_RESET)
   {
     uint16_t lang = g_storedVar.language;
-    const char* allCarsLabel[] = {
+    static const char* const allCarsLabel[LANG_COUNT] = {
       "ALLE BILER", "ALL CARS", "ALL CARS", "ALL CARS",
-      "TODOS AUTOS", "ALLE AUTOS", "TUTTE AUTO"
+      "TODOS AUTOS", "ALLE AUTOS", "TUTTE AUTO", "ALLE AUTOS",
+      "TODOS CARROS", "ALLA BILAR"
     };
-    const char* doneText[] = {
-      "NULLSTILT!", "RESET DONE!", "RESET DONE!", "RESET DONE!",
-      "RESET OK!", "RESET OK!", "RESET OK!"
-    };
+    if (lang >= LANG_COUNT) lang = LANG_DEFAULT;
+    const char* doneText = getResetDoneText(lang);
     const char* carLabel = allCarsLabel[lang];
     bool confirmed = showResetConfirmDialog(carLabel);
     if (confirmed) {
@@ -670,8 +643,9 @@ void showSelectRenameCar() {
       saveEEPROM(g_storedVar);
       initMenuItems();
       obdFill(&g_obd, OBD_WHITE, 1);
-      int tw = strlen(doneText[lang]) * WIDTH12x16;
-      obdWriteString(&g_obd, 0, (OLED_WIDTH - tw) / 2, 24, (char *)doneText[lang], FONT_12x16, OBD_BLACK, 1);
+      int tw = strlen(doneText) * WIDTH12x16;
+      if (tw > OLED_WIDTH) tw = OLED_WIDTH;  /* never start left of column 0 */
+      obdWriteString(&g_obd, 0, (OLED_WIDTH - tw) / 2, 24, (char *)doneText, FONT_12x16, OBD_BLACK, 1);
       delay(1500);
       obdFill(&g_obd, OBD_WHITE, 1);
     }
@@ -691,7 +665,6 @@ exitCarMenu:
   return;
 }
 
-
 /**
  * Show the Rename car screen. Called by selecting RENAME option on the showSelectRenameCar screen.
  */
@@ -704,7 +677,7 @@ void showRenameCar() {
   uint16_t mode = RENAME_CAR_SELECT_OPTION_MODE;  /* Initial mode. There are two mode:
                                                      - RENAME_CAR_SELECT_OPTION_MODE, when scrolling the encoder changes the selectedOption (pick which char to change, or the OK option)
                                                      - RENAME_CAR_SELECT_CHAR_MODE, when scrolling the encoder changes the selectedChar, that is the value of the selectedOption */
-  sprintf(tmpName, "%s", g_storedVar.carParam[g_storedVar.selectedCarNumber].carName); /* Store the current carName in the temporary name */
+  snprintf(tmpName, sizeof(tmpName), "%s", g_storedVar.carParam[g_storedVar.selectedCarNumber].carName); /* Store the current carName in the temporary name */
 
   /* Clear screen */
   obdFill(&g_obd, OBD_WHITE, 1);
@@ -799,7 +772,7 @@ void showRenameCar() {
     /* Print each Char of the name, only the selected one is highlighted (WHITE color) */
     for (uint8_t i = 0; i < CAR_NAME_MAX_SIZE - 1; i++) 
     {
-      sprintf(msgStr, "%c", tmpName[i]);
+      snprintf(msgStr, sizeof(msgStr), "%c", tmpName[i]);
       obdWriteString(&g_obd, 0, 0 + (i * 12), 22, msgStr, FONT_12x16, (selectedOption == i) ? OBD_WHITE : OBD_BLACK, 1);
     }
 
@@ -828,7 +801,7 @@ void showRenameCar() {
       if (selectedOption == CAR_NAME_MAX_SIZE - 1)
       {
         /* Change the name of the Car */
-        sprintf(g_storedVar.carParam[g_storedVar.selectedCarNumber].carName, "%s", tmpName);
+        snprintf(g_storedVar.carParam[g_storedVar.selectedCarNumber].carName, sizeof(g_storedVar.carParam[g_storedVar.selectedCarNumber].carName), "%s", tmpName);
         /* Menu variables are initialized in main loop */
         return;
       }
@@ -861,7 +834,6 @@ void showRenameCar() {
     if (checkRaceModeEscape()) { requestEscapeToMain(); return; }
   }
 }
-
 
 /**
  * Helpers for drawing the throttle-response graph used by CURVE and FADE.
@@ -961,18 +933,11 @@ void showCurveSelection()
   while (!g_rotaryEncoder.isEncoderButtonClicked() && !curveCanceled)
   {
     /* Check for brake button press - acts as "cancel" in curve screen */
-    static bool brakeBtnInCurve = false;
-    static uint32_t lastBrakeBtnCurveTime = 0;
-    if (digitalRead(BUTT_PIN) == BUTTON_PRESSED) {
-      if (!brakeBtnInCurve && millis() - lastBrakeBtnCurveTime > BUTTON_SHORT_PRESS_DEBOUNCE_MS) {
-        brakeBtnInCurve = true;
-        lastBrakeBtnCurveTime = millis();
-        /* Cancel changes - restore original value */
-        g_storedVar.carParam[g_carSel].throttleCurveVertex.curveSpeedDiff = originalCurveValue;
-        curveCanceled = true;
-      }
-    } else {
-      brakeBtnInCurve = false;
+    static BrakeButtonEdge brakeBtnInCurve;
+    if (brakeBtnInCurve.pressed()) {
+      /* Cancel changes - restore original value */
+      g_storedVar.carParam[g_carSel].throttleCurveVertex.curveSpeedDiff = originalCurveValue;
+      curveCanceled = true;
     }
 
     /* Write the trigger value only if it changed */
@@ -1042,17 +1007,10 @@ void showFadeSelection()
 
   while (!g_rotaryEncoder.isEncoderButtonClicked() && !fadeCanceled)
   {
-    static bool brakeBtnInFade = false;
-    static uint32_t lastBrakeBtnFadeTime = 0;
-    if (digitalRead(BUTT_PIN) == BUTTON_PRESSED) {
-      if (!brakeBtnInFade && millis() - lastBrakeBtnFadeTime > BUTTON_SHORT_PRESS_DEBOUNCE_MS) {
-        brakeBtnInFade = true;
-        lastBrakeBtnFadeTime = millis();
-        g_storedVar.carParam[g_carSel].fade = originalFadeValue;
-        fadeCanceled = true;
-      }
-    } else {
-      brakeBtnInFade = false;
+    static BrakeButtonEdge brakeBtnInFade;
+    if (brakeBtnInFade.pressed()) {
+      g_storedVar.carParam[g_carSel].fade = originalFadeValue;
+      fadeCanceled = true;
     }
 
     if (g_escVar.outputSpeed_pct != prevTrigger)

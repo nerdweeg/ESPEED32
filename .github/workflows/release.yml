@@ -83,7 +83,8 @@ jobs:
             --fqbn "$BOARD" \
             --board-options "$BOARD_OPTIONS" \
             --build-path build-as5600 \
-            --build-property build.extra_flags="-DTRIGGER_SENSOR_FAMILY=TRIGGER_SENSOR_FAMILY_AS5600" \
+            --build-property compiler.cpp.extra_flags="-DTRIGGER_SENSOR_FAMILY=TRIGGER_SENSOR_FAMILY_AS5600" \
+            --build-property compiler.c.extra_flags="-DTRIGGER_SENSOR_FAMILY=TRIGGER_SENSOR_FAMILY_AS5600" \
             source/ESPEED32
 
       - name: Verify version matches tag

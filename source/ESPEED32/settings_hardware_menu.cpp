@@ -5,49 +5,39 @@
 #include "HAL.h"
 #include "settings_ext_pot_menu.h"
 #include "diagnostics_self_test.h"
+#include "app_globals.h"
+#include "app_init.h"
+#include "power_ui.h"
+#include "ui_render.h"
+#include "menu_input.h"
 
-extern StoredVar_type g_storedVar;
-extern uint16_t g_encoderInvertEnabled;
-extern ESC_type g_escVar;
-extern OBDISP g_obd;
-extern AiEsp32RotaryEncoder g_rotaryEncoder;
-extern char msgStr[50];
-
-extern bool consumeScreensaverWakeInput(bool wakeTriggered);
-extern bool refreshIdleInteractionFromControls(uint32_t* lastInteraction, bool* screensaverActive, uint16_t* lastEncoderPos);
-extern bool serviceIdlePowerTransitions(uint32_t* lastInteraction, bool* screensaverActive);
-extern bool checkRaceModeEscape();
-extern void requestEscapeToMain();
-extern bool isEscapeToMainRequested();
-extern void showScreensaver();
-extern void saveEEPROM(StoredVar_type toSave);
-extern void initMenuItems();
-
-static const char* HARDWARE_MENU_LABELS[9][HARDWARE_ITEMS_COUNT] = {
-  {"ENC.INVERT", "EKST.POT.", "TRIGGER", "PWM MAX", "TEST", "TILBAKE"},
-  {"ENC.INVERT", "EXT.POT.", "TRIGGER", "PWM MAX", "TEST", "BACK"},
-  {"ENC.INVERT", "EXT.POT.", "TRIGGER", "PWM MAX", "TEST", "BACK"},
-  {"ENC.INVERT", "EXT.POT.", "TRIGGER", "PWM MAX", "TEST", "BACK"},
-  {"ENC.INVERT", "POT.EXT.", "TRIGGER", "PWM MAX", "TEST", "ATRAS"},
-  {"ENC.INVERT", "EXT.POT.", "TRIGGER", "PWM MAX", "TEST", "ZURUCK"},
-  {"ENC.INVERT", "POT.EST.", "TRIGGER", "PWM MAX", "TEST", "INDIETRO"},
-  {"ENC.INVERT", "EXT.POT.", "TRIGGER", "PWM MAX", "TEST", "TERUG"},
-  {"ENC.INVERT", "POT.EXT.", "TRIGGER", "PWM MAX", "TESTE", "VOLTAR"}
+static const char* HARDWARE_MENU_LABELS[LANG_COUNT][HARDWARE_ITEMS_COUNT] = {
+  {"ENC.INVERT", "EKST.POT.", "TRIGGER", "PWM_F MAX", "TEST", "TILBAKE"},
+  {"ENC.INVERT", "EXT.POT.", "TRIGGER", "PWM_F MAX", "TEST", "BACK"},
+  {"ENC.INVERT", "EXT.POT.", "TRIGGER", "PWM_F MAX", "TEST", "BACK"},
+  {"ENC.INVERT", "EXT.POT.", "TRIGGER", "PWM_F MAX", "TEST", "BACK"},
+  {"ENC.INVERT", "POT.EXT.", "TRIGGER", "PWM_F MAX", "TEST", "ATRAS"},
+  {"ENC.INVERT", "EXT.POT.", "TRIGGER", "PWM_F MAX", "TEST", "ZURUCK"},
+  {"ENC.INVERT", "POT.EST.", "TRIGGER", "PWM_F MAX", "TEST", "INDIETRO"},
+  {"ENC.INVERT", "EXT.POT.", "TRIGGER", "PWM_F MAX", "TEST", "TERUG"},
+  {"ENC.INVERT", "POT.EXT.", "TRIGGER", "PWM_F MAX", "TESTE", "VOLTAR"},
+  {"ENC.INVERT", "EXT.POT.", "TRIGGER", "PWM_F MAX", "TEST", "TILLBAKA"}
 };
 
-static const char* HARDWARE_MENU_LABELS_PASCAL[9][HARDWARE_ITEMS_COUNT] = {
-  {"Enc.Invert", "Ekst.Pot.", "Trigger", "Pwm Max", "Test", "Tilbake"},
-  {"Enc.Invert", "Ext.Pot.", "Trigger", "Pwm Max", "Test", "Back"},
-  {"Enc.Invert", "Ext.Pot.", "Trigger", "Pwm Max", "Test", "Back"},
-  {"Enc.Invert", "Ext.Pot.", "Trigger", "Pwm Max", "Test", "Back"},
-  {"Enc.Invert", "Pot.Ext.", "Trigger", "Pwm Max", "Test", "Atras"},
-  {"Enc.Invert", "Ext.Pot.", "Trigger", "Pwm Max", "Test", "Zuruck"},
-  {"Enc.Invert", "Pot.Est.", "Trigger", "Pwm Max", "Test", "Indietro"},
-  {"Enc.Invert", "Ext.Pot.", "Trigger", "Pwm Max", "Test", "Terug"},
-  {"Enc.Invert", "Pot.Ext.", "Trigger", "Pwm Max", "Teste", "Voltar"}
+static const char* HARDWARE_MENU_LABELS_PASCAL[LANG_COUNT][HARDWARE_ITEMS_COUNT] = {
+  {"Enc.Invert", "Ekst.Pot.", "Trigger", "Pwm_F Max", "Test", "Tilbake"},
+  {"Enc.Invert", "Ext.Pot.", "Trigger", "Pwm_F Max", "Test", "Back"},
+  {"Enc.Invert", "Ext.Pot.", "Trigger", "Pwm_F Max", "Test", "Back"},
+  {"Enc.Invert", "Ext.Pot.", "Trigger", "Pwm_F Max", "Test", "Back"},
+  {"Enc.Invert", "Pot.Ext.", "Trigger", "Pwm_F Max", "Test", "Atras"},
+  {"Enc.Invert", "Ext.Pot.", "Trigger", "Pwm_F Max", "Test", "Zuruck"},
+  {"Enc.Invert", "Pot.Est.", "Trigger", "Pwm_F Max", "Test", "Indietro"},
+  {"Enc.Invert", "Ext.Pot.", "Trigger", "Pwm_F Max", "Test", "Terug"},
+  {"Enc.Invert", "Pot.Ext.", "Trigger", "Pwm_F Max", "Teste", "Voltar"},
+  {"Enc.Invert", "Ext.Pot.", "Trigger", "Pwm_F Max", "Test", "Tillbaka"}
 };
 
-static const char* SENSOR_MENU_LABELS[9][4] = {
+static const char* SENSOR_MENU_LABELS[LANG_COUNT][4] = {
   {"FAMILIE", "AKTIV", "TYPE", "TILBAKE"},
   {"FAMILY", "ACTIVE", "TYPE", "BACK"},
   {"FAMILY", "ACTIVE", "TYPE", "BACK"},
@@ -56,10 +46,11 @@ static const char* SENSOR_MENU_LABELS[9][4] = {
   {"FAMILIE", "AKTIV", "TYPE", "ZURUCK"},
   {"FAMIGLIA", "ATTIVO", "TYPE", "INDIETRO"},
   {"FAMILIE", "ACTIEF", "TYPE", "TERUG"},
-  {"FAMILIA", "ATIVO", "TYPE", "VOLTAR"}
+  {"FAMILIA", "ATIVO", "TYPE", "VOLTAR"},
+  {"FAMILJ", "AKTIV", "TYP", "TILLBAKA"}
 };
 
-static const char* SENSOR_MENU_LABELS_PASCAL[9][4] = {
+static const char* SENSOR_MENU_LABELS_PASCAL[LANG_COUNT][4] = {
   {"Familie", "Aktiv", "Type", "Tilbake"},
   {"Family", "Active", "Type", "Back"},
   {"Family", "Active", "Type", "Back"},
@@ -68,7 +59,8 @@ static const char* SENSOR_MENU_LABELS_PASCAL[9][4] = {
   {"Familie", "Aktiv", "Type", "Zuruck"},
   {"Famiglia", "Attivo", "Type", "Indietro"},
   {"Familie", "Actief", "Type", "Terug"},
-  {"Familia", "Ativo", "Type", "Voltar"}
+  {"Familia", "Ativo", "Type", "Voltar"},
+  {"Familj", "Aktiv", "Typ", "Tillbaka"}
 };
 
 static const char* getHardwareMenuLabel(uint8_t lang, uint8_t item) {
@@ -245,27 +237,20 @@ static void showTriggerSensorSettings() {
       delay(200);
     }
 
-    static bool brakeBtnInMenu = false;
-    static uint32_t lastBrakeBtnTime = 0;
-    if (digitalRead(BUTT_PIN) == BUTTON_PRESSED) {
-      if (!brakeBtnInMenu && millis() - lastBrakeBtnTime > BUTTON_SHORT_PRESS_DEBOUNCE_MS) {
-        brakeBtnInMenu = true;
-        lastBrakeBtnTime = millis();
-        if (trigMenuState == VALUE_SELECTION) {
-          /* Cancel */
-          trigMenuState = ITEM_SELECTION;
-          g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
-          setUiEncoderBoundaries(0, numItems - 1, false);
-          resetUiEncoder(sel);
-          obdFill(&g_obd, OBD_WHITE, 1);
-          needRedraw = true;
-        } else {
-          while (digitalRead(BUTT_PIN) == BUTTON_PRESSED) { vTaskDelay(5); }
-          break;
-        }
+    static BrakeButtonEdge brakeBtnInMenu;
+    if (brakeBtnInMenu.pressed()) {
+      if (trigMenuState == VALUE_SELECTION) {
+        /* Cancel */
+        trigMenuState = ITEM_SELECTION;
+        g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
+        setUiEncoderBoundaries(0, numItems - 1, false);
+        resetUiEncoder(sel);
+        obdFill(&g_obd, OBD_WHITE, 1);
+        needRedraw = true;
+      } else {
+        waitForBrakeButtonRelease();
+        break;
       }
-    } else {
-      brakeBtnInMenu = false;
     }
 
     if (checkRaceModeEscape()) { requestEscapeToMain(); break; }
@@ -389,7 +374,7 @@ void showHardwareSettings() {
     if (g_rotaryEncoder.isEncoderButtonClicked()) {
       lastInteraction = millis();
       if (hwMenuState == VALUE_SELECTION) {
-        /* Confirm PWM MAX edit */
+        /* Confirm PWM_F MAX edit */
         if (applyConfiguredPwmFreqMaxProfile(tempPwmProfile)) {
           initMenuItems();
           saveEEPROM(g_storedVar);
@@ -434,27 +419,20 @@ void showHardwareSettings() {
       delay(200);
     }
 
-    static bool brakeBtnInMenu = false;
-    static uint32_t lastBrakeBtnTime = 0;
-    if (digitalRead(BUTT_PIN) == BUTTON_PRESSED) {
-      if (!brakeBtnInMenu && millis() - lastBrakeBtnTime > BUTTON_SHORT_PRESS_DEBOUNCE_MS) {
-        brakeBtnInMenu = true;
-        lastBrakeBtnTime = millis();
-        if (hwMenuState == VALUE_SELECTION) {
-          /* Cancel - discard edit */
-          hwMenuState = ITEM_SELECTION;
-          g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
-          setUiEncoderBoundaries(0, HARDWARE_ITEMS_COUNT - 1, false);
-          resetUiEncoder(sel);
-          obdFill(&g_obd, OBD_WHITE, 1);
-          needRedraw = true;
-        } else {
-          while (digitalRead(BUTT_PIN) == BUTTON_PRESSED) { vTaskDelay(5); }
-          break;
-        }
+    static BrakeButtonEdge brakeBtnInMenu;
+    if (brakeBtnInMenu.pressed()) {
+      if (hwMenuState == VALUE_SELECTION) {
+        /* Cancel - discard edit */
+        hwMenuState = ITEM_SELECTION;
+        g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
+        setUiEncoderBoundaries(0, HARDWARE_ITEMS_COUNT - 1, false);
+        resetUiEncoder(sel);
+        obdFill(&g_obd, OBD_WHITE, 1);
+        needRedraw = true;
+      } else {
+        waitForBrakeButtonRelease();
+        break;
       }
-    } else {
-      brakeBtnInMenu = false;
     }
 
     if (checkRaceModeEscape()) { requestEscapeToMain(); break; }

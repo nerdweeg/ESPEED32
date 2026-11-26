@@ -34,9 +34,11 @@ void serviceWiFiPortal();
 void serviceConnectivityPortal();
 bool isWiFiPortalActive();
 bool isOtaInProgress();
+bool isOtaUploadActive();  /* Side-effect free; safe to poll from Task2 */
 IPAddress getWiFiPortalIP();
 void getWiFiPortalSsid(char* out, size_t outLen);
 void getWiFiPortalHostName(char* out, size_t outLen);
+void getDeviceIdSuffix(char* out, size_t outLen);
 uint16_t getConfiguredWiFiMode();
 void setConfiguredWiFiMode(uint16_t mode);
 uint16_t getActiveWiFiPortalMode();

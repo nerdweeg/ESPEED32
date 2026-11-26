@@ -2,6 +2,7 @@
 /*                                                   Includes                                                        */
 /*********************************************************************************************************************/
 #include "slot_ESC.h"
+#include "app_globals.h"
 #include <esp_ota_ops.h>
 #include "HAL.h"
 #include "ui_strings.h"
@@ -24,6 +25,7 @@
 #include "menu_car.h"
 #include "ui_render.h"
 #include "task_control_loop.h"
+#include "throttle_processing.h"
 #include "ext_pot.h"
 #include "telemetry_logging.h"
 
@@ -47,7 +49,7 @@ TaskHandle_t Task2;
 TaskHandle_t WiFiTask;
 
 /* State Machine */
-StateMachine_enum g_currState = INIT;
+volatile StateMachine_enum g_currState = INIT;  /* Written by Task1, read by Task2 */
 
 /* Display Components */
 #ifdef USE_BACKBUFFER
@@ -60,7 +62,7 @@ OBDISP g_obd;         /* OLED display instance */
 char msgStr[50];      /* Display message buffer */
 
 /* Car Selection */
-uint16_t g_carSel;    /* Currently selected car model index */
+volatile uint16_t g_carSel;    /* Currently selected car model index (written by Task1, read by Task2) */
 
 /* Rotary Encoder */
 AiEsp32RotaryEncoder g_rotaryEncoder = AiEsp32RotaryEncoder(ENCODER_A_PIN, ENCODER_B_PIN, ENCODER_BUTTON_PIN, ENCODER_VCC_PIN, ENCODER_STEPS);
@@ -130,7 +132,7 @@ Menu_type g_carMenu {
 Preferences g_pref;
 
 /* UI Timing */
-uint32_t g_lastEncoderInteraction = 0;         /* Timestamp of last encoder interaction for display power saving */
+volatile uint32_t g_lastEncoderInteraction = 0;         /* Timestamp of last encoder interaction for display power saving */
 bool g_forceRaceRedraw = false; /* Force race mode display to redraw */
 
 /* Settings lock — volatile, resets on reboot */
@@ -281,8 +283,46 @@ static bool isBrakeEditTarget() {
   return g_encoderSelectedValuePtr == &g_storedVar.carParam[g_carSel].brake;
 }
 
+static bool isChokeEditTarget() {
+  return g_encoderSelectedValuePtr == &g_storedVar.carParam[g_carSel].maxSpeed &&
+         isLimitShownAsChoke(g_storedVar.language);
+}
+
 static bool isSensiEditTarget() {
   return g_encoderSelectedValuePtr == &g_storedVar.carParam[g_carSel].minSpeed;
+}
+
+/**
+ * Default profile name: CAR0..CAR9, then CR10..CR19, so every name fits the 4-character carName.
+ */
+void setDefaultCarName(CarParam_type& car, uint8_t index) {
+  snprintf(car.carName, sizeof(car.carName), (index < 10) ? "CAR%u" : "CR%u", (unsigned)index);
+}
+
+/**
+ * Terminate every car name inside carName[]. Older firmware stored the defaults CAR10..CAR19 as
+ * 5 characters with the NUL in the struct padding; those become CR10..CR19, any other unterminated
+ * name is cut to 4 characters.
+ * @return true if any name was changed
+ */
+bool normalizeStoredCarNames(StoredVar_type* storedVar) {
+  if (storedVar == nullptr) return false;
+
+  bool changed = false;
+  for (uint8_t i = 0; i < CAR_MAX_COUNT; i++) {
+    CarParam_type& car = storedVar->carParam[i];
+    if (memchr(car.carName, '\0', sizeof(car.carName)) != nullptr) continue;
+    char legacyDefault[8];
+    snprintf(legacyDefault, sizeof(legacyDefault), "CAR%u", (unsigned)i);
+    if (strlen(legacyDefault) == sizeof(car.carName) &&
+        memcmp(car.carName, legacyDefault, sizeof(car.carName)) == 0) {
+      setDefaultCarName(car, i);
+    } else {
+      car.carName[sizeof(car.carName) - 1] = '\0';
+    }
+    changed = true;
+  }
+  return changed;
 }
 
 bool clampStoredVarCarPwmFreqsToProfile(StoredVar_type* storedVar, uint16_t profile) {
@@ -371,6 +411,14 @@ static uint16_t configureEncoderForSelectedValueEdit(uint16_t minRaw, uint16_t m
     return startEncoder;
   }
 
+  if (isChokeEditTarget()) {
+    /* Encoder counts CHOKE, so turning up chokes more (lowers LIMIT) */
+    uint16_t startChoke = limitPctToChokePct(constrain(*g_encoderSelectedValuePtr, minRaw, maxRaw));
+    setUiEncoderBoundaries(limitPctToChokePct(maxRaw), limitPctToChokePct(minRaw), false);
+    resetUiEncoder(startChoke);
+    return startChoke;
+  }
+
   uint16_t startValue = isAntiSpinEditTarget()
     ? antiSpinMsToUiValue(*g_encoderSelectedValuePtr, g_antiSpinDisplayMode)
     : *g_encoderSelectedValuePtr;
@@ -438,6 +486,8 @@ static void applyValueEditFromEncoder(uint16_t encoderValue) {
     int32_t newValue = (int32_t)g_sensiEditBaseValue + (delta * (int32_t)getSensiEditStepRaw());
     uint16_t maxSensiRaw = getSelectedSensiMaxRaw();
     *g_encoderSelectedValuePtr = (uint16_t)constrain(newValue, 0, maxSensiRaw);
+  } else if (isChokeEditTarget()) {
+    *g_encoderSelectedValuePtr = chokePctToLimitPct(encoderValue);
   } else {
     *g_encoderSelectedValuePtr = encoderValue;
   }
@@ -780,7 +830,6 @@ void applyAdcVoltageRangeMilliVolts(uint16_t range_mV) {
   HalfBridge_SetAdcVoltageRangeMilliVolts(g_adcVoltageRange_mV);
 }
 
-
 /*********************************************************************************************************************/
 /*                                                FreeRTOS Tasks                                                     */
 /*********************************************************************************************************************/
@@ -915,7 +964,8 @@ void Task1code(void *pvParameters) {
               g_pref.putUShort(PREF_KEY_BRAKE_STEP, g_brakeStep);
               g_pref.putUShort(PREF_KEY_SENSI_STEP, g_sensiStep);
             }
-            if (clampStoredVarCarPwmFreqsToProfile(&g_storedVar, g_pwmFreqMaxProfile)) {
+            bool namesFixed = normalizeStoredCarNames(&g_storedVar);
+            if (clampStoredVarCarPwmFreqsToProfile(&g_storedVar, g_pwmFreqMaxProfile) || namesFixed) {
               g_pref.putBytes("user_param", &g_storedVar, sizeof(g_storedVar));
             }
             initMenuItems();                                                  /* init menu items with EEPROM stored variables */
@@ -1061,7 +1111,6 @@ void Task1code(void *pvParameters) {
 
         break;
 
-
       case CALIBRATION:
         /* Read Throttle */
         throttleCalibration(g_escVar.trigger_raw);    /* trigger raw is continuously read on task2 */
@@ -1079,7 +1128,6 @@ void Task1code(void *pvParameters) {
         }
         break;
 
-
       case WELCOME:
         /* This WELCOME state is only used to show the SW versions on the Screen, but the controller is actually fully operational:
             - Calibration is OKAY (either just done, or using stored values)
@@ -1094,7 +1142,6 @@ void Task1code(void *pvParameters) {
         }
         g_currState = RUNNING;  /* Go to RUNNING state */
         break;
-
 
       case RUNNING: { /* when the global variable State is in RUNNING the Task2 will elaborate the trigger to produce the PWM out */
 
@@ -1301,12 +1348,16 @@ void Task1code(void *pvParameters) {
         printMainMenu(menuState);
         if (g_storedVar.carParam[g_carSel].freqPWM != prevFreqPWM)  /* if PWM freq parameter is changed, update motor PWM */
         {
-          prevFreqPWM = g_storedVar.carParam[g_carSel].freqPWM;
-          ledcDetach(HB_IN_PIN);
-          ledcDetach(HB_INH_PIN);
-          uint16_t freqTmp = g_storedVar.carParam[g_carSel].freqPWM * 100;
-          ledcAttachChannel(HB_IN_PIN, freqTmp, THR_PWM_RES_BIT, THR_IN_PWM_CHAN);
-          ledcAttachChannel(HB_INH_PIN, freqTmp, THR_PWM_RES_BIT, THR_INH_PWM_CHAN);
+          /* Retime the LEDC timer in place: the pins stay attached, so Task2's
+           * concurrent ledcWrite() on core 1 never hits a detached pin.
+           * Only record the new value once both pins accepted it, so a failed
+           * change is retried instead of leaving the menu and timer out of sync. */
+          uint32_t freqTmp = (uint32_t)g_storedVar.carParam[g_carSel].freqPWM * 100U;
+          bool inOk = ledcChangeFrequency(HB_IN_PIN, freqTmp, THR_PWM_RES_BIT) != 0;
+          bool inhOk = ledcChangeFrequency(HB_INH_PIN, freqTmp, THR_PWM_RES_BIT) != 0;
+          if (inOk && inhOk) {
+            prevFreqPWM = g_storedVar.carParam[g_carSel].freqPWM;
+          }
         }
         if (g_escVar.outputSpeed_pct == 100) /* indicate 100% throttle also on the internal ESP32 LED*/
           digitalWrite(LED_BUILTIN, 1);
@@ -1315,11 +1366,9 @@ void Task1code(void *pvParameters) {
         break;
       }
 
-
       case FAULT:
         /* FAULT state, not currently used */
         break;
-
 
       default:
         /* Default case, do nothing */
@@ -1365,18 +1414,17 @@ void showScreenWelcome()
   obdWriteString(&g_obd, 0, 24, 14, (char *)"ESPEED", FONT_12x16, OBD_BLACK, 1);
 
   /* Display version in smaller font, centered below with spacing */
-  sprintf(msgStr, "v%d.%d", SW_MAJOR_VERSION, SW_MINOR_VERSION);
+  snprintf(msgStr, sizeof(msgStr), "v%d.%d", SW_MAJOR_VERSION, SW_MINOR_VERSION);
   uint8_t versionWidth = strlen(msgStr) * 6;  /* 6px per char for FONT_6x8 */
   obdWriteString(&g_obd, 0, (OLED_WIDTH - versionWidth) / 2, 36, msgStr, FONT_6x8, OBD_BLACK, 1);
 }
-
 
 /**
  * Show the Pre-Calibration screen, when the button is pressed during startup, but not yet released
  */
 void showScreenPreCalibration() 
 {
-  sprintf(msgStr, "ESPEED32 v%d.%d", SW_MAJOR_VERSION, SW_MINOR_VERSION);  //print SW version
+  snprintf(msgStr, sizeof(msgStr), "ESPEED32 v%d.%d", SW_MAJOR_VERSION, SW_MINOR_VERSION);  //print SW version
   obdWriteString(&g_obd, 0, 8, 0, msgStr, FONT_8x8, OBD_BLACK, 1);
   obdWriteString(&g_obd, 0, (OLED_WIDTH / 2) - 48, 1 * HEIGHT8x8, (char *)"Release button", FONT_8x8, OBD_BLACK, 1);
   obdWriteString(&g_obd, 0, (OLED_WIDTH / 2) - 48, 2 * HEIGHT8x8, (char *)"to calibrate", FONT_8x8, OBD_BLACK, 1);
@@ -1385,13 +1433,12 @@ void showScreenPreCalibration()
   obdWriteString(&g_obd, 0, (OLED_WIDTH / 2) - 48, 5 * HEIGHT8x8, (char *)"  to exit  ", FONT_8x8, OBD_BLACK, 1);
 }
 
-
 /**
  * Show the screen indicating that the stored variables are not present in the EEPROM
  */
 void showScreenNoEEPROM()
 {
-  sprintf(msgStr, "ESPEED32 v%d.%d", SW_MAJOR_VERSION, SW_MINOR_VERSION);  //print SW version
+  snprintf(msgStr, sizeof(msgStr), "ESPEED32 v%d.%d", SW_MAJOR_VERSION, SW_MINOR_VERSION);  //print SW version
   obdWriteString(&g_obd, 0, 0, 0, msgStr, FONT_8x8, OBD_WHITE, 1);
   obdWriteString(&g_obd, 0, (OLED_WIDTH / 2) - 64, 3 * HEIGHT8x8, (char *)"EEPROM NOT init!", FONT_8x8, OBD_BLACK, 1);
   obdWriteString(&g_obd, 0, (OLED_WIDTH / 2) - 48, 5 * HEIGHT8x8, (char *)"Press button", FONT_8x8, OBD_BLACK, 1);
@@ -1416,7 +1463,6 @@ void showTriggerSensorFaultWarning()
   obdFill(&g_obd, OBD_WHITE, 1);
 }
 
-
 /**
  * Show the calibration screen. It displays the current trigger raw value, as well as the max and min encountered values.
  * 
@@ -1424,201 +1470,24 @@ void showTriggerSensorFaultWarning()
  */
 void showScreenCalibration(int16_t adcRaw)
 {
-  sprintf(msgStr, "%s", STR_CALIBRATION[g_storedVar.language]);
+  snprintf(msgStr, sizeof(msgStr), "%s", STR_CALIBRATION[g_storedVar.language]);
   int calWidth = strlen(msgStr) * 6;
   obdWriteString(&g_obd, 0, (OLED_WIDTH - calWidth) / 2, 0, msgStr, FONT_6x8, OBD_WHITE, 1);
 
-  sprintf(msgStr, "%s", STR_PRESS_RELEASE[g_storedVar.language]);
+  snprintf(msgStr, sizeof(msgStr), "%s", STR_PRESS_RELEASE[g_storedVar.language]);
   obdWriteString(&g_obd, 0, 0, 8, msgStr, FONT_6x8, OBD_BLACK, 1);
 
-  sprintf(msgStr, "Raw throttle %4d  ", adcRaw);
+  snprintf(msgStr, sizeof(msgStr), "Raw throttle %4d  ", adcRaw);
   obdWriteString(&g_obd, 0, 0, 24, msgStr, FONT_6x8, OBD_BLACK, 1);
 
-  sprintf(msgStr, "Min throttle %4d   ", g_storedVar.minTrigger_raw);
+  snprintf(msgStr, sizeof(msgStr), "Min throttle %4d   ", g_storedVar.minTrigger_raw);
   obdWriteString(&g_obd, 0, 0, 32, msgStr, FONT_6x8, OBD_BLACK, 1);
 
-  sprintf(msgStr, "Max throttle %4d   ", g_storedVar.maxTrigger_raw);
+  snprintf(msgStr, sizeof(msgStr), "Max throttle %4d   ", g_storedVar.maxTrigger_raw);
   obdWriteString(&g_obd, 0, 0, 40, msgStr, FONT_6x8, OBD_BLACK, 1);
 
-  sprintf(msgStr, "%s", STR_PUSH_DONE[g_storedVar.language]);
+  snprintf(msgStr, sizeof(msgStr), "%s", STR_PUSH_DONE[g_storedVar.language]);
   obdWriteString(&g_obd, 0, 0, 56, msgStr, FONT_6x8, OBD_BLACK, 1);
-}
-
-#define ANTIS_SPEED_START_MIN 30  /* [%] Start anti-spin only for throttle requests above this threshold */
-#define ANTIS_SPEED_START_MAX 65  /* [%] Maximum anti-spin start threshold */
-
-/**
- * @brief Apply anti-spin control to prevent car drift
- * @details Applies a ramp to output speed to prevent sudden speed changes that cause wheel spin.
- *          Anti-spin time is the ramp time from the anti-spin start point up toward maxSpeed.
- *          It is not a pure trigger delay.
- *          Anti-spin is bypassed at low duty cycles (< antispinPercStart) where current is too low to cause spinning.
- *          The antispinPercStart threshold varies with the antiSpin setting:
- *          - High antiSpin (200ms) = Low threshold (powerful motor/slippery track)
- *          - Low antiSpin = High threshold (good traction)
- * 
- * @param requestedSpeedX10 [0.1%] Requested output speed (0-1000)
- * @return [0.1%] Actual output speed respecting anti-spin ramp limits
- */
-uint16_t throttleAntiSpin3(uint16_t requestedSpeedX10) {
-  static uint32_t lastOutputSpeedx1000 = 0;
-  static unsigned long prevCall_uS = 0;
-  
-  unsigned long currCall_uS = micros();
-  unsigned long deltaTime_uS = currCall_uS - prevCall_uS;
-  prevCall_uS = currCall_uS;
-
-  /* Calculate dynamic anti-spin start threshold based on anti-spin setting */
-  uint16_t antispinPercStart = map((long)g_storedVar.carParam[g_carSel].antiSpin, 0, (long)ANTISPIN_MAX_VALUE, 
-                                    (long)ANTIS_SPEED_START_MAX, (long)ANTIS_SPEED_START_MIN);
-  uint16_t antispinPercStartRaw = antispinPercStart * SENSI_SCALE;
-
-  /* Bypass anti-spin if disabled */
-  if (g_storedVar.carParam[g_carSel].antiSpin == 0) {
-    lastOutputSpeedx1000 = (uint32_t)getEffectiveSensiRaw() * 100U;
-    return requestedSpeedX10;
-  }
-
-  /* Bypass anti-spin at low speeds (insufficient current for wheel spin) */
-  if (requestedSpeedX10 < antispinPercStartRaw) {
-    lastOutputSpeedx1000 = (uint32_t)requestedSpeedX10 * 100U;
-    return requestedSpeedX10;
-  }
-
-  /* Allow immediate deceleration (braking) */
-  if ((uint32_t)requestedSpeedX10 * 100U <= lastOutputSpeedx1000) {
-    lastOutputSpeedx1000 = (uint32_t)requestedSpeedX10 * 100U;
-    return requestedSpeedX10;
-  }
-
-  /* Apply anti-spin ramp for acceleration */
-  uint16_t minSpeedTmpRaw = max(getEffectiveSensiRaw(), antispinPercStartRaw);
-  uint16_t maxSpeedRaw = g_storedVar.carParam[g_carSel].maxSpeed * SENSI_SCALE;
-  if (maxSpeedRaw <= minSpeedTmpRaw) {
-    lastOutputSpeedx1000 = (uint32_t)requestedSpeedX10 * 100U;
-    return requestedSpeedX10;
-  }
-  
-  /* Convert the 0.1%-unit span into x1000-percent ramp units.
-   * deltaTime is in us while antiSpin is in ms, so denominator is antiSpin * scale. */
-  uint32_t maxDeltaSpeedx1000 = ((uint32_t)(maxSpeedRaw - minSpeedTmpRaw) * deltaTime_uS) /
-                                 ((uint32_t)g_storedVar.carParam[g_carSel].antiSpin * (uint32_t)SENSI_SCALE);
-
-  uint32_t outputSpeedX1000;
-  uint32_t targetSpeedX1000 = (uint32_t)requestedSpeedX10 * 100U;
-  
-  /* Check if we can increase speed by full delta or if we're close to target */
-  if (maxDeltaSpeedx1000 < (targetSpeedX1000 - lastOutputSpeedx1000)) {
-    outputSpeedX1000 = lastOutputSpeedx1000 + maxDeltaSpeedx1000;
-  } else {
-    outputSpeedX1000 = targetSpeedX1000;  /* Target reached */
-  }
-
-  /* Ensure ramp starts from minSpeed, not zero */
-  if (outputSpeedX1000 < (uint32_t)getEffectiveSensiRaw() * 100U) {
-    outputSpeedX1000 = (uint32_t)getEffectiveSensiRaw() * 100U;
-  }
-
-  lastOutputSpeedx1000 = outputSpeedX1000;
-  return (uint16_t)((outputSpeedX1000 + 50U) / 100U);
-}
-
-
-/**
- * Accounts for a deadband in an input value.
- * 
- * @param inputVal The input value
- * @param minVal The lower bound of the input value range
- * @param maxVal The upper bound of the input value range
- * @param deadBand The deadband as absolute value (not a percentage)
- * @return If the input value is less than the minVal + deadBand, it returns minVal.
-           If the input value is more than the maxVal - deadBand, it returns the maxVal.
-           Otherwise, it returns the inputVal, scaled in order to range from minVal to maxVal.
- */
-uint16_t addDeadBand(uint16_t inputVal, uint16_t minVal, uint16_t maxVal, uint16_t deadBand) 
-{
-  uint16_t retVal = 0;
-
-  /* If the inputVal is less than deadBand_pct, return 0 */
-  if (inputVal < minVal + deadBand) 
-  {
-    retVal = 0;
-  } 
-  /* If the inputVal is more than maxValue - deadBand, return maxValue */
-  else if (inputVal > maxVal - deadBand) 
-  {
-    retVal = maxVal;
-  } 
-  else 
-  {
-    retVal = map(inputVal, deadBand, maxVal - deadBand, minVal, maxVal);  /* Scale the inputValue (which ranges from (minVal + deadBand) to (maxVal - deadBand))
-                                                                             so that it ranges from minVal to maxVal */
-  }
-
-  return retVal;
-}
-
-/**
- * throttleCurve2: Map trigger position(throttle) to speed (duty) on a broken line curve, with midpoint set as throttleCurveVertex
- * dual throttle curve: When decelerating , if dragB is higher than 100%-minSpeed, then set a lower minSpeed
- * @param inputThrottleNorm The input Trigger value, normalized between 0 and THROTTLE_NORMALIZED
- * @return duty cycle in 0.1% units to be applied at that trigger position on the selected curve
- */
-uint16_t throttleCurve2(uint16_t inputThrottleNorm )
-{
-  uint32_t throttleCurveVertexSpeedRaw;  /* Output speed in 0.1% units at the curve vertex */
-  uint16_t outputSpeedRaw = 0;           /* Output speed in 0.1% units */
-  uint16_t tmpMinSpeedRaw;               /* Minimum speed in 0.1% units */
-  uint16_t maxSpeedRaw;                  /* Maximum speed in 0.1% units */
-  uint16_t fadeThrottleNorm;
-  uint16_t curveVertexInputNorm;
-
-  /* dual throttle curve: When decelerating , if dragB is higher than 100%-minSpeed, then set a lower minSpeed on the curve to allow the desired drag brake to be applied*/
-  tmpMinSpeedRaw = getEffectiveSensiRaw();
-  maxSpeedRaw = g_storedVar.carParam[g_carSel].maxSpeed * SENSI_SCALE;
-  if (maxSpeedRaw < tmpMinSpeedRaw) {
-    maxSpeedRaw = tmpMinSpeedRaw;
-  }
-  fadeThrottleNorm = fadePctToThrottleNorm(min((uint16_t)FADE_MAX_VALUE, g_storedVar.carParam[g_carSel].fade));
-  curveVertexInputNorm = curveVertexInputWithFade(fadeThrottleNorm, g_storedVar.carParam[g_carSel].throttleCurveVertex.inputThrottle);
-
-  /* Calculate the output speed of the throttle curve vertex
-     This is calculated as the curveSpeedDiff (from 10% to 90%) percentage of the difference between minSpeed and maxSpeed */
-  throttleCurveVertexSpeedRaw = tmpMinSpeedRaw + (((uint32_t)maxSpeedRaw - (uint32_t)tmpMinSpeedRaw) * ((uint32_t)g_storedVar.carParam[g_carSel].throttleCurveVertex.curveSpeedDiff) / 100);
-
-  if (inputThrottleNorm == 0)   /* If input throttle is 0 --> output speed is 0% */
-  {
-    outputSpeedRaw = 0;
-  }
-  else if (fadeThrottleNorm > 0 && inputThrottleNorm <= fadeThrottleNorm)
-  {
-    /* FADE fills the gap between 0 output and SENSI over the first part of trigger travel. */
-    outputSpeedRaw = (uint16_t)map(inputThrottleNorm, 0, fadeThrottleNorm, 0, tmpMinSpeedRaw);
-  }
-  else if (inputThrottleNorm <= curveVertexInputNorm)
-  {
-    if (curveVertexInputNorm <= fadeThrottleNorm)
-    {
-      outputSpeedRaw = (uint16_t)throttleCurveVertexSpeedRaw;
-    }
-    else
-    {
-      outputSpeedRaw = (uint16_t)map(inputThrottleNorm, fadeThrottleNorm, curveVertexInputNorm, tmpMinSpeedRaw, throttleCurveVertexSpeedRaw);
-    }
-  }
-  else
-  {
-    if (curveVertexInputNorm >= THROTTLE_NORMALIZED)
-    {
-      outputSpeedRaw = maxSpeedRaw;
-    }
-    else
-    {
-      outputSpeedRaw = (uint16_t)map(inputThrottleNorm, curveVertexInputNorm, THROTTLE_NORMALIZED, throttleCurveVertexSpeedRaw, maxSpeedRaw);
-    }
-  }
-
-  return outputSpeedRaw;
 }
 
 /**
@@ -1637,7 +1506,6 @@ void throttleCalibration(int16_t adcRaw)
       g_storedVar.minTrigger_raw = adcRaw;
     }
 }
-
 
 /**
  * Reacts to the rotary encoder being clicked.
@@ -1746,7 +1614,6 @@ MenuState_enum rotary_onButtonClick(MenuState_enum currMenuState)
     {
       g_rotaryEncoder.setAcceleration(SEL_ACCELERATION); /* Set higher encoder acceleration so it doesn't require too many turns to make a big value change */
 
-
       g_encoderSelectedValuePtr = (uint16_t *)g_mainMenu.item[g_encoderMainSelector - 1].value;   /* Update the g_encoderSelectedValuePtr to point to the value of the selected item.
                                                                                                      value is a generic pointer to void, so cast to uint16_t pointer */
       selectedParamMaxValue = g_mainMenu.item[g_encoderMainSelector - 1].maxValue;                /* Set Max and Min boundaries according to the selected items max and min value */
@@ -1791,67 +1658,6 @@ MenuState_enum rotary_onButtonClick(MenuState_enum currMenuState)
   }
 }
 
-/**
- * Take an ADC raw value where the max and min has been recorded and returns the value scaled
- * 
- * @param raw The raw ADC value
- * @param minIn The lowest reading of the ADC
- * @param maxIn The highest reading of the ADC
- * @param normalizedMax The new max value of the scale
- * @param isReversed Whether the throttle is reversed or not
- * @return The raw ADC value scaled from 0 to normalizedMax
- */
-uint16_t normalizeAndClamp(uint16_t raw, uint16_t minIn, uint16_t maxIn, uint16_t normalizedMax, bool isReversed)
-{
-  uint16_t retVal = 0;  /* From 0 to normalizedMax */
-
-  if (maxIn == minIn)  /* If maxIn == minIn avoid division by 0 */
-  {
-    retVal = 0;
-  }
-  else
-  {
-    raw = constrain(raw, minIn, maxIn); /* Make sure the raw value is constrained between minIn and maxIn */
-
-    if (isReversed == true)  /* If throttle is reversed (it goes to low values when pressed) */
-    {
-      raw = abs(maxIn - raw);
-    }
-    else
-    {
-      raw = abs(raw - minIn);
-    }
-
-    retVal = ((uint32_t)raw * normalizedMax) / (maxIn - minIn); /* Scale the raw reading */
-  }
-
-  return retVal;
-}
-
-/**
- * Saturate an input value between a upper and lower bound
- * 
- * @param paramValue The input value to be saturated
- * @param minValue The lower bound
- * @param maxValue The upper bound
- * @return The saturated input value.
- */
-uint16_t saturateParamValue(uint16_t paramValue, uint16_t minValue, uint16_t maxValue) 
-{
-  uint16_t retValue = paramValue;
-
-  if (paramValue > maxValue) 
-  {
-    retValue = maxValue;
-  } else if (paramValue < minValue) 
-  {
-    retValue = minValue;
-  }
-
-  return retValue;
-}
-
-
 /* Packed so the byte layout has no compiler-inserted gaps between members,
  * which keeps the memcmp() dirty-check below reliable. */
 #pragma pack(push, 1)
@@ -1872,10 +1678,9 @@ struct EepromSnapshot_type {
 };
 #pragma pack(pop)
 
-void saveEEPROM(StoredVar_type toSave) {
-  clampStoredVarCarPwmFreqsToProfile(&toSave, g_pwmFreqMaxProfile);
-
-  EepromSnapshot_type snapshot = {
+void saveEEPROM(const StoredVar_type& toSave) {
+  /* alignas: the struct is packed, and storedVar (offset 0) is clamped through a pointer below. */
+  alignas(4) EepromSnapshot_type snapshot = {
     toSave,
     (uint8_t)(g_statsEnabled ? 1 : 0),
     (uint16_t)constrain(g_antiSpinStepMs, ANTISPIN_STEP_MIN, ANTISPIN_STEP_MAX),
@@ -1890,13 +1695,14 @@ void saveEEPROM(StoredVar_type toSave) {
     (uint8_t)constrain(g_extPotTarget[0], EXT_POT_TARGET_MIN, EXT_POT_TARGET_MAX),
     (uint8_t)constrain(g_extPotTarget[1], EXT_POT_TARGET_MIN, EXT_POT_TARGET_MAX)
   };
+  clampStoredVarCarPwmFreqsToProfile(&snapshot.storedVar, g_pwmFreqMaxProfile);
 
   /* Skip the "stored_var" flash write if nothing has changed since the last
    * save: saveEEPROM() is called on almost every menu confirm (and even on
    * a plain GRID/LIST view toggle), so this avoids needless NVS wear during
-   * trackside tuning sessions. saveWiFiNetworkSettings() is unaffected by
-   * this check and always runs, since WiFi credentials live outside this
-   * snapshot and are not otherwise persisted here. */
+   * trackside tuning sessions. saveWiFiNetworkSettings() is not covered by
+   * this snapshot: WiFi/login keys live outside it and have their own
+   * skip-if-unchanged check in writeWiFiNetworkSettingsToPrefs(). */
   static EepromSnapshot_type s_lastSaved;
   static bool s_hasLastSaved = false;
   bool storedVarUnchanged = s_hasLastSaved && memcmp(&s_lastSaved, &snapshot, sizeof(snapshot)) == 0;

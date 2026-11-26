@@ -17,7 +17,7 @@ DATA_DOCS_DIR = ROOT_DIR / "source/ESPEED32" / "data" / "docs"
 TEMPLATE_PATH = SHARED_DIR / "template.html"
 STYLE_PATH = SHARED_DIR / "style.css"
 SCRIPT_PATH = SHARED_DIR / "script.js"
-DEFAULT_LANGS = ("en", "no", "es", "de", "it", "nl", "pt")
+DEFAULT_LANGS = ("en", "no", "es", "de", "it", "nl", "pt", "sv")
 
 DEFAULT_TEMPLATE = """<!DOCTYPE html>
 <html lang="{{lang}}">

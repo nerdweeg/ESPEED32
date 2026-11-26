@@ -2,22 +2,10 @@
 #include <Arduino.h>
 #include "slot_ESC.h"
 #include "ui_text_access.h"
-
-extern StoredVar_type g_storedVar;
-extern ESC_type g_escVar;
-extern OBDISP g_obd;
-extern uint16_t g_carSel;
-extern AiEsp32RotaryEncoder g_rotaryEncoder;
-
-extern bool consumeScreensaverWakeInput(bool wakeTriggered);
-extern bool refreshIdleInteractionFromControls(uint32_t* lastInteraction, bool* screensaverActive, uint16_t* lastEncoderPos);
-extern bool serviceIdlePowerTransitions(uint32_t* lastInteraction, bool* screensaverActive);
-extern bool checkRaceModeEscape();
-extern void requestEscapeToMain();
-
-extern void showScreensaver();
-extern void saveEEPROM(StoredVar_type toSave);
-extern void resetEncoderForMainMenu();
+#include "app_globals.h"
+#include "power_ui.h"
+#include "ui_render.h"
+#include "menu_input.h"
 
 enum AdvancedBrakeRowType : uint8_t {
   AB_ROW_BUTTON = 0,
@@ -60,11 +48,11 @@ static AdvancedBrakeRowType getAdvancedBrakeRowType(uint16_t mode, uint8_t visib
 }
 
 static const char* getAdvancedBrakeRowLabel(uint8_t lang, uint16_t mode, AdvancedBrakeRowType rowType) {
-  static const char* BUTTON_LABELS[9] = {"Alt.brems", "Alt.Brake", "Alt.Brake", "Alt.Brake", "Alt.Freno", "Alt.Brems", "Alt.Freno", "Alt.Rem", "Alt.Trav"};
-  static const char* MODE_LABELS[9]   = {"Rel.brems", "Rel.Brake", "Rel.Brake", "Rel.Brake", "Rel.Freno", "Rel.Brems", "Rel.Freno", "Rel.Rem", "Rel.Trav"};
-  static const char* ZONE_LABELS[9]   = {"Sone", "Zone", "Zone", "Zone", "Zona", "Zone", "Zona", "Zone", "Zona"};
-  static const char* QUICK_LABELS[9]  = {"Quick", "Quick", "Quick", "Quick", "Quick", "Quick", "Quick", "Quick", "Quick"};
-  static const char* DRAG_LABELS[9]   = {"Drag", "Drag", "Drag", "Drag", "Drag", "Drag", "Drag", "Drag", "Drag"};
+  static const char* BUTTON_LABELS[LANG_COUNT] = {"Alt.brems", "Alt.Brake", "Alt.Brake", "Alt.Brake", "Alt.Freno", "Alt.Brems", "Alt.Freno", "Alt.Rem", "Alt.Trav", "Alt.broms"};
+  static const char* MODE_LABELS[LANG_COUNT]   = {"Rel.brems", "Rel.Brake", "Rel.Brake", "Rel.Brake", "Rel.Freno", "Rel.Brems", "Rel.Freno", "Rel.Rem", "Rel.Trav", "Rel.broms"};
+  static const char* ZONE_LABELS[LANG_COUNT]   = {"Sone", "Zone", "Zone", "Zone", "Zona", "Zone", "Zona", "Zone", "Zona", "Zon"};
+  static const char* QUICK_LABELS[LANG_COUNT]  = {"Quick", "Quick", "Quick", "Quick", "Quick", "Quick", "Quick", "Quick", "Quick", "Quick"};
+  static const char* DRAG_LABELS[LANG_COUNT]   = {"Drag", "Drag", "Drag", "Drag", "Drag", "Drag", "Drag", "Drag", "Drag", "Drag"};
 
   switch (rowType) {
     case AB_ROW_BUTTON:
@@ -82,7 +70,7 @@ static const char* getAdvancedBrakeRowLabel(uint8_t lang, uint16_t mode, Advance
 }
 
 static const char* getReleaseBrakeMenuModeValue(uint8_t lang, uint16_t mode) {
-  static const char* MODE_VALUES[9][3] = {
+  static const char* MODE_VALUES[LANG_COUNT][3] = {
     {"AV", "QUICK", "DRAG"},
     {"OFF", "QUICK", "DRAG"},
     {"OFF", "QUICK", "DRAG"},
@@ -91,7 +79,8 @@ static const char* getReleaseBrakeMenuModeValue(uint8_t lang, uint16_t mode) {
     {"AUS", "QUICK", "DRAG"},
     {"OFF", "QUICK", "DRAG"},
     {"UIT", "QUICK", "DRAG"},
-    {"OFF", "QUICK", "DRAG"}
+    {"OFF", "QUICK", "DRAG"},
+    {"AV", "QUICK", "DRAG"}
   };
 
   if (mode > RELEASE_BRAKE_DRAG) {
@@ -126,8 +115,7 @@ void showAdvancedBrakeMenu() {
   bool screensaverActive     = false;
   uint16_t screensaverEncPos = (uint16_t)readUiEncoder();
 
-  static bool brakeInQB = false;
-  static uint32_t lastBrakeQB = 0;
+  static BrakeButtonEdge brakeInQB;
 
   auto currentMode = [&]() -> uint16_t {
     return g_storedVar.carParam[g_carSel].quickBrakeEnabled;
@@ -170,29 +158,23 @@ void showAdvancedBrakeMenu() {
     }
 
     /* Brake button: cancel edit or exit submenu */
-    if (digitalRead(BUTT_PIN) == BUTTON_PRESSED) {
-      if (!brakeInQB && millis() - lastBrakeQB > BUTTON_SHORT_PRESS_DEBOUNCE_MS) {
-        brakeInQB = true;
-        lastBrakeQB = millis();
-        if (state == VALUE_SELECTION) {
-          /* Cancel: restore original value */
-          if (editRowType == AB_ROW_BUTTON) g_storedVar.carParam[g_carSel].brakeButtonReduction = origValue;
-          else if (editRowType == AB_ROW_MODE) g_storedVar.carParam[g_carSel].quickBrakeEnabled = origValue;
-          else if (editRowType == AB_ROW_ZONE) g_storedVar.carParam[g_carSel].quickBrakeThreshold = origValue;
-          else if (editRowType == AB_ROW_LEVEL) g_storedVar.carParam[g_carSel].quickBrakeStrength = origValue;
-          state = ITEM_SELECTION;
-          g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
-          refreshSelectionBounds();
-          obdFill(&g_obd, OBD_WHITE, 1);
-          prevSel     = 0xFF;
-          forceRedraw = true;
-        } else {
-          while (digitalRead(BUTT_PIN) == BUTTON_PRESSED) { vTaskDelay(5); }
-          break;
-        }
+    if (brakeInQB.pressed()) {
+      if (state == VALUE_SELECTION) {
+        /* Cancel: restore original value */
+        if (editRowType == AB_ROW_BUTTON) g_storedVar.carParam[g_carSel].brakeButtonReduction = origValue;
+        else if (editRowType == AB_ROW_MODE) g_storedVar.carParam[g_carSel].quickBrakeEnabled = origValue;
+        else if (editRowType == AB_ROW_ZONE) g_storedVar.carParam[g_carSel].quickBrakeThreshold = origValue;
+        else if (editRowType == AB_ROW_LEVEL) g_storedVar.carParam[g_carSel].quickBrakeStrength = origValue;
+        state = ITEM_SELECTION;
+        g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
+        refreshSelectionBounds();
+        obdFill(&g_obd, OBD_WHITE, 1);
+        prevSel     = 0xFF;
+        forceRedraw = true;
+      } else {
+        waitForBrakeButtonRelease();
+        break;
       }
-    } else {
-      brakeInQB = false;
     }
 
     /* Encoder scroll */
@@ -219,7 +201,7 @@ void showAdvancedBrakeMenu() {
         AdvancedBrakeRowType rowType = getAdvancedBrakeRowType(currentMode(), sel);
         if (rowType == AB_ROW_BACK) {
           /* BACK */
-          while (digitalRead(BUTT_PIN) == BUTTON_PRESSED) { vTaskDelay(5); }
+          waitForBrakeButtonRelease();
           break;
         }
         /* Enter value edit */

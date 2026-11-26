@@ -2,21 +2,10 @@
 #include <Arduino.h>
 #include "slot_ESC.h"
 #include "ui_text_access.h"
-
-extern StoredVar_type g_storedVar;
-extern ESC_type g_escVar;
-extern OBDISP g_obd;
-extern AiEsp32RotaryEncoder g_rotaryEncoder;
-extern char msgStr[50];
-
-extern bool consumeScreensaverWakeInput(bool wakeTriggered);
-extern bool refreshIdleInteractionFromControls(uint32_t* lastInteraction, bool* screensaverActive, uint16_t* lastEncoderPos);
-extern bool serviceIdlePowerTransitions(uint32_t* lastInteraction, bool* screensaverActive);
-extern bool checkRaceModeEscape();
-extern void requestEscapeToMain();
-extern void showScreensaver();
-extern void saveEEPROM(StoredVar_type toSave);
-extern void serviceTimedWiFiPortal();
+#include "app_globals.h"
+#include "power_ui.h"
+#include "ui_render.h"
+#include "menu_input.h"
 
 /**
  * Lock settings submenu.
@@ -125,27 +114,22 @@ void showLockSettings() {
     }
 
     /* Brake button = back (or cancel shortcut editing) */
-    static bool brakeBtnInLock = false;
-    static uint32_t lastBrakeBtnLockTime = 0;
+    static BrakeButtonEdge brakeBtnInLock;
     if (digitalRead(BUTT_PIN) == BUTTON_PRESSED) {
       lastInteraction = millis();
-      if (!brakeBtnInLock && millis() - lastBrakeBtnLockTime > BUTTON_SHORT_PRESS_DEBOUNCE_MS) {
-        brakeBtnInLock = true;
-        lastBrakeBtnLockTime = millis();
-        if (editingShortcut) {
-          editingShortcut = false;
-          g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
-          setUiEncoderBoundaries(0, NUM_ITEMS - 1, false);
-          resetUiEncoder(ITEM_SHORT);
-          sel = ITEM_SHORT;
-          needRedraw = true;
-        } else {
-          while (digitalRead(BUTT_PIN) == BUTTON_PRESSED) { vTaskDelay(5); }
-          break;
-        }
+    }
+    if (brakeBtnInLock.pressed()) {
+      if (editingShortcut) {
+        editingShortcut = false;
+        g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
+        setUiEncoderBoundaries(0, NUM_ITEMS - 1, false);
+        resetUiEncoder(ITEM_SHORT);
+        sel = ITEM_SHORT;
+        needRedraw = true;
+      } else {
+        waitForBrakeButtonRelease();
+        break;
       }
-    } else {
-      brakeBtnInLock = false;
     }
 
     if (checkRaceModeEscape()) { requestEscapeToMain(); break; }
@@ -159,7 +143,7 @@ void showLockSettings() {
       bool s0 = (!editingShortcut && sel == ITEM_MENU);
       obdWriteString(&g_obd, 0, 0, 0 * lineH, (char*)getLockMenuName(lang, ITEM_MENU),
                      menuFont, s0 ? OBD_WHITE : OBD_BLACK, 1);
-      sprintf(msgStr, "%3s", getOnOffLabel(lang, g_storedVar.lockMenuEnabled ? 1 : 0));
+      snprintf(msgStr, sizeof(msgStr), "%3s", getOnOffLabel(lang, g_storedVar.lockMenuEnabled ? 1 : 0));
       uint8_t vx = OLED_WIDTH - (uint8_t)(strlen(msgStr) * WIDTH8x8);
       obdWriteString(&g_obd, 0, vx, 0 * lineH, msgStr,
                      menuFont, s0 ? OBD_WHITE : OBD_BLACK, 1);
@@ -169,7 +153,7 @@ void showLockSettings() {
       obdWriteString(&g_obd, 0, 0, 1 * lineH, (char*)getLockMenuName(lang, ITEM_SHORT),
                      menuFont, (s1 || editingShortcut) ? OBD_WHITE : OBD_BLACK, 1);
       uint8_t shownIdx = editingShortcut ? tmpShortcutIdx : (uint8_t)g_storedVar.lockShortcutIdx;
-      sprintf(msgStr, "%4s", getLockShortcutLabel(lang, shownIdx));
+      snprintf(msgStr, sizeof(msgStr), "%4s", getLockShortcutLabel(lang, shownIdx));
       uint8_t sx = OLED_WIDTH - (uint8_t)(strlen(msgStr) * WIDTH8x8);
       obdWriteString(&g_obd, 0, sx, 1 * lineH, msgStr,
                      menuFont, (s1 || editingShortcut) ? OBD_WHITE : OBD_BLACK, 1);
@@ -178,7 +162,7 @@ void showLockSettings() {
       bool s2 = (!editingShortcut && sel == ITEM_CONFIRM);
       obdWriteString(&g_obd, 0, 0, 2 * lineH, (char*)getLockMenuName(lang, ITEM_CONFIRM),
                      menuFont, s2 ? OBD_WHITE : OBD_BLACK, 1);
-      sprintf(msgStr, "%3s", getOnOffLabel(lang, g_storedVar.lockConfirmEnabled ? 1 : 0));
+      snprintf(msgStr, sizeof(msgStr), "%3s", getOnOffLabel(lang, g_storedVar.lockConfirmEnabled ? 1 : 0));
       uint8_t cx = OLED_WIDTH - (uint8_t)(strlen(msgStr) * WIDTH8x8);
       obdWriteString(&g_obd, 0, cx, 2 * lineH, msgStr,
                      menuFont, s2 ? OBD_WHITE : OBD_BLACK, 1);

@@ -4,32 +4,22 @@
 #include "HAL.h"
 #include "ext_pot.h"
 #include "connectivity_portal.h"
+#include "app_globals.h"
+#include "app_init.h"
+#include "power_ui.h"
+#include "ui_render.h"
+#include "menu_input.h"
 
-extern StoredVar_type g_storedVar;
-extern uint16_t g_statsEnabled;
-extern uint16_t g_antiSpinStepMs;
-extern uint16_t g_antiSpinStepPct;
-extern uint16_t g_antiSpinDisplayMode;
-extern uint16_t g_brakeStep;
-extern uint16_t g_sensiStep;
-extern uint16_t g_advancedMenuEnabled;
-extern uint16_t g_encoderInvertEnabled;
-extern uint16_t g_pwmFreqMaxProfile;
-extern ESC_type g_escVar;
-extern OBDISP g_obd;
-extern AiEsp32RotaryEncoder g_rotaryEncoder;
-extern Preferences g_pref;
-
-extern bool consumeScreensaverWakeInput(bool wakeTriggered);
-extern bool refreshIdleInteractionFromControls(uint32_t* lastInteraction, bool* screensaverActive, uint16_t* lastEncoderPos);
-extern bool serviceIdlePowerTransitions(uint32_t* lastInteraction, bool* screensaverActive);
-extern bool checkRaceModeEscape();
-extern void requestEscapeToMain();
-
-extern void showScreensaver();
-extern void saveEEPROM(StoredVar_type toSave);
-extern void initMenuItems();
-extern void initSettingsMenuItems();
+/* Row names are written in Pascal case; upper-case them when the UPPER text style is selected. */
+static void formatResetRowLabel(const char* source, char* buffer, size_t bufferSize) {
+  if (bufferSize == 0) return;
+  size_t out = 0;
+  for (; source[out] != '\0' && out + 1 < bufferSize; out++) {
+    char c = source[out];
+    buffer[out] = (g_storedVar.textCase == TEXT_CASE_UPPER && c >= 'a' && c <= 'z') ? (char)(c - 'a' + 'A') : c;
+  }
+  buffer[out] = '\0';
+}
 
 static const char* getResetCancelText(uint16_t lang) {
   switch (lang) {
@@ -39,6 +29,7 @@ static const char* getResetCancelText(uint16_t lang) {
     case LANG_ITA: return "INDIET=ANNULLA";
     case LANG_NLD: return "TERUG=ANNUL";
     case LANG_POR: return "VOLTAR=CANC";
+    case LANG_SWE: return "TILLB=AVBRYT";
     default:       return "BACK=CANCEL";
   }
 }
@@ -49,8 +40,9 @@ static const char* getResetCancelledText(uint16_t lang) {
     case LANG_ESP: return "CANCELADO!";
     case LANG_DEU: return "ABBRUCH!";
     case LANG_ITA: return "ANNULLATO!";
-    case LANG_NLD: return "GEANNULEERD";
+    case LANG_NLD: return "AFGEBROKEN";
     case LANG_POR: return "CANCELADO!";
+    case LANG_SWE: return "AVBRUTET!";
     default:       return "CANCELLED!";
   }
 }
@@ -63,6 +55,7 @@ static const char* getResetPressTwiceText(uint16_t lang) {
     case LANG_ITA: return "PREMI 2 VOLTE";
     case LANG_NLD: return "DRUK 2 KEER";
     case LANG_POR: return "PRIMA 2 VEZES";
+    case LANG_SWE: return "TRYCK 2 GGR";
     default:       return "PRESS TWICE";
   }
 }
@@ -75,6 +68,7 @@ static const char* getResetAgainLine1(uint16_t lang) {
     case LANG_ITA: return "PREMI ANCORA";
     case LANG_NLD: return "DRUK OPNIEUW";
     case LANG_POR: return "PRIMA NOVO";
+    case LANG_SWE: return "TRYCK IGEN";
     default:       return "PRESS AGAIN";
   }
 }
@@ -87,11 +81,12 @@ static const char* getResetAgainLine2(uint16_t lang) {
     case LANG_ITA: return "PER RESET";
     case LANG_NLD: return "VOOR RESET";
     case LANG_POR: return "PARA RESET";
+    case LANG_SWE: return "FOR ATERST.";
     default:       return "TO RESET";
   }
 }
 
-static const char* getResetDoneText(uint16_t lang) {
+const char* getResetDoneText(uint16_t lang) {
   switch (lang) {
     case LANG_NOR: return "NULLSTILT!";
     case LANG_ESP: return "RESET OK!";
@@ -99,7 +94,8 @@ static const char* getResetDoneText(uint16_t lang) {
     case LANG_ITA: return "RESET OK!";
     case LANG_NLD: return "RESET OK!";
     case LANG_POR: return "RESET OK!";
-    default:       return "RESET DONE!";
+    case LANG_SWE: return "ATERSTALLT";
+    default:       return "RESET OK!";
   }
 }
 
@@ -116,6 +112,7 @@ static bool resetConfirm(const char* label) {
     obdFill(&g_obd, OBD_WHITE, 1);
     const char* msg = getResetCancelledText(lang);
     int tw = strlen(msg) * WIDTH12x16;
+    if (tw > OLED_WIDTH) tw = OLED_WIDTH;  /* never start left of column 0 */
     obdWriteString(&g_obd, 0, (OLED_WIDTH - tw) / 2, 24, (char *)msg, FONT_12x16, OBD_BLACK, 1);
     delay(1000);
     obdFill(&g_obd, OBD_WHITE, 1);
@@ -260,7 +257,7 @@ static void doResetCar() {
     g_storedVar.carParam[i].quickBrakeEnabled    = QUICK_BRAKE_ENABLED_DEFAULT;
     g_storedVar.carParam[i].quickBrakeThreshold  = QUICK_BRAKE_THRESHOLD_DEFAULT;
     g_storedVar.carParam[i].quickBrakeStrength   = QUICK_BRAKE_STRENGTH_DEFAULT;
-    sprintf(g_storedVar.carParam[i].carName, "CAR%d", i);
+    setDefaultCarName(g_storedVar.carParam[i], i);
   }
 }
 
@@ -324,7 +321,7 @@ void showResetSubmenu() {
   const uint8_t RS_ITEMS = 6;
   uint16_t lang = g_storedVar.language;
 
-  const char* rowNamesByLang[9][RS_ITEMS] = {
+  const char* rowNamesByLang[LANG_COUNT][RS_ITEMS] = {
     {"Bil", "Innstillinger", "Kalibrering", "Nettverk", "Alt", "Tilbake"},
     {"Car", "Settings", "Calibration", "Network", "Everything", "Back"},
     {"Car", "Settings", "Calibration", "Network", "Everything", "Back"},
@@ -333,7 +330,8 @@ void showResetSubmenu() {
     {"Auto", "Einstell.", "Kalibr.", "Netzwerk", "Alles", "Zuruck"},
     {"Auto", "Impostaz.", "Calibraz.", "Rete", "Tutto", "Indietro"},
     {"Auto", "Instell.", "Kalibr.", "Netwerk", "Alles", "Terug"},
-    {"Carro", "Ajustes", "Calibr.", "Rede", "Tudo", "Voltar"}
+    {"Carro", "Ajustes", "Calibr.", "Rede", "Tudo", "Voltar"},
+    {"Bil", "Installningar", "Kalibrering", "Natverk", "Allt", "Tillbaka"}
   };
   const char** rowNames = rowNamesByLang[lang];
 
@@ -349,8 +347,7 @@ void showResetSubmenu() {
   bool screensaverActive = false;
   uint16_t screensaverEncoderPos = (uint16_t)readUiEncoder();
 
-  static bool brakeInReset = false;
-  static uint32_t lastBrakeReset = 0;
+  static BrakeButtonEdge brakeInReset;
 
   while (true) {
     bool wakeUp = refreshIdleInteractionFromControls(&lastInteraction, &screensaverActive, &screensaverEncoderPos);
@@ -390,14 +387,10 @@ void showResetSubmenu() {
     /* Brake exits */
     if (digitalRead(BUTT_PIN) == BUTTON_PRESSED) {
       lastInteraction = millis();
-      if (!brakeInReset && millis() - lastBrakeReset > BUTTON_SHORT_PRESS_DEBOUNCE_MS) {
-        brakeInReset = true;
-        lastBrakeReset = millis();
-        while (digitalRead(BUTT_PIN) == BUTTON_PRESSED) { vTaskDelay(5); }
-        break;
-      }
-    } else {
-      brakeInReset = false;
+    }
+    if (brakeInReset.pressed()) {
+      waitForBrakeButtonRelease();
+      break;
     }
 
     /* Encoder scroll */
@@ -412,13 +405,16 @@ void showResetSubmenu() {
       lastInteraction = millis();
       if (sel == RS_ITEMS) break;  /* BACK */
 
-      bool confirmed = resetConfirm(rowNames[sel - 1]);
+      char confirmLabel[16];
+      formatResetRowLabel(rowNames[sel - 1], confirmLabel, sizeof(confirmLabel));
+      bool confirmed = resetConfirm(confirmLabel);
       lastInteraction = millis();
       screensaverActive = false;
       if (confirmed) {
         obdFill(&g_obd, OBD_WHITE, 1);
         const char* doneText = getResetDoneText(lang);
         int tw = strlen(doneText) * WIDTH12x16;
+        if (tw > OLED_WIDTH) tw = OLED_WIDTH;  /* never start left of column 0 */
         obdWriteString(&g_obd, 0, (OLED_WIDTH - tw) / 2, 24, (char *)doneText, FONT_12x16, OBD_BLACK, 1);
         delay(1500);
 
@@ -463,7 +459,9 @@ void showResetSubmenu() {
       for (uint8_t idx = 0; idx < RS_ITEMS; idx++) {
         uint8_t yPx     = idx * HEIGHT8x8;
         bool isSelected = (sel == idx + 1);
-        obdWriteString(&g_obd, 0, 0, yPx, (char *)rowNames[idx], FONT_8x8,
+        char rowBuf[16];
+        formatResetRowLabel(rowNames[idx], rowBuf, sizeof(rowBuf));
+        obdWriteString(&g_obd, 0, 0, yPx, rowBuf, FONT_8x8,
                        isSelected ? OBD_WHITE : OBD_BLACK, 1);
       }
     }

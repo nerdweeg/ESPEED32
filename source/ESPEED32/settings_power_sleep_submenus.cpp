@@ -2,22 +2,10 @@
 #include <Arduino.h>
 #include "slot_ESC.h"
 #include "ui_text_access.h"
-
-extern StoredVar_type g_storedVar;
-extern ESC_type g_escVar;
-extern OBDISP g_obd;
-extern AiEsp32RotaryEncoder g_rotaryEncoder;
-
-extern bool consumeScreensaverWakeInput(bool wakeTriggered);
-extern bool refreshIdleInteractionFromControls(uint32_t* lastInteraction, bool* screensaverActive, uint16_t* lastEncoderPos);
-extern bool serviceIdlePowerTransitions(uint32_t* lastInteraction, bool* screensaverActive);
-extern bool checkRaceModeEscape();
-extern void requestEscapeToMain();
-
-extern void showScreensaver();
-extern void showPowerSave();
-extern void showDeepSleep();
-extern void saveEEPROM(StoredVar_type toSave);
+#include "app_globals.h"
+#include "power_ui.h"
+#include "ui_render.h"
+#include "menu_input.h"
 
 static void formatConfiguredMenuLabel(const char* source, char* buffer, size_t bufferSize) {
   if (buffer == nullptr || bufferSize == 0) return;
@@ -54,8 +42,8 @@ void showSleepSettings() {
   uint16_t lang = g_storedVar.language;
 
   /* Labels [NOR, ENG, CS, ACD, ESP, DEU, ITA, NLD, POR] */
-  const char* lblInterval[9] = {"INTERV.", "INTERVAL", "INTERVAL", "INTERVAL", "INTERVALO", "INTERVAL", "INTERVAL", "INTERVAL", "INTERVAL"};
-  const char* lblNow[9]      = {"SOV NA",  "SLEEP NOW", "SLEEP NOW", "SLEEP NOW", "REPOSO YA", "JETZT RUH", "DORMI ORA", "SLAAP NU", "DORMIR JA"};
+  const char* lblInterval[LANG_COUNT] = {"INTERV.", "INTERVAL", "INTERVAL", "INTERVAL", "INTERVALO", "INTERVAL", "INTERVAL", "INTERVAL", "INTERVAL", "INTERV."};
+  const char* lblNow[LANG_COUNT]      = {"SOV NA",  "SLEEP NOW", "SLEEP NOW", "SLEEP NOW", "REPOSO YA", "JETZT RUH", "DORMI ORA", "SLAAP NU", "DORMIR JA", "SOV NU"};
   const uint8_t ITEM_NOW = 0;
   const uint8_t ITEM_INTERVAL = 1;
   const uint8_t ITEM_BACK = 2;
@@ -165,7 +153,7 @@ void showSleepSettings() {
         needRedraw = true;
         delay(200);
       } else {
-        while (digitalRead(BUTT_PIN) == BUTTON_PRESSED) { vTaskDelay(5); }
+        waitForBrakeButtonRelease();
         break;
       }
     }
@@ -212,8 +200,8 @@ void showSleepSettings() {
 void showDeepSleepSettings() {
   uint16_t lang = g_storedVar.language;
 
-  const char* lblInterval[9] = {"INTERV.",   "INTERVAL",  "INTERVAL",  "INTERVAL",  "INTERVALO", "INTERVAL", "INTERVAL", "INTERVAL", "INTERVAL"};
-  const char* lblNow[9]      = {"SLUKK NA",  "SLEEP NOW", "SLEEP NOW", "SLEEP NOW", "APAGA YA",  "AUS JETZT", "SPEGNI ORA", "UIT NU", "DESLIG JA"};
+  const char* lblInterval[LANG_COUNT] = {"INTERV.",   "INTERVAL",  "INTERVAL",  "INTERVAL",  "INTERVALO", "INTERVAL", "INTERVAL", "INTERVAL", "INTERVAL", "INTERV."};
+  const char* lblNow[LANG_COUNT]      = {"SLUKK NA",  "SLEEP NOW", "SLEEP NOW", "SLEEP NOW", "APAGA YA",  "AUS JETZT", "SPEGNI ORA", "UIT NU", "DESLIG JA", "SLACK NU"};
   const uint8_t ITEM_NOW = 0;
   const uint8_t ITEM_INTERVAL = 1;
   const uint8_t ITEM_BACK = 2;
@@ -313,7 +301,7 @@ void showDeepSleepSettings() {
         needRedraw = true;
         delay(200);
       } else {
-        while (digitalRead(BUTT_PIN) == BUTTON_PRESSED) { vTaskDelay(5); }
+        waitForBrakeButtonRelease();
         break;
       }
     }
