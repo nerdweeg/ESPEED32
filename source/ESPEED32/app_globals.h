@@ -49,7 +49,7 @@ extern uint16_t g_encoderInvertEnabled;
 extern uint16_t g_pwmFreqMaxProfile;
 
 /* Storage */
-void saveEEPROM(StoredVar_type toSave);
+void saveEEPROM(const StoredVar_type& toSave);
 
 /* Menu navigation */
 bool checkRaceModeEscape();

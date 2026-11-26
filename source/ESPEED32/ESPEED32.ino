@@ -1640,10 +1640,9 @@ struct EepromSnapshot_type {
 };
 #pragma pack(pop)
 
-void saveEEPROM(StoredVar_type toSave) {
-  clampStoredVarCarPwmFreqsToProfile(&toSave, g_pwmFreqMaxProfile);
-
-  EepromSnapshot_type snapshot = {
+void saveEEPROM(const StoredVar_type& toSave) {
+  /* alignas: the struct is packed, and storedVar (offset 0) is clamped through a pointer below. */
+  alignas(4) EepromSnapshot_type snapshot = {
     toSave,
     (uint8_t)(g_statsEnabled ? 1 : 0),
     (uint16_t)constrain(g_antiSpinStepMs, ANTISPIN_STEP_MIN, ANTISPIN_STEP_MAX),
@@ -1658,6 +1657,7 @@ void saveEEPROM(StoredVar_type toSave) {
     (uint8_t)constrain(g_extPotTarget[0], EXT_POT_TARGET_MIN, EXT_POT_TARGET_MAX),
     (uint8_t)constrain(g_extPotTarget[1], EXT_POT_TARGET_MIN, EXT_POT_TARGET_MAX)
   };
+  clampStoredVarCarPwmFreqsToProfile(&snapshot.storedVar, g_pwmFreqMaxProfile);
 
   /* Skip the "stored_var" flash write if nothing has changed since the last
    * save: saveEEPROM() is called on almost every menu confirm (and even on
