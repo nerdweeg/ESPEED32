@@ -400,6 +400,51 @@ static uint16_t getSteppedEditMaxEncoder(uint16_t maxRaw, uint16_t stepRaw) {
   return (uint16_t)(maxRaw / stepRaw);
 }
 
+/**
+ * Point the encoder at the current car's value for a race view parameter and set its limits.
+ */
+static void selectRaceParamForEdit(uint8_t param, uint16_t* minValue, uint16_t* maxValue) {
+  CarParam_type& car = g_storedVar.carParam[g_carSel];
+  switch (param) {
+    case RACE_PARAM_SENSI:
+      g_encoderSelectedValuePtr = &car.minSpeed;
+      *minValue = 0;
+      *maxValue = getSelectedSensiMaxRaw();
+      break;
+    case RACE_PARAM_ANTIS:
+      g_encoderSelectedValuePtr = &car.antiSpin;
+      *minValue = 0;
+      *maxValue = antiSpinUiMaxValue(g_antiSpinDisplayMode);
+      break;
+    case RACE_PARAM_CURVE:
+      g_encoderSelectedValuePtr = &car.throttleCurveVertex.curveSpeedDiff;
+      *minValue = THROTTLE_CURVE_SPEED_DIFF_MIN_VALUE;
+      *maxValue = THROTTLE_CURVE_SPEED_DIFF_MAX_VALUE;
+      break;
+    case RACE_PARAM_FADE:
+      g_encoderSelectedValuePtr = &car.fade;
+      *minValue = 0;
+      *maxValue = FADE_MAX_VALUE;
+      break;
+    case RACE_PARAM_PWM_F:
+      g_encoderSelectedValuePtr = &car.freqPWM;
+      *minValue = FREQ_MIN_VALUE / 100;
+      *maxValue = getConfiguredPwmFreqMaxRaw();
+      break;
+    case RACE_PARAM_LIMIT:
+      g_encoderSelectedValuePtr = &car.maxSpeed;
+      *minValue = max(5, (int)sensiToWholePctCeil(car.minSpeed) + 5);
+      *maxValue = MAX_SPEED_DEFAULT;
+      break;
+    case RACE_PARAM_BRAKE:
+    default:
+      g_encoderSelectedValuePtr = &car.brake;
+      *minValue = 0;
+      *maxValue = BRAKE_MAX_VALUE;
+      break;
+  }
+}
+
 static uint16_t configureEncoderForSelectedValueEdit(uint16_t minRaw, uint16_t maxRaw) {
   if (g_encoderSelectedValuePtr == NULL) {
     setUiEncoderBoundaries(minRaw, maxRaw, false);
@@ -1561,62 +1606,19 @@ MenuState_enum rotary_onButtonClick(MenuState_enum currMenuState)
       uint8_t gridItem = g_encoderMainSelector - 1;  /* 0-4 (FULL) or 0-2 (SIMPLE) */
       g_rotaryEncoder.setAcceleration(SEL_ACCELERATION);
 
-      /* Map grid item to parameter pointer and limits based on race view mode */
-      if (g_storedVar.raceViewMode == RACE_VIEW_SIMPLE) {
-        /* SIMPLE mode: 0=BRAKE, 1=SENSI, 2=CAR */
-        switch (gridItem) {
-          case 0:  /* BRAKE */
-            g_encoderSelectedValuePtr = &g_storedVar.carParam[g_carSel].brake;
-            selectedParamMaxValue = BRAKE_MAX_VALUE;
-            selectedParamMinValue = 0;
-            break;
-          case 1:  /* SENSI (minSpeed) */
-            g_encoderSelectedValuePtr = &g_storedVar.carParam[g_carSel].minSpeed;
-            selectedParamMaxValue = getSelectedSensiMaxRaw();
-            selectedParamMinValue = 0;
-            break;
-          case 2:  /* CAR - select different car */
-            g_encoderSelectedValuePtr = &g_storedVar.selectedCarNumber;
-            selectedParamMaxValue = CAR_MAX_COUNT - 1;
-            selectedParamMinValue = 0;
-            g_isEditingCarSelection = true;  /* Prevent g_carSel update during edit */
-            break;
-          default:
-            return ITEM_SELECTION;
-        }
-      }
-      else {
-        /* FULL mode: 0=BRAKE, 1=SENSI, 2=ANTIS, 3=CURVE, 4=CAR */
-        switch (gridItem) {
-          case 0:  /* BRAKE */
-            g_encoderSelectedValuePtr = &g_storedVar.carParam[g_carSel].brake;
-            selectedParamMaxValue = BRAKE_MAX_VALUE;
-            selectedParamMinValue = 0;
-            break;
-          case 1:  /* SENSI (minSpeed) */
-            g_encoderSelectedValuePtr = &g_storedVar.carParam[g_carSel].minSpeed;
-            selectedParamMaxValue = getSelectedSensiMaxRaw();
-            selectedParamMinValue = 0;
-            break;
-          case 2:  /* ANTIS (antiSpin) */
-            g_encoderSelectedValuePtr = &g_storedVar.carParam[g_carSel].antiSpin;
-            selectedParamMaxValue = antiSpinUiMaxValue(g_antiSpinDisplayMode);
-            selectedParamMinValue = 0;
-            break;
-          case 3:  /* CURVE */
-            g_encoderSelectedValuePtr = &g_storedVar.carParam[g_carSel].throttleCurveVertex.curveSpeedDiff;
-            selectedParamMaxValue = THROTTLE_CURVE_SPEED_DIFF_MAX_VALUE;
-            selectedParamMinValue = THROTTLE_CURVE_SPEED_DIFF_MIN_VALUE;
-            break;
-          case 4:  /* CAR - select different car */
-            g_encoderSelectedValuePtr = &g_storedVar.selectedCarNumber;
-            selectedParamMaxValue = CAR_MAX_COUNT - 1;
-            selectedParamMinValue = 0;
-            g_isEditingCarSelection = true;  /* Prevent g_carSel update during edit */
-            break;
-          default:
-            return ITEM_SELECTION;
-        }
+      /* Map grid item to a race slot parameter or CAR.
+       * SIMPLE: 0-1 = race slots 0-1, 2 = CAR. FULL: 0-3 = race slots 0-3, 4 = CAR. */
+      uint8_t slotCount = (g_storedVar.raceViewMode == RACE_VIEW_SIMPLE) ? 2U : RACE_SLOTS;
+      if (gridItem < slotCount) {
+        selectRaceParamForEdit(normalizeRaceSlotParam(0, gridItem), &selectedParamMinValue, &selectedParamMaxValue);
+      } else if (gridItem == slotCount) {
+        /* CAR - select different car */
+        g_encoderSelectedValuePtr = &g_storedVar.selectedCarNumber;
+        selectedParamMaxValue = CAR_MAX_COUNT - 1;
+        selectedParamMinValue = 0;
+        g_isEditingCarSelection = true;  /* Prevent g_carSel update during edit */
+      } else {
+        return ITEM_SELECTION;
       }
 
       g_originalValueBeforeEdit = *g_encoderSelectedValuePtr;  /* Save original value for cancel before any stepped-edit snapping */

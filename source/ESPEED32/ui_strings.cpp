@@ -61,16 +61,16 @@ const char* STEPS_MENU_NAMES[][4] = {
   /* SWE */ {"ANTISPIN", "BROMSSTEG", "SENSISTEG", "TILLBAKA"}
 };
 
-/* Race mode parameter labels: [language][param] */
-const char* RACE_LABELS[][4] = {
-  /* NOR */ {"BREMS", "SENSI", "ANTIS", "KURVE"},
-  /* ENG */ {"BRAKE", "SENSI", "ANTIS", "CURVE"},
-  /* ESP */ {"FRENO", "SENSI", "ANTIS", "CURVA"},
-  /* DEU */ {"BREMS", "SENSI", "ANTIS", "KURVE"},
-  /* ITA */ {"FRENO", "SENSI", "ANTIS", "CURVA"},
-  /* NLD */ {"REM", "SENSI", "ANTIS", "CURVE"},
-  /* POR */ {"TRAV", "SENSI", "ANTIS", "CURVA"},
-  /* SWE */ {"BROMS", "SENSI", "ANTIS", "KURVA"}
+/* Race mode parameter labels: [language][MENU_NAMES index]; BRAKE+ (6) is never shown */
+const char* RACE_LABELS[][RACE_PARAM_LABELS] = {
+  /* NOR */ {"BREMS", "SENSI", "ANTIS", "KURVE", "FADE", "PWM_F", "", "STROM"},
+  /* ENG */ {"BRAKE", "SENSI", "ANTIS", "CURVE", "FADE", "PWM_F", "", "LIMIT"},
+  /* ESP */ {"FRENO", "SENSI", "ANTIS", "CURVA", "FADE", "PWM_F", "", "LIMIT"},
+  /* DEU */ {"BREMS", "SENSI", "ANTIS", "KURVE", "FADE", "PWM_F", "", "LIMIT"},
+  /* ITA */ {"FRENO", "SENSI", "ANTIS", "CURVA", "FADE", "PWM_F", "", "LIMIT"},
+  /* NLD */ {"REM", "SENSI", "ANTIS", "CURVE", "FADE", "PWM_F", "", "LIMIT"},
+  /* POR */ {"TRAV", "SENSI", "ANTIS", "CURVA", "FADE", "PWM_F", "", "LIMIT"},
+  /* SWE */ {"BROMS", "SENSI", "ANTIS", "KURVA", "FADE", "PWM_F", "", "GRANS"}
 };
 
 /* Car menu option labels: [language][option] */
@@ -257,15 +257,15 @@ const char* STEPS_MENU_NAMES_PASCAL[][4] = {
 };
 
 /* Race mode parameter labels - Pascal Case: [language][param] */
-const char* RACE_LABELS_PASCAL[][4] = {
-  /* NOR */ {"Brems", "Sensi", "Antis", "Kurve"},
-  /* ENG */ {"Brake", "Sensi", "Antis", "Curve"},
-  /* ESP */ {"Freno", "Sensi", "Antis", "Curva"},
-  /* DEU */ {"Brems", "Sensi", "Antis", "Kurve"},
-  /* ITA */ {"Freno", "Sensi", "Antis", "Curva"},
-  /* NLD */ {"Rem", "Sensi", "Antis", "Curve"},
-  /* POR */ {"Trav", "Sensi", "Antis", "Curva"},
-  /* SWE */ {"Broms", "Sensi", "Antis", "Kurva"}
+const char* RACE_LABELS_PASCAL[][RACE_PARAM_LABELS] = {
+  /* NOR */ {"Brems", "Sensi", "Antis", "Kurve", "Fade", "Pwm_F", "", "Strom"},
+  /* ENG */ {"Brake", "Sensi", "Antis", "Curve", "Fade", "Pwm_F", "", "Limit"},
+  /* ESP */ {"Freno", "Sensi", "Antis", "Curva", "Fade", "Pwm_F", "", "Limit"},
+  /* DEU */ {"Brems", "Sensi", "Antis", "Kurve", "Fade", "Pwm_F", "", "Limit"},
+  /* ITA */ {"Freno", "Sensi", "Antis", "Curva", "Fade", "Pwm_F", "", "Limit"},
+  /* NLD */ {"Rem", "Sensi", "Antis", "Curve", "Fade", "Pwm_F", "", "Limit"},
+  /* POR */ {"Trav", "Sensi", "Antis", "Curva", "Fade", "Pwm_F", "", "Limit"},
+  /* SWE */ {"Broms", "Sensi", "Antis", "Kurva", "Fade", "Pwm_F", "", "Grans"}
 };
 
 /* Car menu option labels - Pascal Case: [language][option] */

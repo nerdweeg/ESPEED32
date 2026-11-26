@@ -77,6 +77,28 @@
 #define LANG_COUNT          (LANG_MAX + 1)  /* Rows in every language-indexed string table */
 #define LANG_DEFAULT        LANG_ENG
 
+/* Race view slots. Parameter ids are MENU_NAMES indices, so race labels follow language and
+ * terminology. A stored slot value is (param + 1); 0 means "this slot's default". */
+#define RACE_SLOTS          4
+#define RACE_PARAM_BRAKE    0
+#define RACE_PARAM_SENSI    1
+#define RACE_PARAM_ANTIS    2
+#define RACE_PARAM_CURVE    3
+#define RACE_PARAM_FADE     4
+#define RACE_PARAM_PWM_F    5
+#define RACE_PARAM_LIMIT    7     /* 6 is BRAKE+, a submenu that cannot be shown in race view */
+#define RACE_PARAM_LABELS   8     /* columns in RACE_LABELS */
+
+static inline bool isRaceParamSelectable(uint16_t param) {
+  return param <= RACE_PARAM_LIMIT && param != 6U;
+}
+
+/* Default layout (FULL: all four slots, SIMPLE: the first two): BRAKE, SENSI, ANTIS, CURVE. */
+static inline uint8_t normalizeRaceSlotParam(uint16_t storedValue, uint8_t slot) {
+  if (storedValue >= 1U && isRaceParamSelectable(storedValue - 1U)) return (uint8_t)(storedValue - 1U);
+  return (slot < RACE_SLOTS) ? slot : RACE_PARAM_BRAKE;  /* defaults are params 0..3 in slot order */
+}
+
 /* Terminology sets: replace a few parameter names on top of any language */
 #define TERM_ESPEED         0     /* ESPEED32 names: SENSI, ANTIS, CURVE, LIMIT */
 #define TERM_CS             1     /* CarSteen names: ATTCK, CHOK2, PROFL, CHOK1 */
