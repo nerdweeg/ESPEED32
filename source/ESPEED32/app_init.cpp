@@ -87,6 +87,7 @@ void initStoredVariables() {
   g_storedVar.gridCarSelectEnabled = GRID_CAR_SELECT_DEFAULT;  /* Car select in grid view default */
   g_storedVar.raceViewMode = RACE_VIEW_DEFAULT;  /* Default race view mode */
   g_storedVar.language = LANG_DEFAULT;  /* Default language */
+  g_storedVar.terminology = TERM_DEFAULT;  /* Default parameter names */
   g_storedVar.textCase = TEXT_CASE_DEFAULT;  /* Default text case style */
   g_storedVar.listFontSize = FONT_SIZE_DEFAULT;  /* Default list view font size */
   g_storedVar.startupDelay = STARTUP_DELAY_DEFAULT;  /* Default startup delay (0 = immediate) */
@@ -348,7 +349,7 @@ void initDisplayMenuItems() {
   int i = 0;
   uint8_t lang = g_storedVar.language;
 
-  snprintf(g_settingsMenu.item[i].name, sizeof(g_settingsMenu.item[i].name), "%s", getDisplayMenuName(lang, 0));  /* VIEW */
+  snprintf(g_settingsMenu.item[i].name, sizeof(g_settingsMenu.item[i].name), "%s", getDisplayMenuName(lang, DISPLAY_ITEM_VIEW_IDX));  /* VIEW */
   g_settingsMenu.item[i].value = (void *)&g_storedVar.raceViewMode;
   g_settingsMenu.item[i].type = VALUE_TYPE_STRING;
   snprintf(g_settingsMenu.item[i].unit, sizeof(g_settingsMenu.item[i].unit), "");
@@ -356,7 +357,7 @@ void initDisplayMenuItems() {
   g_settingsMenu.item[i].minValue = RACE_VIEW_OFF;
   g_settingsMenu.item[i].callback = ITEM_NO_CALLBACK;
 
-  snprintf(g_settingsMenu.item[++i].name, sizeof(g_settingsMenu.item[0].name), "%s", getDisplayMenuName(lang, 1));  /* LANG */
+  snprintf(g_settingsMenu.item[++i].name, sizeof(g_settingsMenu.item[0].name), "%s", getDisplayMenuName(lang, DISPLAY_ITEM_LANG_IDX));  /* LANG */
   g_settingsMenu.item[i].value = (void *)&g_storedVar.language;
   g_settingsMenu.item[i].type = VALUE_TYPE_STRING;
   snprintf(g_settingsMenu.item[i].unit, sizeof(g_settingsMenu.item[i].unit), "");
@@ -364,7 +365,15 @@ void initDisplayMenuItems() {
   g_settingsMenu.item[i].minValue = LANG_NOR;
   g_settingsMenu.item[i].callback = ITEM_NO_CALLBACK;
 
-  snprintf(g_settingsMenu.item[++i].name, sizeof(g_settingsMenu.item[0].name), "%s", getDisplayMenuName(lang, 2));  /* CASE */
+  snprintf(g_settingsMenu.item[++i].name, sizeof(g_settingsMenu.item[0].name), "%s", getDisplayMenuName(lang, DISPLAY_ITEM_TERM_IDX));  /* TERMS */
+  g_settingsMenu.item[i].value = (void *)&g_storedVar.terminology;
+  g_settingsMenu.item[i].type = VALUE_TYPE_STRING;
+  snprintf(g_settingsMenu.item[i].unit, sizeof(g_settingsMenu.item[i].unit), "");
+  g_settingsMenu.item[i].maxValue = TERM_MAX;
+  g_settingsMenu.item[i].minValue = TERM_ESPEED;
+  g_settingsMenu.item[i].callback = ITEM_NO_CALLBACK;
+
+  snprintf(g_settingsMenu.item[++i].name, sizeof(g_settingsMenu.item[0].name), "%s", getDisplayMenuName(lang, DISPLAY_ITEM_CASE_IDX));  /* CASE */
   g_settingsMenu.item[i].value = (void *)&g_storedVar.textCase;
   g_settingsMenu.item[i].type = VALUE_TYPE_STRING;
   snprintf(g_settingsMenu.item[i].unit, sizeof(g_settingsMenu.item[i].unit), "");
@@ -372,7 +381,7 @@ void initDisplayMenuItems() {
   g_settingsMenu.item[i].minValue = TEXT_CASE_UPPER;
   g_settingsMenu.item[i].callback = ITEM_NO_CALLBACK;
 
-  snprintf(g_settingsMenu.item[++i].name, sizeof(g_settingsMenu.item[0].name), "%s", getDisplayMenuName(lang, 3));  /* FSIZE */
+  snprintf(g_settingsMenu.item[++i].name, sizeof(g_settingsMenu.item[0].name), "%s", getDisplayMenuName(lang, DISPLAY_ITEM_FSIZE_IDX));  /* FSIZE */
   g_settingsMenu.item[i].value = (void *)&g_storedVar.listFontSize;
   g_settingsMenu.item[i].type = VALUE_TYPE_STRING;
   snprintf(g_settingsMenu.item[i].unit, sizeof(g_settingsMenu.item[i].unit), "");

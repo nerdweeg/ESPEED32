@@ -285,7 +285,7 @@ static bool isBrakeEditTarget() {
 
 static bool isChokeEditTarget() {
   return g_encoderSelectedValuePtr == &g_storedVar.carParam[g_carSel].maxSpeed &&
-         isLimitShownAsChoke(g_storedVar.language);
+         isLimitShownAsChoke(g_storedVar.language, g_storedVar.terminology);
 }
 
 static bool isSensiEditTarget() {

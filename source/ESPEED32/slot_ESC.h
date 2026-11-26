@@ -27,7 +27,7 @@
 #define MENU_ITEMS_COUNT    12    /* Number of possible items in main menu (including optional STATS, LOCK and CAR) */
 #define SETTINGS_ITEMS_COUNT 12   /* Number of items in settings menu (including BACK) */
 #define POWER_ITEMS_COUNT    6    /* Number of items in power submenu (SCRSV, SLEEP, D-SLEEP, STARTUP, VIN CAL., BACK) */
-#define DISPLAY_ITEMS_COUNT  8    /* Number of items in display submenu (VIEW, LANG, CASE, FSIZE, ADVANCED, STEPS, STATUS, BACK) */
+#define DISPLAY_ITEMS_COUNT  9    /* Number of items in display submenu (VIEW, LANG, TERMS, CASE, FSIZE, ADVANCED, STEPS, STATUS, BACK) */
 #define STEPS_ITEMS_COUNT    4    /* Number of items in steps submenu (ANTISPIN, BRAKE STEP, SENSI STEP, BACK) */
 #define HARDWARE_ITEMS_COUNT 6    /* Number of items in hardware submenu (ENC INV, EXT POT, TRIGGER, PWM_F MAX, TEST, BACK) */
 #define MAIN_MENU_BASE_TUNING_ITEMS 4 /* BRAKE, SENSI, ANTIS, CURVE always stay before optional advanced items */
@@ -50,12 +50,13 @@
 /* Display submenu item indexes */
 #define DISPLAY_ITEM_VIEW_IDX      0
 #define DISPLAY_ITEM_LANG_IDX      1
-#define DISPLAY_ITEM_CASE_IDX      2
-#define DISPLAY_ITEM_FSIZE_IDX     3
-#define DISPLAY_ITEM_ADVANCED_IDX  4
-#define DISPLAY_ITEM_STEPS_IDX     5
-#define DISPLAY_ITEM_STATUS_IDX    6
-#define DISPLAY_ITEM_BACK_IDX      7
+#define DISPLAY_ITEM_TERM_IDX      2
+#define DISPLAY_ITEM_CASE_IDX      3
+#define DISPLAY_ITEM_FSIZE_IDX     4
+#define DISPLAY_ITEM_ADVANCED_IDX  5
+#define DISPLAY_ITEM_STEPS_IDX     6
+#define DISPLAY_ITEM_STATUS_IDX    7
+#define DISPLAY_ITEM_BACK_IDX      8
 
 /* Race Mode View Types */
 #define RACE_VIEW_OFF       0     /* No race mode (list view only) */
@@ -77,6 +78,14 @@
 #define LANG_MAX            LANG_SWE
 #define LANG_COUNT          (LANG_MAX + 1)  /* Rows in every language-indexed string table */
 #define LANG_DEFAULT        LANG_ENG
+
+/* Terminology sets: replace a few parameter names on top of any language */
+#define TERM_ESPEED         0     /* ESPEED32 names: SENSI, ANTIS, CURVE, LIMIT */
+#define TERM_CS             1     /* CarSteen names: ATTCK, CHOK2, PROFL, CHOK1 */
+#define TERM_ACD            2     /* ACD names: CHOKE for LIMIT */
+#define TERM_MAX            TERM_ACD
+#define TERM_COUNT          (TERM_MAX + 1)
+#define TERM_DEFAULT        TERM_ESPEED
 
 /* Default Parameter Values */
 #define BRAKE_SCALE              10     /* 0.1% resolution: stored value = percent * 10 */
@@ -484,6 +493,7 @@ typedef struct {
   uint16_t lockMenuEnabled;          /* Show LOCK item in main menu: 0=OFF, 1=ON */
   uint16_t lockShortcutIdx;          /* Brake hold shortcut: 0=OFF, 1=1s, 2=2s, …, 10=10s */
   uint16_t lockConfirmEnabled;       /* Show fullscreen LOCKED/UNLOCKED flash: 0=OFF, 1=ON */
+  uint16_t terminology;              /* Parameter names: TERM_ESPEED, TERM_CS or TERM_ACD */
 } StoredVar_type;
 
 bool clampStoredVarCarPwmFreqsToProfile(StoredVar_type* storedVar, uint16_t profile);
@@ -547,8 +557,12 @@ typedef struct {
 
 /* CS/ACD call LIMIT "choke", which runs the opposite way: CHOKE = 100 - LIMIT.
  * Storage always uses LIMIT; only the displayed/edited value is inverted. */
-static inline bool isLimitShownAsChoke(uint16_t lang) {
-  return (lang == LANG_CS) || (lang == LANG_ACD);
+static inline uint16_t normalizeTerminology(uint16_t terminology) {
+  return (terminology <= TERM_MAX) ? terminology : TERM_DEFAULT;
+}
+
+static inline bool isLimitShownAsChoke(uint16_t lang, uint16_t terminology) {
+  return (normalizeTerminology(terminology) != TERM_ESPEED) || (lang == LANG_CS) || (lang == LANG_ACD);
 }
 
 static inline uint16_t limitPctToChokePct(uint16_t limitPct) {

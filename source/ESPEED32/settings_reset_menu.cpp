@@ -272,6 +272,7 @@ static void doResetSettings() {
   g_storedVar.gridCarSelectEnabled = GRID_CAR_SELECT_DEFAULT;
   g_storedVar.raceViewMode         = RACE_VIEW_DEFAULT;
   g_storedVar.language             = LANG_DEFAULT;
+  g_storedVar.terminology          = TERM_DEFAULT;
   g_storedVar.textCase             = TEXT_CASE_DEFAULT;
   g_storedVar.listFontSize         = FONT_SIZE_DEFAULT;
   g_storedVar.startupDelay         = STARTUP_DELAY_DEFAULT;

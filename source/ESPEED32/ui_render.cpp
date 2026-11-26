@@ -585,7 +585,7 @@ void printMainMenu(MenuState_enum currMenuState)
     /* Print LIMITER warning if LIMIT is any value other than 100% */
     if (g_storedVar.carParam[g_carSel].maxSpeed < MAX_SPEED_DEFAULT)
     {
-      obdWriteString(&g_obd, 0, WIDTH8x8, 3 * HEIGHT12x16, (char *)STR_LIMITER[g_storedVar.language], FONT_8x8, OBD_WHITE, 1);
+      obdWriteString(&g_obd, 0, WIDTH8x8, 3 * HEIGHT12x16, (char *)getLimiterLabel(g_storedVar.language), FONT_8x8, OBD_WHITE, 1);
     }
     else
     {
@@ -687,7 +687,7 @@ void printMainMenu(MenuState_enum currMenuState)
             /* value is a generic pointer to void, so first cast to uint16_t pointer, then take the pointed value */
             uint16_t shownValue = *(uint16_t *)(g_mainMenu.item[menuIndex].value);
             if (g_mainMenu.item[menuIndex].value == &g_storedVar.carParam[g_carSel].maxSpeed &&
-                isLimitShownAsChoke(g_storedVar.language)) {
+                isLimitShownAsChoke(g_storedVar.language, g_storedVar.terminology)) {
               shownValue = limitPctToChokePct(shownValue);  /* CS/ACD: show LIMIT as CHOKE */
             }
             snprintf(msgStr, sizeof(msgStr), "%3d%s", shownValue, g_mainMenu.item[menuIndex].unit);
@@ -771,7 +771,7 @@ void printMainMenu(MenuState_enum currMenuState)
     /* Print LIMITER warning if LIMIT is any value other than 100% */
     if (g_storedVar.carParam[g_carSel].maxSpeed < MAX_SPEED_DEFAULT) 
     {
-      obdWriteString(&g_obd, 0, WIDTH8x8, 3 * HEIGHT12x16, (char *)STR_LIMITER[g_storedVar.language], FONT_8x8, OBD_WHITE, 1);
+      obdWriteString(&g_obd, 0, WIDTH8x8, 3 * HEIGHT12x16, (char *)getLimiterLabel(g_storedVar.language), FONT_8x8, OBD_WHITE, 1);
     } 
     else
     {

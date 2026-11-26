@@ -2,6 +2,7 @@
 #define UI_STRINGS_H_
 
 #include <Arduino.h>
+#include "slot_ESC.h"
 
 /* Menu item names: [language][item] */
 extern const char* MENU_NAMES[][12];
@@ -9,7 +10,7 @@ extern const char* SETTINGS_MENU_NAMES[][12];
 extern const char* LOCK_MENU_NAMES[][4];
 extern const char* LOCK_SHORTCUT_LABELS[][11];
 extern const char* POWER_MENU_NAMES[][6];
-extern const char* DISPLAY_MENU_NAMES[][8];
+extern const char* DISPLAY_MENU_NAMES[][DISPLAY_ITEMS_COUNT];
 extern const char* STEPS_MENU_NAMES[][4];
 extern const char* RACE_LABELS[][4];
 extern const char* CAR_MENU_OPTIONS[][5];
@@ -26,7 +27,7 @@ extern const char* MENU_NAMES_PASCAL[][12];
 extern const char* SETTINGS_MENU_NAMES_PASCAL[][12];
 extern const char* LOCK_MENU_NAMES_PASCAL[][4];
 extern const char* POWER_MENU_NAMES_PASCAL[][6];
-extern const char* DISPLAY_MENU_NAMES_PASCAL[][8];
+extern const char* DISPLAY_MENU_NAMES_PASCAL[][DISPLAY_ITEMS_COUNT];
 extern const char* STEPS_MENU_NAMES_PASCAL[][4];
 extern const char* RACE_LABELS_PASCAL[][4];
 extern const char* CAR_MENU_OPTIONS_PASCAL[][5];

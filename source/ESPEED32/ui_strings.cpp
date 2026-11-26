@@ -44,17 +44,17 @@ const char* POWER_MENU_NAMES[][6] = {
 };
 
 /* Display submenu item names: [language][item] */
-const char* DISPLAY_MENU_NAMES[][8] = {
-  /* NOR */ {"RACEMODUS", "SPRAK", "STYL", "SKRIFTSTRL", "AVANSERT", "STEG", "STATUSLINJE", "TILBAKE"},
-  /* ENG */ {"RACE MODE", "LANGUAGE", "CASE", "FONT SIZE", "ADVANCED", "STEPS", "STATUS BAR", "BACK"},
-  /* CS  */ {"RACE MODE", "LANGUAGE", "CASE", "FONT SIZE", "ADVANCED", "STEPS", "STATUS BAR", "BACK"},
-  /* ACD */ {"RACE MODE", "LANGUAGE", "CASE", "FONT SIZE", "ADVANCED", "STEPS", "STATUS BAR", "BACK"},
-  /* ESP */ {"MODO RACE", "IDIOMA", "ESTILO", "TAM TEXTO", "AVANZADO", "PASOS", "BARRA EST", "ATRAS"},
-  /* DEU */ {"RACE MODUS", "SPRACHE", "STIL", "SCHRIFT", "ERWEITERT", "SCHRITTE", "STATUSLEISTE", "ZURUCK"},
-  /* ITA */ {"MODO GARA", "LINGUA", "STILE", "DIM TESTO", "AVANZATO", "PASSI", "BARRA STATO", "INDIETRO"},
-  /* NLD */ {"RACE MODUS", "TAAL", "STIJL", "TEKSTGRT", "GEAVANCEERD", "STAPPEN", "STATUSBALK", "TERUG"},
-  /* POR */ {"MODO RACE", "IDIOMA", "ESTILO", "TAM TEXTO", "AVANCADO", "PASSOS", "BARRA EST", "VOLTAR"},
-  /* SWE */ {"RACELAGE", "SPRAK", "STIL", "TEXTSTRL", "AVANCER.", "STEG", "STATUSRAD", "TILLBAKA"}
+const char* DISPLAY_MENU_NAMES[][DISPLAY_ITEMS_COUNT] = {
+  /* NOR */ {"RACEMODUS", "SPRAK", "TERMER", "STYL", "SKRIFTSTRL", "AVANSERT", "STEG", "STATUSLINJE", "TILBAKE"},
+  /* ENG */ {"RACE MODE", "LANGUAGE", "TERMS", "CASE", "FONT SIZE", "ADVANCED", "STEPS", "STATUS BAR", "BACK"},
+  /* CS  */ {"RACE MODE", "LANGUAGE", "TERMS", "CASE", "FONT SIZE", "ADVANCED", "STEPS", "STATUS BAR", "BACK"},
+  /* ACD */ {"RACE MODE", "LANGUAGE", "TERMS", "CASE", "FONT SIZE", "ADVANCED", "STEPS", "STATUS BAR", "BACK"},
+  /* ESP */ {"MODO RACE", "IDIOMA", "TERMINOS", "ESTILO", "TAM TEXTO", "AVANZADO", "PASOS", "BARRA EST", "ATRAS"},
+  /* DEU */ {"RACE MODUS", "SPRACHE", "BEGRIFFE", "STIL", "SCHRIFT", "ERWEITERT", "SCHRITTE", "STATUSLEISTE", "ZURUCK"},
+  /* ITA */ {"MODO GARA", "LINGUA", "TERMINI", "STILE", "DIM TESTO", "AVANZATO", "PASSI", "BARRA STATO", "INDIETRO"},
+  /* NLD */ {"RACE MODUS", "TAAL", "TERMEN", "STIJL", "TEKSTGRT", "GEAVANCEERD", "STAPPEN", "STATUSBALK", "TERUG"},
+  /* POR */ {"MODO RACE", "IDIOMA", "TERMOS", "ESTILO", "TAM TEXTO", "AVANCADO", "PASSOS", "BARRA EST", "VOLTAR"},
+  /* SWE */ {"RACELAGE", "SPRAK", "TERMER", "STIL", "TEXTSTRL", "AVANCER.", "STEG", "STATUSRAD", "TILLBAKA"}
 };
 
 /* Steps submenu item names: [language][item] */
@@ -271,17 +271,17 @@ const char* POWER_MENU_NAMES_PASCAL[][6] = {
 };
 
 /* Display submenu item names - Pascal Case: [language][item] */
-const char* DISPLAY_MENU_NAMES_PASCAL[][8] = {
-  /* NOR */ {"Racemodus", "Sprak", "Styl", "Skriftstrl", "Avansert", "Steg", "Statuslinje", "Tilbake"},
-  /* ENG */ {"Race Mode", "Language", "Case", "Font Size", "Advanced", "Steps", "Status bar", "Back"},
-  /* CS  */ {"Race Mode", "Language", "Case", "Font Size", "Advanced", "Steps", "Status bar", "Back"},
-  /* ACD */ {"Race Mode", "Language", "Case", "Font Size", "Advanced", "Steps", "Status bar", "Back"},
-  /* ESP */ {"Modo Race", "Idioma", "Estilo", "Tam texto", "Avanzado", "Pasos", "Barra est", "Atras"},
-  /* DEU */ {"Race Modus", "Sprache", "Stil", "Schrift", "Erweitert", "Schritte", "Statusleiste", "Zuruck"},
-  /* ITA */ {"Modo Gara", "Lingua", "Stile", "Dim testo", "Avanzato", "Passi", "Barra stato", "Indietro"},
-  /* NLD */ {"Race Modus", "Taal", "Stijl", "Tekstgrt", "Geavanceerd", "Stappen", "Statusbalk", "Terug"},
-  /* POR */ {"Modo Race", "Idioma", "Estilo", "Tam texto", "Avancado", "Passos", "Barra est", "Voltar"},
-  /* SWE */ {"Racelage", "Sprak", "Stil", "Textstrl", "Avancer.", "Steg", "Statusrad", "Tillbaka"}
+const char* DISPLAY_MENU_NAMES_PASCAL[][DISPLAY_ITEMS_COUNT] = {
+  /* NOR */ {"Racemodus", "Sprak", "Termer", "Styl", "Skriftstrl", "Avansert", "Steg", "Statuslinje", "Tilbake"},
+  /* ENG */ {"Race Mode", "Language", "Terms", "Case", "Font Size", "Advanced", "Steps", "Status bar", "Back"},
+  /* CS  */ {"Race Mode", "Language", "Terms", "Case", "Font Size", "Advanced", "Steps", "Status bar", "Back"},
+  /* ACD */ {"Race Mode", "Language", "Terms", "Case", "Font Size", "Advanced", "Steps", "Status bar", "Back"},
+  /* ESP */ {"Modo Race", "Idioma", "Terminos", "Estilo", "Tam texto", "Avanzado", "Pasos", "Barra est", "Atras"},
+  /* DEU */ {"Race Modus", "Sprache", "Begriffe", "Stil", "Schrift", "Erweitert", "Schritte", "Statusleiste", "Zuruck"},
+  /* ITA */ {"Modo Gara", "Lingua", "Termini", "Stile", "Dim testo", "Avanzato", "Passi", "Barra stato", "Indietro"},
+  /* NLD */ {"Race Modus", "Taal", "Termen", "Stijl", "Tekstgrt", "Geavanceerd", "Stappen", "Statusbalk", "Terug"},
+  /* POR */ {"Modo Race", "Idioma", "Termos", "Estilo", "Tam texto", "Avancado", "Passos", "Barra est", "Voltar"},
+  /* SWE */ {"Racelage", "Sprak", "Termer", "Stil", "Textstrl", "Avancer.", "Steg", "Statusrad", "Tillbaka"}
 };
 
 /* Steps submenu item names - Pascal Case: [language][item] */
