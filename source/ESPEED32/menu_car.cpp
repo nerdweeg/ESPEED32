@@ -629,14 +629,13 @@ void showSelectRenameCar() {
   else if (selectedOption == CAR_OPTION_RESET)
   {
     uint16_t lang = g_storedVar.language;
-    const char* allCarsLabel[] = {
+    static const char* const allCarsLabel[LANG_COUNT] = {
       "ALLE BILER", "ALL CARS", "ALL CARS", "ALL CARS",
-      "TODOS AUTOS", "ALLE AUTOS", "TUTTE AUTO"
+      "TODOS AUTOS", "ALLE AUTOS", "TUTTE AUTO", "ALLE AUTOS",
+      "TODOS CARROS", "ALLA BILAR"
     };
-    const char* doneText[] = {
-      "NULLSTILT!", "RESET DONE!", "RESET DONE!", "RESET DONE!",
-      "RESET OK!", "RESET OK!", "RESET OK!"
-    };
+    if (lang >= LANG_COUNT) lang = LANG_DEFAULT;
+    const char* doneText = getResetDoneText(lang);
     const char* carLabel = allCarsLabel[lang];
     bool confirmed = showResetConfirmDialog(carLabel);
     if (confirmed) {
@@ -644,8 +643,8 @@ void showSelectRenameCar() {
       saveEEPROM(g_storedVar);
       initMenuItems();
       obdFill(&g_obd, OBD_WHITE, 1);
-      int tw = strlen(doneText[lang]) * WIDTH12x16;
-      obdWriteString(&g_obd, 0, (OLED_WIDTH - tw) / 2, 24, (char *)doneText[lang], FONT_12x16, OBD_BLACK, 1);
+      int tw = strlen(doneText) * WIDTH12x16;
+      obdWriteString(&g_obd, 0, (OLED_WIDTH - tw) / 2, 24, (char *)doneText, FONT_12x16, OBD_BLACK, 1);
       delay(1500);
       obdFill(&g_obd, OBD_WHITE, 1);
     }

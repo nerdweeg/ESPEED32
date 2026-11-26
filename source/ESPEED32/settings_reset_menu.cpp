@@ -75,7 +75,7 @@ static const char* getResetAgainLine2(uint16_t lang) {
   }
 }
 
-static const char* getResetDoneText(uint16_t lang) {
+const char* getResetDoneText(uint16_t lang) {
   switch (lang) {
     case LANG_NOR: return "NULLSTILT!";
     case LANG_ESP: return "RESET OK!";
