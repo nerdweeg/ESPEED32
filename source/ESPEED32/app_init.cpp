@@ -235,7 +235,7 @@ void initMenuItems() {
   /* Init Car selection menu items */
   for (uint8_t j = 0; j < CAR_MAX_COUNT; j++)
   {
-    snprintf(g_carMenu.item[j].name, sizeof(g_carMenu.item[j].name), (const char *)g_storedVar.carParam[j].carName);
+    snprintf(g_carMenu.item[j].name, sizeof(g_carMenu.item[j].name), "%s", (const char *)g_storedVar.carParam[j].carName);
     g_carMenu.item[j].value = (void *)&g_storedVar.carParam[j].carNumber;
   }
 }
