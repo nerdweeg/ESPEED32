@@ -1134,6 +1134,8 @@ static void handleSerialCommand(const String& cmd) {
     getConfiguredWiFiClientPassword(tempWiFiPassword, sizeof(tempWiFiPassword));
     getCurrentUiAuthUsername(tempUiAuthUsername, sizeof(tempUiAuthUsername));
     getCurrentUiAuthPassword(tempUiAuthPassword, sizeof(tempUiAuthPassword));
+    RestoreExtraSettings restoreExtras;
+    loadRestoreExtraSettings(&restoreExtras);
     if (parseAndValidateJson(json, &tempVar, &tempAntiSpinStep, &tempAntiSpinStepPct, &tempAntiSpinDisplayMode,
                              &tempBrakeStep, &tempSensiStep, &tempAdvancedMenu, &tempEncoderInvert,
                              &tempPwmFreqMaxProfile, &tempAdcVoltageRange,
@@ -1141,7 +1143,7 @@ static void handleSerialCommand(const String& cmd) {
                              tempWiFiPassword, sizeof(tempWiFiPassword),
                              tempUiAuthUsername, sizeof(tempUiAuthUsername),
                              tempUiAuthPassword, sizeof(tempUiAuthPassword),
-                             &errorMsg, &warningMsg)) {
+                             &errorMsg, &warningMsg, &restoreExtras)) {
       g_storedVar = tempVar;
       g_antiSpinStepMs = tempAntiSpinStep;
       g_antiSpinStepPct = tempAntiSpinStepPct;
@@ -1159,6 +1161,7 @@ static void handleSerialCommand(const String& cmd) {
       setConfiguredWiFiMode(tempWiFiMode);
       setConfiguredWiFiClientCredentials(tempWiFiSsid, tempWiFiPassword);
       setCurrentUiAuthCredentials(tempUiAuthUsername, tempUiAuthPassword);
+      applyRestoreExtraSettings(restoreExtras);
       initMenuItems();
       saveEEPROM(g_storedVar);
       if (warningMsg.length() > 0) {
@@ -1488,6 +1491,8 @@ static void handleRestore() {
   getConfiguredWiFiClientPassword(tempWiFiPassword, sizeof(tempWiFiPassword));
   getCurrentUiAuthUsername(tempUiAuthUsername, sizeof(tempUiAuthUsername));
   getCurrentUiAuthPassword(tempUiAuthPassword, sizeof(tempUiAuthPassword));
+  RestoreExtraSettings restoreExtras;
+  loadRestoreExtraSettings(&restoreExtras);
   if (parseAndValidateJson(g_uploadBuffer, &tempVar, &tempAntiSpinStep, &tempAntiSpinStepPct, &tempAntiSpinDisplayMode,
                            &tempBrakeStep, &tempSensiStep, &tempAdvancedMenu, &tempEncoderInvert,
                            &tempPwmFreqMaxProfile, &tempAdcVoltageRange,
@@ -1495,7 +1500,7 @@ static void handleRestore() {
                            tempWiFiPassword, sizeof(tempWiFiPassword),
                            tempUiAuthUsername, sizeof(tempUiAuthUsername),
                            tempUiAuthPassword, sizeof(tempUiAuthPassword),
-                           &errorMsg, &warningMsg)) {
+                           &errorMsg, &warningMsg, &restoreExtras)) {
     g_storedVar = tempVar;
     g_antiSpinStepMs = tempAntiSpinStep;
     g_antiSpinStepPct = tempAntiSpinStepPct;
@@ -1513,6 +1518,7 @@ static void handleRestore() {
     setConfiguredWiFiMode(tempWiFiMode);
     setConfiguredWiFiClientCredentials(tempWiFiSsid, tempWiFiPassword);
     setCurrentUiAuthCredentials(tempUiAuthUsername, tempUiAuthPassword);
+    applyRestoreExtraSettings(restoreExtras);
     initMenuItems();
     saveEEPROM(g_storedVar);
     String response = "OK - Settings restored!";

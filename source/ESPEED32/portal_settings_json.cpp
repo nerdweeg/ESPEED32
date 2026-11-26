@@ -1,5 +1,9 @@
 #include "connectivity_portal_internal.h"
 #include "app_init.h"
+#include "ext_pot.h"
+#if defined(TLE493D_MAG)
+#include "tle493d.h"
+#endif
 
 /* Settings JSON: backup build/parse/validate, web UI schema and state, and live web patches. */
 
@@ -63,6 +67,10 @@ static String buildJsonBackupFromConfig(const StoredVar_type& storedVar,
   snprintf(buf, sizeof(buf), "  \"lockMenuEnabled\": %u,\n", storedVar.lockMenuEnabled);   json += buf;
   snprintf(buf, sizeof(buf), "  \"lockShortcutIdx\": %u,\n", storedVar.lockShortcutIdx);   json += buf;
   snprintf(buf, sizeof(buf), "  \"lockConfirmEnabled\": %u,\n", storedVar.lockConfirmEnabled); json += buf;
+  snprintf(buf, sizeof(buf), "  \"statsEnabled\": %u,\n", g_statsEnabled ? 1U : 0U);   json += buf;
+  snprintf(buf, sizeof(buf), "  \"extPot1Target\": %u,\n", g_extPotTarget[0]);         json += buf;
+  snprintf(buf, sizeof(buf), "  \"extPot2Target\": %u,\n", g_extPotTarget[1]);         json += buf;
+  snprintf(buf, sizeof(buf), "  \"triggerSensorType\": %u,\n", HAL_GetTriggerSensorTypeOverride()); json += buf;
   snprintf(buf, sizeof(buf), "  \"textCase\": %u,\n", storedVar.textCase);           json += buf;
   snprintf(buf, sizeof(buf), "  \"listFontSize\": %u,\n", storedVar.listFontSize);   json += buf;
   snprintf(buf, sizeof(buf), "  \"startupDelay\": %u,\n", storedVar.startupDelay);   json += buf;
@@ -319,7 +327,7 @@ bool parseAndValidateJson(const String& json, StoredVar_type* sv, uint16_t* anti
                                  size_t wifiClientPasswordLen, char* uiAuthUsername,
                                  size_t uiAuthUsernameLen, char* uiAuthPassword,
                                  size_t uiAuthPasswordLen, String* errorMsg,
-                                 String* warningMsg) {
+                                 String* warningMsg, RestoreExtraSettings* extras) {
   int32_t v;
   bool wifiPasswordStoredSpecified = false;
   bool wifiPasswordStored = false;
@@ -516,6 +524,20 @@ bool parseAndValidateJson(const String& json, StoredVar_type* sv, uint16_t* anti
     sv->lockShortcutIdx = v;
   if (parseJsonInt(json, "lockConfirmEnabled", v) && inRange(v, 0, 1))
     sv->lockConfirmEnabled = v;
+  if (extras != nullptr) {
+    if (parseJsonInt(json, "statsEnabled", v) && inRange(v, 0, 1))
+      extras->statsEnabled = (uint16_t)v;
+    if (parseJsonInt(json, "extPot1Target", v) && inRange(v, EXT_POT_TARGET_MIN, EXT_POT_TARGET_MAX))
+      extras->extPotTarget[0] = (uint16_t)v;
+    if (parseJsonInt(json, "extPot2Target", v) && inRange(v, EXT_POT_TARGET_MIN, EXT_POT_TARGET_MAX))
+      extras->extPotTarget[1] = (uint16_t)v;
+    /* The sensor type belongs to this board's hardware, so only take it from its own backup */
+    if (controllerLocalSettingsRestoreAllowed &&
+        parseJsonInt(json, "triggerSensorType", v) && inRange(v, 0, TRIGGER_SENSOR_TYPE_MAX)) {
+      extras->sensorTypeOverride = (uint16_t)v;
+      extras->sensorTypeOverrideSet = true;
+    }
+  }
   if (parseJsonInt(json, "textCase", v) && inRange(v, TEXT_CASE_UPPER, TEXT_CASE_PASCAL))
     sv->textCase = v;
   if (parseJsonInt(json, "listFontSize", v) && inRange(v, FONT_SIZE_LARGE, FONT_SIZE_SMALL))
@@ -1372,4 +1394,26 @@ bool parseAndApplyWebPatch(const String& json, String* errorMsg, uint8_t* applie
 
   if (appliedCarIndex != nullptr) *appliedCarIndex = carIndex;
   return true;
+}
+
+void loadRestoreExtraSettings(RestoreExtraSettings* extras) {
+  extras->statsEnabled = g_statsEnabled ? 1U : 0U;
+  extras->extPotTarget[0] = g_extPotTarget[0];
+  extras->extPotTarget[1] = g_extPotTarget[1];
+  extras->sensorTypeOverride = HAL_GetTriggerSensorTypeOverride();
+  extras->sensorTypeOverrideSet = false;
+}
+
+void applyRestoreExtraSettings(const RestoreExtraSettings& extras) {
+  g_statsEnabled = extras.statsEnabled ? 1U : 0U;
+  g_extPotTarget[0] = extras.extPotTarget[0];
+  g_extPotTarget[1] = extras.extPotTarget[1];
+  sanitizeExtPotTargets(0);
+#if defined(TLE493D_MAG)
+  /* Only persist it: restore reboots right after, and the new mode is applied at boot, so the
+     portal task never reconfigures the sensor while the control loop is reading it. */
+  if (extras.sensorTypeOverrideSet) {
+    TLE493D_SaveOverrideMode(extras.sensorTypeOverride);
+  }
+#endif
 }
