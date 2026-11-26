@@ -235,7 +235,7 @@ void displayStatusLine() {
 
 /* Parameter shown in a race view slot (FULL uses slots 0-3, SIMPLE slots 0-1). */
 static uint8_t getRaceSlotParam(uint8_t slot) {
-  return normalizeRaceSlotParam(0, slot);
+  return normalizeRaceSlotParam(g_storedVar.raceSlot[slot], slot);
 }
 
 /**

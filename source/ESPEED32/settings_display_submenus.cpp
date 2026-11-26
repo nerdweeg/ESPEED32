@@ -843,6 +843,42 @@ void showStatusSettings() {
   runSlotPicker(cfg);
 }
 
+/* Parameters offered for the race view slots, in menu order. BRAKE+ is a submenu, so it is left out. */
+static const uint8_t RACE_SLOT_OPTIONS[] = {
+  RACE_PARAM_BRAKE, RACE_PARAM_SENSI, RACE_PARAM_ANTIS, RACE_PARAM_CURVE,
+  RACE_PARAM_FADE, RACE_PARAM_LIMIT, RACE_PARAM_PWM_F
+};
+static const uint8_t RACE_SLOT_OPTION_COUNT = sizeof(RACE_SLOT_OPTIONS) / sizeof(RACE_SLOT_OPTIONS[0]);
+
+static uint8_t raceSlotOptionOf(uint16_t storedValue, uint8_t slot) {
+  uint8_t param = normalizeRaceSlotParam(storedValue, slot);
+  for (uint8_t i = 0; i < RACE_SLOT_OPTION_COUNT; i++) {
+    if (RACE_SLOT_OPTIONS[i] == param) return i;
+  }
+  return 0;
+}
+
+static uint16_t raceSlotStoredOf(uint8_t option) {
+  return (uint16_t)RACE_SLOT_OPTIONS[(option < RACE_SLOT_OPTION_COUNT) ? option : 0] + 1U;
+}
+
+static void formatRaceSlotOption(uint8_t option, char* out, size_t outSize) {
+  /* getRaceLabel() already applies text case and terminology */
+  snprintf(out, outSize, "%s", getRaceLabel(g_storedVar.language, RACE_SLOT_OPTIONS[(option < RACE_SLOT_OPTION_COUNT) ? option : 0]));
+}
+
+/**
+ * Race view slot settings submenu: choose the parameter in each of the four race view slots.
+ * SIMPLE race view shows the first two.
+ */
+void showRaceSlotSettings() {
+  SlotPickerConfig cfg = {
+    g_storedVar.raceSlot, RACE_SLOTS, RACE_SLOT_OPTION_COUNT,
+    raceSlotOptionOf, raceSlotStoredOf, formatRaceSlotOption, false
+  };
+  runSlotPicker(cfg);
+}
+
 /**
  * Steps submenu: ANTISPIN (submenu), BRAKE STEP, SENSI STEP, BACK.
  * Handles inline editing for BRAKE STEP and SENSI STEP, and snaps the

@@ -88,6 +88,7 @@ void initStoredVariables() {
   g_storedVar.raceViewMode = RACE_VIEW_DEFAULT;  /* Default race view mode */
   g_storedVar.language = LANG_DEFAULT;  /* Default language */
   g_storedVar.terminology = TERM_DEFAULT;  /* Default parameter names */
+  for (uint8_t s = 0; s < RACE_SLOTS; s++) g_storedVar.raceSlot[s] = 0;  /* 0 = BRAKE, SENSI, ANTIS, CURVE */
   g_storedVar.textCase = TEXT_CASE_DEFAULT;  /* Default text case style */
   g_storedVar.listFontSize = FONT_SIZE_DEFAULT;  /* Default list view font size */
   g_storedVar.startupDelay = STARTUP_DELAY_DEFAULT;  /* Default startup delay (0 = immediate) */
@@ -355,6 +356,14 @@ void initDisplayMenuItems() {
   snprintf(g_settingsMenu.item[i].unit, sizeof(g_settingsMenu.item[i].unit), "");
   g_settingsMenu.item[i].maxValue = RACE_VIEW_SIMPLE;
   g_settingsMenu.item[i].minValue = RACE_VIEW_OFF;
+  g_settingsMenu.item[i].callback = ITEM_NO_CALLBACK;
+
+  snprintf(g_settingsMenu.item[++i].name, sizeof(g_settingsMenu.item[0].name), "%s", getDisplayMenuName(lang, DISPLAY_ITEM_RACE_SLOTS_IDX));  /* RACE SLOTS - opens submenu */
+  g_settingsMenu.item[i].value = ITEM_NO_VALUE;
+  g_settingsMenu.item[i].type = VALUE_TYPE_INTEGER;
+  snprintf(g_settingsMenu.item[i].unit, sizeof(g_settingsMenu.item[i].unit), "");
+  g_settingsMenu.item[i].maxValue = 0;
+  g_settingsMenu.item[i].minValue = 0;
   g_settingsMenu.item[i].callback = ITEM_NO_CALLBACK;
 
   snprintf(g_settingsMenu.item[++i].name, sizeof(g_settingsMenu.item[0].name), "%s", getDisplayMenuName(lang, DISPLAY_ITEM_LANG_IDX));  /* LANG */

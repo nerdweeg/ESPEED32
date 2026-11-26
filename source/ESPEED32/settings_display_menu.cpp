@@ -11,10 +11,10 @@
 #include "menu_input.h"
 
 /**
- * Display settings submenu: VIEW, LANG, TERMS, CASE, FSIZE, ADVANCED, STEPS, STATUS, BACK.
+ * Display settings submenu: VIEW, RACE SLOTS, LANG, TERMS, CASE, FSIZE, ADVANCED, STEPS, STATUS, BACK.
  * 2-choice params (CASE, FSIZE, ADVANCED) toggle instantly on click.
  * Multi-choice params (VIEW, LANG, TERMS) use press-enter / scroll / confirm.
- * STEPS and STATUS open dedicated submenus.
+ * RACE SLOTS, STEPS and STATUS open dedicated submenus.
  */
 void showDisplaySettings() {
   initDisplayMenuItems();
@@ -105,6 +105,17 @@ void showDisplaySettings() {
         /* Submenus */
         if (sel == DISPLAY_ITEM_STEPS_IDX + 1) {
           showStepsSettings();
+          if (isEscapeToMainRequested()) break;
+          initDisplayMenuItems();
+          g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
+          setUiEncoderBoundaries(1, DISPLAY_ITEMS_COUNT, false);
+          resetUiEncoder(sel);
+          obdFill(&g_obd, OBD_WHITE, 1);
+          prevSel = 0;
+          continue;
+        }
+        if (sel == DISPLAY_ITEM_RACE_SLOTS_IDX + 1) {
+          showRaceSlotSettings();
           if (isEscapeToMainRequested()) break;
           initDisplayMenuItems();
           g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);

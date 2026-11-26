@@ -5,5 +5,6 @@ void showScreensaverSettings();
 void showAntiSpinSettings();
 void showStepsSettings();
 void showStatusSettings();
+void showRaceSlotSettings();
 
 #endif  /* SETTINGS_DISPLAY_SUBMENUS_H_ */

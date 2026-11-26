@@ -1610,7 +1610,7 @@ MenuState_enum rotary_onButtonClick(MenuState_enum currMenuState)
        * SIMPLE: 0-1 = race slots 0-1, 2 = CAR. FULL: 0-3 = race slots 0-3, 4 = CAR. */
       uint8_t slotCount = (g_storedVar.raceViewMode == RACE_VIEW_SIMPLE) ? 2U : RACE_SLOTS;
       if (gridItem < slotCount) {
-        selectRaceParamForEdit(normalizeRaceSlotParam(0, gridItem), &selectedParamMinValue, &selectedParamMaxValue);
+        selectRaceParamForEdit(normalizeRaceSlotParam(g_storedVar.raceSlot[gridItem], gridItem), &selectedParamMinValue, &selectedParamMaxValue);
       } else if (gridItem == slotCount) {
         /* CAR - select different car */
         g_encoderSelectedValuePtr = &g_storedVar.selectedCarNumber;

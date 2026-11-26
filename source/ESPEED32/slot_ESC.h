@@ -27,7 +27,7 @@
 #define MENU_ITEMS_COUNT    12    /* Number of possible items in main menu (including optional STATS, LOCK and CAR) */
 #define SETTINGS_ITEMS_COUNT 12   /* Number of items in settings menu (including BACK) */
 #define POWER_ITEMS_COUNT    6    /* Number of items in power submenu (SCRSV, SLEEP, D-SLEEP, STARTUP, VIN CAL., BACK) */
-#define DISPLAY_ITEMS_COUNT  9    /* Number of items in display submenu (VIEW, LANG, TERMS, CASE, FSIZE, ADVANCED, STEPS, STATUS, BACK) */
+#define DISPLAY_ITEMS_COUNT  10   /* Number of items in display submenu (VIEW, RACE SLOTS, LANG, TERMS, CASE, FSIZE, ADVANCED, STEPS, STATUS, BACK) */
 #define STEPS_ITEMS_COUNT    4    /* Number of items in steps submenu (ANTISPIN, BRAKE STEP, SENSI STEP, BACK) */
 #define HARDWARE_ITEMS_COUNT 6    /* Number of items in hardware submenu (ENC INV, EXT POT, TRIGGER, PWM_F MAX, TEST, BACK) */
 #define MAIN_MENU_BASE_TUNING_ITEMS 4 /* BRAKE, SENSI, ANTIS, CURVE always stay before optional advanced items */
@@ -49,14 +49,15 @@
 
 /* Display submenu item indexes */
 #define DISPLAY_ITEM_VIEW_IDX      0
-#define DISPLAY_ITEM_LANG_IDX      1
-#define DISPLAY_ITEM_TERM_IDX      2
-#define DISPLAY_ITEM_CASE_IDX      3
-#define DISPLAY_ITEM_FSIZE_IDX     4
-#define DISPLAY_ITEM_ADVANCED_IDX  5
-#define DISPLAY_ITEM_STEPS_IDX     6
-#define DISPLAY_ITEM_STATUS_IDX    7
-#define DISPLAY_ITEM_BACK_IDX      8
+#define DISPLAY_ITEM_RACE_SLOTS_IDX 1
+#define DISPLAY_ITEM_LANG_IDX      2
+#define DISPLAY_ITEM_TERM_IDX      3
+#define DISPLAY_ITEM_CASE_IDX      4
+#define DISPLAY_ITEM_FSIZE_IDX     5
+#define DISPLAY_ITEM_ADVANCED_IDX  6
+#define DISPLAY_ITEM_STEPS_IDX     7
+#define DISPLAY_ITEM_STATUS_IDX    8
+#define DISPLAY_ITEM_BACK_IDX      9
 
 /* Race Mode View Types */
 #define RACE_VIEW_OFF       0     /* No race mode (list view only) */
@@ -518,6 +519,7 @@ typedef struct {
   uint16_t lockShortcutIdx;          /* Brake hold shortcut: 0=OFF, 1=1s, 2=2s, …, 10=10s */
   uint16_t lockConfirmEnabled;       /* Show fullscreen LOCKED/UNLOCKED flash: 0=OFF, 1=ON */
   uint16_t terminology;              /* Parameter names: TERM_ESPEED, TERM_CS or TERM_ACD */
+  uint16_t raceSlot[RACE_SLOTS];     /* Race view slots: RACE_PARAM_* + 1, 0 = slot default */
 } StoredVar_type;
 
 bool clampStoredVarCarPwmFreqsToProfile(StoredVar_type* storedVar, uint16_t profile);
