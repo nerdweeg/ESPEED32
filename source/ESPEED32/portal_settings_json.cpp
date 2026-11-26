@@ -55,6 +55,14 @@ static String buildJsonBackupFromConfig(const StoredVar_type& storedVar,
   for (uint8_t s = 0; s < RACE_SLOTS; s++) {
     snprintf(buf, sizeof(buf), "  \"raceSlot%u\": %u,\n", (unsigned)s, storedVar.raceSlot[s]); json += buf;
   }
+  for (uint8_t s = 0; s < STATUS_SLOTS; s++) {
+    snprintf(buf, sizeof(buf), "  \"statusSlot%u\": %u,\n", (unsigned)s, normalizeStatusSlotValue(storedVar.statusSlot[s])); json += buf;
+  }
+  snprintf(buf, sizeof(buf), "  \"powerSaveTimeout\": %u,\n", storedVar.powerSaveTimeout); json += buf;
+  snprintf(buf, sizeof(buf), "  \"deepSleepTimeout\": %u,\n", storedVar.deepSleepTimeout); json += buf;
+  snprintf(buf, sizeof(buf), "  \"lockMenuEnabled\": %u,\n", storedVar.lockMenuEnabled);   json += buf;
+  snprintf(buf, sizeof(buf), "  \"lockShortcutIdx\": %u,\n", storedVar.lockShortcutIdx);   json += buf;
+  snprintf(buf, sizeof(buf), "  \"lockConfirmEnabled\": %u,\n", storedVar.lockConfirmEnabled); json += buf;
   snprintf(buf, sizeof(buf), "  \"textCase\": %u,\n", storedVar.textCase);           json += buf;
   snprintf(buf, sizeof(buf), "  \"listFontSize\": %u,\n", storedVar.listFontSize);   json += buf;
   snprintf(buf, sizeof(buf), "  \"startupDelay\": %u,\n", storedVar.startupDelay);   json += buf;
@@ -492,6 +500,22 @@ bool parseAndValidateJson(const String& json, StoredVar_type* sv, uint16_t* anti
     if (parseJsonInt(json, key, v) && (v == 0 || (inRange(v, 1, RACE_PARAM_LIMIT + 1) && isRaceParamSelectable(v - 1))))
       sv->raceSlot[s] = v;
   }
+  for (uint8_t s = 0; s < STATUS_SLOTS; s++) {
+    char key[12];
+    snprintf(key, sizeof(key), "statusSlot%u", (unsigned)s);
+    if (parseJsonInt(json, key, v) && inRange(v, STATUS_BLANK, STATUS_DEVICE_ID))
+      sv->statusSlot[s] = normalizeStatusSlotValue(v);
+  }
+  if (parseJsonInt(json, "powerSaveTimeout", v) && inRange(v, 0, POWER_SAVE_TIMEOUT_MAX))
+    sv->powerSaveTimeout = v;
+  if (parseJsonInt(json, "deepSleepTimeout", v) && (v == 0 || inRange(v, DEEP_SLEEP_TIMEOUT_MIN, DEEP_SLEEP_TIMEOUT_MAX)))
+    sv->deepSleepTimeout = v;
+  if (parseJsonInt(json, "lockMenuEnabled", v) && inRange(v, 0, 1))
+    sv->lockMenuEnabled = v;
+  if (parseJsonInt(json, "lockShortcutIdx", v) && inRange(v, 0, LOCK_SHORTCUT_COUNT))
+    sv->lockShortcutIdx = v;
+  if (parseJsonInt(json, "lockConfirmEnabled", v) && inRange(v, 0, 1))
+    sv->lockConfirmEnabled = v;
   if (parseJsonInt(json, "textCase", v) && inRange(v, TEXT_CASE_UPPER, TEXT_CASE_PASCAL))
     sv->textCase = v;
   if (parseJsonInt(json, "listFontSize", v) && inRange(v, FONT_SIZE_LARGE, FONT_SIZE_SMALL))
