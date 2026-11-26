@@ -2114,6 +2114,7 @@ static const char* getDocsPathForLanguage(uint16_t lang) {
     case LANG_ITA: return "/docs/it/index.html";
     case LANG_NLD: return "/docs/nl/index.html";
     case LANG_POR: return "/docs/pt/index.html";
+    case LANG_SWE: return "/docs/sv/index.html";
     default:       return "/docs/en/index.html";
   }
 }
@@ -2702,7 +2703,8 @@ static void handleDocsDefault() {
       !streamHtmlFromSpiffs("/docs/pt/index.html") &&
       !streamHtmlFromSpiffs("/docs/es/index.html") &&
       !streamHtmlFromSpiffs("/docs/de/index.html") &&
-      !streamHtmlFromSpiffs("/docs/it/index.html")) {
+      !streamHtmlFromSpiffs("/docs/it/index.html") &&
+      !streamHtmlFromSpiffs("/docs/sv/index.html")) {
     sendDocsMissing(defaultPath);
   }
 }
@@ -2728,6 +2730,12 @@ static void handleDocsNl() {
 static void handleDocsPt() {
   if (!streamHtmlFromSpiffs("/docs/pt/index.html")) {
     sendDocsMissing("/docs/pt/index.html");
+  }
+}
+
+static void handleDocsSv() {
+  if (!streamHtmlFromSpiffs("/docs/sv/index.html")) {
+    sendDocsMissing("/docs/sv/index.html");
   }
 }
 
@@ -3182,6 +3190,9 @@ static void registerWebRoutes() {
   g_wifiServer->on("/docs/pt", HTTP_GET, handleDocsPt);
   g_wifiServer->on("/docs/pt/", HTTP_GET, handleDocsPt);
   g_wifiServer->on("/docs/pt/index.html", HTTP_GET, handleDocsPt);
+  g_wifiServer->on("/docs/sv", HTTP_GET, handleDocsSv);
+  g_wifiServer->on("/docs/sv/", HTTP_GET, handleDocsSv);
+  g_wifiServer->on("/docs/sv/index.html", HTTP_GET, handleDocsSv);
   g_wifiServer->on("/docs/es", HTTP_GET, handleDocsEs);
   g_wifiServer->on("/docs/es/", HTTP_GET, handleDocsEs);
   g_wifiServer->on("/docs/es/index.html", HTTP_GET, handleDocsEs);

@@ -235,7 +235,7 @@ details.doc-fold>:not(summary){margin-top:8px}
     <h3>Lingua e display</h3>
     <ul>
       <li><code>DISPLAY -&gt; LANGUAGE</code> sceglie tra etichette localizzate e i profili di nomi ENG/CS/ACD.</li>
-      <li><code>NOR/ESP/DEU/ITA/NLD/POR</code>: interfaccia localizzata con i nomi standard <code>BRAKE/SENSI/ANTIS/CURVE/FADE/LIMIT</code>.</li>
+      <li><code>NOR/ESP/DEU/ITA/NLD/POR/SVE</code>: interfaccia localizzata con i nomi standard <code>BRAKE/SENSI/ANTIS/CURVE/FADE/LIMIT</code>.</li>
       <li><code>ENG</code>: nomi generici (<code>BRAKE/SENSI/ANTIS/CURVE/FADE/LIMIT</code>).</li>
       <li><code>CS</code>: stile CarSteen (<code>ATTCK/CHOK2/PROFL/CHOK1</code>).</li>
       <li><code>ACD</code>: stile ACD dove esiste una corrispondenza diretta (<code>SENSI</code> e <code>CHOKE</code> per LIMIT).</li>
@@ -602,7 +602,7 @@ details.doc-fold>:not(summary){margin-top:8px}
 |  |  `- BACK
 |  |- DISPLAY
 |  |  |- RACE MODE (OFF/FULL/SIMPLE)
-|  |  |- LANGUAGE (NOR/ENG/CS/ACD/ESP/DEU/ITA/NLD/POR)
+|  |  |- LANGUAGE (NOR/ENG/CS/ACD/ESP/DEU/ITA/NLD/POR/SVE)
 |  |  |- CASE (UPPER/Pascal)
 |  |  |- FONT SIZE (LARGE/small)
 |  |  |- AVANZATO (OFF/ON)
@@ -694,6 +694,7 @@ details.doc-fold>:not(summary){margin-top:8px}
   else if (path.indexOf("/docs/es") !== -1) activeLang = "es";
   else if (path.indexOf("/docs/de") !== -1) activeLang = "de";
   else if (path.indexOf("/docs/it") !== -1) activeLang = "it";
+  else if (path.indexOf("/docs/sv") !== -1) activeLang = "sv";
 
   var languageOptions = [
     { value: "no", label: "\uD83C\uDDF3\uD83C\uDDF4 Norsk" },
@@ -702,7 +703,8 @@ details.doc-fold>:not(summary){margin-top:8px}
     { value: "pt", label: "\uD83C\uDDF5\uD83C\uDDF9 Portugues" },
     { value: "es", label: "\uD83C\uDDEA\uD83C\uDDF8 Espa\u00F1ol" },
     { value: "de", label: "\uD83C\uDDE9\uD83C\uDDEA Deutsch" },
-    { value: "it", label: "\uD83C\uDDEE\uD83C\uDDF9 Italiano" }
+    { value: "it", label: "\uD83C\uDDEE\uD83C\uDDF9 Italiano" },
+    { value: "sv", label: "\uD83C\uDDF8\uD83C\uDDEA Svenska" }
   ];
 
   function apply(mode){
@@ -730,7 +732,8 @@ details.doc-fold>:not(summary){margin-top:8px}
     pt: "Link para este titulo",
     es: "Enlace a este titulo",
     de: "Link zu dieser Uberschrift",
-    it: "Link a questo titolo"
+    it: "Link a questo titolo",
+    sv: "L\u00E4nk till denna rubrik"
   };
 
   function slugify(text){
