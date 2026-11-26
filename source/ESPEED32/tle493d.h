@@ -13,6 +13,13 @@
 /* Datasheet tAPC is in the sub-millisecond range; keep a small margin plus retries. */
 static constexpr uint16_t TLE493D_I2C_STABILIZE_MS = 2;
 
+/* I2C fast mode. A 7-byte frame takes about 0.2 ms here, against about 0.7 ms at 100 kHz,
+ * which no longer fit inside one 500 us control period. */
+static constexpr uint32_t TLE493D_I2C_CLOCK_HZ = 400000UL;
+/* Upper bound on a stalled I2C transfer. Task2 blocks for this long on a failed read, so keep
+ * it far below Wire's 50 ms default; a good transfer finishes well inside it. */
+static constexpr uint16_t TLE493D_I2C_TIMEOUT_MS = 3;
+
 enum class TLE493DVariant : uint8_t {
   NONE = 0,
   W2B6,
