@@ -248,7 +248,7 @@ void showSettingsMenu() {
         } else if (g_settingsMenu.item[itemIndex].unit[0] != '\0') {
           snprintf(msgStr, sizeof(msgStr), "%2d%s", value, g_settingsMenu.item[itemIndex].unit);
         } else {
-          sprintf(msgStr, "%3d", value);
+          snprintf(msgStr, sizeof(msgStr), "%3d", value);
         }
         int textWidth = strlen(msgStr) * charWidth;
         obdWriteString(&g_obd, 0, OLED_WIDTH - textWidth, i * lineHeight, msgStr,

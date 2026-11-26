@@ -1376,7 +1376,7 @@ void showScreenWelcome()
   obdWriteString(&g_obd, 0, 24, 14, (char *)"ESPEED", FONT_12x16, OBD_BLACK, 1);
 
   /* Display version in smaller font, centered below with spacing */
-  sprintf(msgStr, "v%d.%d", SW_MAJOR_VERSION, SW_MINOR_VERSION);
+  snprintf(msgStr, sizeof(msgStr), "v%d.%d", SW_MAJOR_VERSION, SW_MINOR_VERSION);
   uint8_t versionWidth = strlen(msgStr) * 6;  /* 6px per char for FONT_6x8 */
   obdWriteString(&g_obd, 0, (OLED_WIDTH - versionWidth) / 2, 36, msgStr, FONT_6x8, OBD_BLACK, 1);
 }
@@ -1386,7 +1386,7 @@ void showScreenWelcome()
  */
 void showScreenPreCalibration() 
 {
-  sprintf(msgStr, "ESPEED32 v%d.%d", SW_MAJOR_VERSION, SW_MINOR_VERSION);  //print SW version
+  snprintf(msgStr, sizeof(msgStr), "ESPEED32 v%d.%d", SW_MAJOR_VERSION, SW_MINOR_VERSION);  //print SW version
   obdWriteString(&g_obd, 0, 8, 0, msgStr, FONT_8x8, OBD_BLACK, 1);
   obdWriteString(&g_obd, 0, (OLED_WIDTH / 2) - 48, 1 * HEIGHT8x8, (char *)"Release button", FONT_8x8, OBD_BLACK, 1);
   obdWriteString(&g_obd, 0, (OLED_WIDTH / 2) - 48, 2 * HEIGHT8x8, (char *)"to calibrate", FONT_8x8, OBD_BLACK, 1);
@@ -1400,7 +1400,7 @@ void showScreenPreCalibration()
  */
 void showScreenNoEEPROM()
 {
-  sprintf(msgStr, "ESPEED32 v%d.%d", SW_MAJOR_VERSION, SW_MINOR_VERSION);  //print SW version
+  snprintf(msgStr, sizeof(msgStr), "ESPEED32 v%d.%d", SW_MAJOR_VERSION, SW_MINOR_VERSION);  //print SW version
   obdWriteString(&g_obd, 0, 0, 0, msgStr, FONT_8x8, OBD_WHITE, 1);
   obdWriteString(&g_obd, 0, (OLED_WIDTH / 2) - 64, 3 * HEIGHT8x8, (char *)"EEPROM NOT init!", FONT_8x8, OBD_BLACK, 1);
   obdWriteString(&g_obd, 0, (OLED_WIDTH / 2) - 48, 5 * HEIGHT8x8, (char *)"Press button", FONT_8x8, OBD_BLACK, 1);
@@ -1432,23 +1432,23 @@ void showTriggerSensorFaultWarning()
  */
 void showScreenCalibration(int16_t adcRaw)
 {
-  sprintf(msgStr, "%s", STR_CALIBRATION[g_storedVar.language]);
+  snprintf(msgStr, sizeof(msgStr), "%s", STR_CALIBRATION[g_storedVar.language]);
   int calWidth = strlen(msgStr) * 6;
   obdWriteString(&g_obd, 0, (OLED_WIDTH - calWidth) / 2, 0, msgStr, FONT_6x8, OBD_WHITE, 1);
 
-  sprintf(msgStr, "%s", STR_PRESS_RELEASE[g_storedVar.language]);
+  snprintf(msgStr, sizeof(msgStr), "%s", STR_PRESS_RELEASE[g_storedVar.language]);
   obdWriteString(&g_obd, 0, 0, 8, msgStr, FONT_6x8, OBD_BLACK, 1);
 
-  sprintf(msgStr, "Raw throttle %4d  ", adcRaw);
+  snprintf(msgStr, sizeof(msgStr), "Raw throttle %4d  ", adcRaw);
   obdWriteString(&g_obd, 0, 0, 24, msgStr, FONT_6x8, OBD_BLACK, 1);
 
-  sprintf(msgStr, "Min throttle %4d   ", g_storedVar.minTrigger_raw);
+  snprintf(msgStr, sizeof(msgStr), "Min throttle %4d   ", g_storedVar.minTrigger_raw);
   obdWriteString(&g_obd, 0, 0, 32, msgStr, FONT_6x8, OBD_BLACK, 1);
 
-  sprintf(msgStr, "Max throttle %4d   ", g_storedVar.maxTrigger_raw);
+  snprintf(msgStr, sizeof(msgStr), "Max throttle %4d   ", g_storedVar.maxTrigger_raw);
   obdWriteString(&g_obd, 0, 0, 40, msgStr, FONT_6x8, OBD_BLACK, 1);
 
-  sprintf(msgStr, "%s", STR_PUSH_DONE[g_storedVar.language]);
+  snprintf(msgStr, sizeof(msgStr), "%s", STR_PUSH_DONE[g_storedVar.language]);
   obdWriteString(&g_obd, 0, 0, 56, msgStr, FONT_6x8, OBD_BLACK, 1);
 }
 

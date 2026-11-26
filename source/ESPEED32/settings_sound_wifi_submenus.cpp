@@ -149,7 +149,7 @@ void showSoundSettings() {
         /* Show ON/OFF value on right for BOOT (i=0) and RACE (i=1) */
         if (i < 2) {
           uint16_t state = (i == 0) ? g_storedVar.soundBoot : g_storedVar.soundRace;
-          sprintf(msgStr, "%3s", getOnOffLabel(lang, state));
+          snprintf(msgStr, sizeof(msgStr), "%3s", getOnOffLabel(lang, state));
           uint8_t vx = OLED_WIDTH - (uint8_t)(strlen(msgStr) * WIDTH8x8);
           obdWriteString(&g_obd, 0, vx, i * lineH, msgStr,
                          menuFont, isSelected ? OBD_WHITE : OBD_BLACK, 1);
@@ -565,7 +565,7 @@ void showLoggingSettings() {
       bool s0 = (!editing && sel == ITEM_ACTIVE);
       const char* actionStr = telemetryIsLoggingActive() ? lblStopNow[lang] : lblStartNow[lang];
       obdWriteString(&g_obd, 0, 0, 0 * lineH, (char*)actionStr, menuFont, s0 ? OBD_WHITE : OBD_BLACK, 1);
-      sprintf(msgStr, "%3s", getOnOffLabel(lang, telemetryIsLoggingActive() ? 1 : 0));
+      snprintf(msgStr, sizeof(msgStr), "%3s", getOnOffLabel(lang, telemetryIsLoggingActive() ? 1 : 0));
       uint8_t ax = OLED_WIDTH - (uint8_t)(strlen(msgStr) * WIDTH8x8);
       obdWriteString(&g_obd, 0, ax, 0 * lineH, msgStr, menuFont, s0 ? OBD_WHITE : OBD_BLACK, 1);
 

@@ -69,7 +69,7 @@ void initStoredVariables() {
     g_storedVar.carParam[i].quickBrakeEnabled = QUICK_BRAKE_ENABLED_DEFAULT;
     g_storedVar.carParam[i].quickBrakeThreshold = QUICK_BRAKE_THRESHOLD_DEFAULT;
     g_storedVar.carParam[i].quickBrakeStrength = QUICK_BRAKE_STRENGTH_DEFAULT;
-    sprintf(g_storedVar.carParam[i].carName, "CAR%d", i);
+    snprintf(g_storedVar.carParam[i].carName, sizeof(g_storedVar.carParam[i].carName), "CAR%d", i);
   }
   g_storedVar.selectedCarNumber = 0;
   g_storedVar.minTrigger_raw = 0;
@@ -124,108 +124,108 @@ void initMenuItems() {
   uint8_t lang = g_storedVar.language;
   /* Init menu items - using language-specific names */
 
-  sprintf(g_mainMenu.item[i].name, "%s", getMenuName(lang, 0));  /* BRAKE */
+  snprintf(g_mainMenu.item[i].name, sizeof(g_mainMenu.item[i].name), "%s", getMenuName(lang, 0));  /* BRAKE */
   g_mainMenu.item[i].value = (void *)&g_storedVar.carParam[g_carSel].brake;
   g_mainMenu.item[i].type = VALUE_TYPE_INTEGER;
-  sprintf(g_mainMenu.item[i].unit, "%%");
+  snprintf(g_mainMenu.item[i].unit, sizeof(g_mainMenu.item[i].unit), "%%");
   g_mainMenu.item[i].maxValue = BRAKE_MAX_VALUE;
   g_mainMenu.item[i].minValue = 0;
   g_mainMenu.item[i].callback = ITEM_NO_CALLBACK;
 
-  sprintf(g_mainMenu.item[++i].name, "%s", getMenuName(lang, 1));  /* SENSI */
+  snprintf(g_mainMenu.item[++i].name, sizeof(g_mainMenu.item[0].name), "%s", getMenuName(lang, 1));  /* SENSI */
   g_mainMenu.item[i].value = (void *)&g_storedVar.carParam[g_carSel].minSpeed;
   g_mainMenu.item[i].type = VALUE_TYPE_INTEGER;
-  sprintf(g_mainMenu.item[i].unit, "%%");
+  snprintf(g_mainMenu.item[i].unit, sizeof(g_mainMenu.item[i].unit), "%%");
   g_mainMenu.item[i].maxValue = min(MIN_SPEED_MAX_VALUE, (int)g_storedVar.carParam[g_carSel].maxSpeed * SENSI_SCALE);
   g_mainMenu.item[i].minValue = 0;
   g_mainMenu.item[i].callback = ITEM_NO_CALLBACK;
 
-  sprintf(g_mainMenu.item[++i].name, "%s", getMenuName(lang, 2));  /* ANTIS */
+  snprintf(g_mainMenu.item[++i].name, sizeof(g_mainMenu.item[0].name), "%s", getMenuName(lang, 2));  /* ANTIS */
   g_mainMenu.item[i].value = (void *)&g_storedVar.carParam[g_carSel].antiSpin;
   g_mainMenu.item[i].type = VALUE_TYPE_INTEGER;
   if (g_antiSpinDisplayMode == ANTISPIN_UI_MODE_PERCENT) {
-    sprintf(g_mainMenu.item[i].unit, "%%");
+    snprintf(g_mainMenu.item[i].unit, sizeof(g_mainMenu.item[i].unit), "%%");
   } else if (g_antiSpinDisplayMode == ANTISPIN_UI_MODE_MS) {
-    sprintf(g_mainMenu.item[i].unit, "ms");
+    snprintf(g_mainMenu.item[i].unit, sizeof(g_mainMenu.item[i].unit), "ms");
   } else {
-    sprintf(g_mainMenu.item[i].unit, "");
+    snprintf(g_mainMenu.item[i].unit, sizeof(g_mainMenu.item[i].unit), "");
   }
   g_mainMenu.item[i].maxValue = antiSpinUiMaxValue(g_antiSpinDisplayMode);
   g_mainMenu.item[i].minValue = 0;
   g_mainMenu.item[i].callback = ITEM_NO_CALLBACK;
 
-  sprintf(g_mainMenu.item[++i].name, "%s", getMenuName(lang, 3));  /* CURVE */
+  snprintf(g_mainMenu.item[++i].name, sizeof(g_mainMenu.item[0].name), "%s", getMenuName(lang, 3));  /* CURVE */
   g_mainMenu.item[i].value = (void *)&g_storedVar.carParam[g_carSel].throttleCurveVertex.curveSpeedDiff;
   g_mainMenu.item[i].type = VALUE_TYPE_INTEGER;
-  sprintf(g_mainMenu.item[i].unit, "%%");
+  snprintf(g_mainMenu.item[i].unit, sizeof(g_mainMenu.item[i].unit), "%%");
   g_mainMenu.item[i].maxValue = THROTTLE_CURVE_SPEED_DIFF_MAX_VALUE;
   g_mainMenu.item[i].minValue = THROTTLE_CURVE_SPEED_DIFF_MIN_VALUE;
   g_mainMenu.item[i].callback = &showCurveSelection;
 
   if (g_advancedMenuEnabled) {
-    sprintf(g_mainMenu.item[++i].name, "%s", getMenuName(lang, 4));  /* FADE */
+    snprintf(g_mainMenu.item[++i].name, sizeof(g_mainMenu.item[0].name), "%s", getMenuName(lang, 4));  /* FADE */
     g_mainMenu.item[i].value = (void *)&g_storedVar.carParam[g_carSel].fade;
     g_mainMenu.item[i].type = VALUE_TYPE_INTEGER;
-    sprintf(g_mainMenu.item[i].unit, "%%");
+    snprintf(g_mainMenu.item[i].unit, sizeof(g_mainMenu.item[i].unit), "%%");
     g_mainMenu.item[i].maxValue = FADE_MAX_VALUE;
     g_mainMenu.item[i].minValue = 0;
     g_mainMenu.item[i].callback = &showFadeSelection;
 
-    sprintf(g_mainMenu.item[++i].name, "%s", getMenuName(lang, 5));  /* PWM_F */
+    snprintf(g_mainMenu.item[++i].name, sizeof(g_mainMenu.item[0].name), "%s", getMenuName(lang, 5));  /* PWM_F */
     g_mainMenu.item[i].value = (void *)&g_storedVar.carParam[g_carSel].freqPWM;
     g_mainMenu.item[i].type = VALUE_TYPE_DECIMAL;
-    sprintf(g_mainMenu.item[i].unit, "k");
+    snprintf(g_mainMenu.item[i].unit, sizeof(g_mainMenu.item[i].unit), "k");
     g_mainMenu.item[i].maxValue = getConfiguredPwmFreqMaxRaw();
     g_mainMenu.item[i].minValue = FREQ_MIN_VALUE / 100;
     g_mainMenu.item[i].decimalPoint = 1;
     g_mainMenu.item[i].callback = ITEM_NO_CALLBACK;
 
-    sprintf(g_mainMenu.item[++i].name, "%s", getMenuName(lang, 6));  /* BRAKE+ submenu */
+    snprintf(g_mainMenu.item[++i].name, sizeof(g_mainMenu.item[0].name), "%s", getMenuName(lang, 6));  /* BRAKE+ submenu */
     g_mainMenu.item[i].value = ITEM_NO_VALUE;
     g_mainMenu.item[i].type = VALUE_TYPE_INTEGER;
-    sprintf(g_mainMenu.item[i].unit, "");
+    snprintf(g_mainMenu.item[i].unit, sizeof(g_mainMenu.item[i].unit), "");
     g_mainMenu.item[i].maxValue = 0;
     g_mainMenu.item[i].minValue = 0;
     g_mainMenu.item[i].callback = &showAdvancedBrakeMenu;
   }
 
-  sprintf(g_mainMenu.item[++i].name, "%s", getMenuName(lang, 7));  /* LIMIT */
+  snprintf(g_mainMenu.item[++i].name, sizeof(g_mainMenu.item[0].name), "%s", getMenuName(lang, 7));  /* LIMIT */
   g_mainMenu.item[i].value = (void *)&g_storedVar.carParam[g_carSel].maxSpeed;
   g_mainMenu.item[i].type = VALUE_TYPE_INTEGER;
-  sprintf(g_mainMenu.item[i].unit, "%%");
+  snprintf(g_mainMenu.item[i].unit, sizeof(g_mainMenu.item[i].unit), "%%");
   g_mainMenu.item[i].maxValue = MAX_SPEED_DEFAULT;
   g_mainMenu.item[i].minValue = max(5, (int)sensiToWholePctCeil(g_storedVar.carParam[g_carSel].minSpeed) + 5);
   g_mainMenu.item[i].callback = ITEM_NO_CALLBACK;
 
-  sprintf(g_mainMenu.item[++i].name, "%s", getMenuName(lang, 8));  /* SETTINGS */
+  snprintf(g_mainMenu.item[++i].name, sizeof(g_mainMenu.item[0].name), "%s", getMenuName(lang, 8));  /* SETTINGS */
   g_mainMenu.item[i].value = ITEM_NO_VALUE;
   g_mainMenu.item[i].type = VALUE_TYPE_INTEGER;
-  sprintf(g_mainMenu.item[i].unit, "");
+  snprintf(g_mainMenu.item[i].unit, sizeof(g_mainMenu.item[i].unit), "");
   g_mainMenu.item[i].maxValue = 0;
   g_mainMenu.item[i].minValue = 0;
   g_mainMenu.item[i].callback = &showSettingsMenu;
 
   if (g_statsEnabled) {
-    sprintf(g_mainMenu.item[++i].name, "%s", getMenuName(lang, 9));  /* STATS */
+    snprintf(g_mainMenu.item[++i].name, sizeof(g_mainMenu.item[0].name), "%s", getMenuName(lang, 9));  /* STATS */
     g_mainMenu.item[i].value = ITEM_NO_VALUE;
     g_mainMenu.item[i].type = VALUE_TYPE_INTEGER;
-    sprintf(g_mainMenu.item[i].unit, "");
+    snprintf(g_mainMenu.item[i].unit, sizeof(g_mainMenu.item[i].unit), "");
     g_mainMenu.item[i].maxValue = 0;
     g_mainMenu.item[i].minValue = 0;
     g_mainMenu.item[i].callback = &showLapStats;
   }
 
   if (g_storedVar.lockMenuEnabled) {
-    sprintf(g_mainMenu.item[++i].name, "%s", getMenuName(lang, 10));  /* LOCK */
+    snprintf(g_mainMenu.item[++i].name, sizeof(g_mainMenu.item[0].name), "%s", getMenuName(lang, 10));  /* LOCK */
     g_mainMenu.item[i].value = ITEM_NO_VALUE;
     g_mainMenu.item[i].type = VALUE_TYPE_INTEGER;
-    sprintf(g_mainMenu.item[i].unit, "");
+    snprintf(g_mainMenu.item[i].unit, sizeof(g_mainMenu.item[i].unit), "");
     g_mainMenu.item[i].maxValue = 0;
     g_mainMenu.item[i].minValue = 0;
     g_mainMenu.item[i].callback = &toggleSettingsLock;
   }
 
-  sprintf(g_mainMenu.item[++i].name, "%s", getMenuName(lang, 11));  /* CAR or BIL */
+  snprintf(g_mainMenu.item[++i].name, sizeof(g_mainMenu.item[0].name), "%s", getMenuName(lang, 11));  /* CAR or BIL */
   g_mainMenu.item[i].value = (void *)&g_storedVar.carParam[g_carSel].carName;
   g_mainMenu.item[i].type = VALUE_TYPE_STRING;
   g_mainMenu.item[i].maxValue = CAR_MAX_COUNT - 1;  // so menu will scroll in the array (CAR_MAX_COUNT long)
@@ -235,7 +235,7 @@ void initMenuItems() {
   /* Init Car selection menu items */
   for (uint8_t j = 0; j < CAR_MAX_COUNT; j++)
   {
-    sprintf(g_carMenu.item[j].name, (const char *)g_storedVar.carParam[j].carName);
+    snprintf(g_carMenu.item[j].name, sizeof(g_carMenu.item[j].name), (const char *)g_storedVar.carParam[j].carName);
     g_carMenu.item[j].value = (void *)&g_storedVar.carParam[j].carNumber;
   }
 }
@@ -247,98 +247,98 @@ void initSettingsMenuItems() {
   int i = 0;
   uint8_t lang = g_storedVar.language;
 
-  sprintf(g_settingsMenu.item[i].name, "%s", getSettingsMenuName(lang, 0));  /* POWER - opens submenu */
+  snprintf(g_settingsMenu.item[i].name, sizeof(g_settingsMenu.item[i].name), "%s", getSettingsMenuName(lang, 0));  /* POWER - opens submenu */
   g_settingsMenu.item[i].value = ITEM_NO_VALUE;
   g_settingsMenu.item[i].type = VALUE_TYPE_INTEGER;
-  sprintf(g_settingsMenu.item[i].unit, "");
+  snprintf(g_settingsMenu.item[i].unit, sizeof(g_settingsMenu.item[i].unit), "");
   g_settingsMenu.item[i].maxValue = 0;
   g_settingsMenu.item[i].minValue = 0;
   g_settingsMenu.item[i].callback = ITEM_NO_CALLBACK;
 
-  sprintf(g_settingsMenu.item[++i].name, "%s", getSettingsMenuName(lang, 1));  /* DISPLAY - opens submenu */
+  snprintf(g_settingsMenu.item[++i].name, sizeof(g_settingsMenu.item[0].name), "%s", getSettingsMenuName(lang, 1));  /* DISPLAY - opens submenu */
   g_settingsMenu.item[i].value = ITEM_NO_VALUE;
   g_settingsMenu.item[i].type = VALUE_TYPE_INTEGER;
-  sprintf(g_settingsMenu.item[i].unit, "");
+  snprintf(g_settingsMenu.item[i].unit, sizeof(g_settingsMenu.item[i].unit), "");
   g_settingsMenu.item[i].maxValue = 0;
   g_settingsMenu.item[i].minValue = 0;
   g_settingsMenu.item[i].callback = ITEM_NO_CALLBACK;
 
-  sprintf(g_settingsMenu.item[++i].name, "%s", getSettingsMenuName(lang, 2));  /* SOUND - opens submenu */
+  snprintf(g_settingsMenu.item[++i].name, sizeof(g_settingsMenu.item[0].name), "%s", getSettingsMenuName(lang, 2));  /* SOUND - opens submenu */
   g_settingsMenu.item[i].value = ITEM_NO_VALUE;
   g_settingsMenu.item[i].type = VALUE_TYPE_INTEGER;
-  sprintf(g_settingsMenu.item[i].unit, "");
+  snprintf(g_settingsMenu.item[i].unit, sizeof(g_settingsMenu.item[i].unit), "");
   g_settingsMenu.item[i].maxValue = 0;
   g_settingsMenu.item[i].minValue = 0;
   g_settingsMenu.item[i].callback = ITEM_NO_CALLBACK;
 
-  sprintf(g_settingsMenu.item[++i].name, "%s", getSettingsMenuName(lang, 3));  /* HARDWARE */
+  snprintf(g_settingsMenu.item[++i].name, sizeof(g_settingsMenu.item[0].name), "%s", getSettingsMenuName(lang, 3));  /* HARDWARE */
   g_settingsMenu.item[i].value = ITEM_NO_VALUE;
   g_settingsMenu.item[i].type = VALUE_TYPE_INTEGER;
-  sprintf(g_settingsMenu.item[i].unit, "");
+  snprintf(g_settingsMenu.item[i].unit, sizeof(g_settingsMenu.item[i].unit), "");
   g_settingsMenu.item[i].maxValue = 0;
   g_settingsMenu.item[i].minValue = 0;
   g_settingsMenu.item[i].callback = ITEM_NO_CALLBACK;
 
-  sprintf(g_settingsMenu.item[++i].name, "%s", getSettingsMenuName(lang, 4));  /* STATS */
+  snprintf(g_settingsMenu.item[++i].name, sizeof(g_settingsMenu.item[0].name), "%s", getSettingsMenuName(lang, 4));  /* STATS */
   g_settingsMenu.item[i].value = (void *)&g_statsEnabled;
   g_settingsMenu.item[i].type = VALUE_TYPE_STRING;
-  sprintf(g_settingsMenu.item[i].unit, "");
+  snprintf(g_settingsMenu.item[i].unit, sizeof(g_settingsMenu.item[i].unit), "");
   g_settingsMenu.item[i].maxValue = 1;
   g_settingsMenu.item[i].minValue = 0;
   g_settingsMenu.item[i].callback = ITEM_NO_CALLBACK;
 
-  sprintf(g_settingsMenu.item[++i].name, "%s", getSettingsMenuName(lang, 5));  /* WIFI */
+  snprintf(g_settingsMenu.item[++i].name, sizeof(g_settingsMenu.item[0].name), "%s", getSettingsMenuName(lang, 5));  /* WIFI */
   g_settingsMenu.item[i].value = ITEM_NO_VALUE;
   g_settingsMenu.item[i].type = VALUE_TYPE_STRING;
-  sprintf(g_settingsMenu.item[i].unit, "");
+  snprintf(g_settingsMenu.item[i].unit, sizeof(g_settingsMenu.item[i].unit), "");
   g_settingsMenu.item[i].maxValue = 0;
   g_settingsMenu.item[i].minValue = 0;
   g_settingsMenu.item[i].callback = ITEM_NO_CALLBACK;
 
-  sprintf(g_settingsMenu.item[++i].name, "%s", getSettingsMenuName(lang, 6));  /* LOGGING */
+  snprintf(g_settingsMenu.item[++i].name, sizeof(g_settingsMenu.item[0].name), "%s", getSettingsMenuName(lang, 6));  /* LOGGING */
   g_settingsMenu.item[i].value = ITEM_NO_VALUE;
   g_settingsMenu.item[i].type = VALUE_TYPE_STRING;
-  sprintf(g_settingsMenu.item[i].unit, "");
+  snprintf(g_settingsMenu.item[i].unit, sizeof(g_settingsMenu.item[i].unit), "");
   g_settingsMenu.item[i].maxValue = 0;
   g_settingsMenu.item[i].minValue = 0;
   g_settingsMenu.item[i].callback = ITEM_NO_CALLBACK;
 
-  sprintf(g_settingsMenu.item[++i].name, "%s", getSettingsMenuName(lang, 7));  /* LOCK - opens submenu */
+  snprintf(g_settingsMenu.item[++i].name, sizeof(g_settingsMenu.item[0].name), "%s", getSettingsMenuName(lang, 7));  /* LOCK - opens submenu */
   g_settingsMenu.item[i].value = ITEM_NO_VALUE;
   g_settingsMenu.item[i].type = VALUE_TYPE_INTEGER;
-  sprintf(g_settingsMenu.item[i].unit, "");
+  snprintf(g_settingsMenu.item[i].unit, sizeof(g_settingsMenu.item[i].unit), "");
   g_settingsMenu.item[i].maxValue = 0;
   g_settingsMenu.item[i].minValue = 0;
   g_settingsMenu.item[i].callback = ITEM_NO_CALLBACK;
 
-  sprintf(g_settingsMenu.item[++i].name, "%s", getSettingsMenuName(lang, 8));  /* USB */
+  snprintf(g_settingsMenu.item[++i].name, sizeof(g_settingsMenu.item[0].name), "%s", getSettingsMenuName(lang, 8));  /* USB */
   g_settingsMenu.item[i].value = ITEM_NO_VALUE;
   g_settingsMenu.item[i].type = VALUE_TYPE_INTEGER;
-  sprintf(g_settingsMenu.item[i].unit, "");
+  snprintf(g_settingsMenu.item[i].unit, sizeof(g_settingsMenu.item[i].unit), "");
   g_settingsMenu.item[i].maxValue = 0;
   g_settingsMenu.item[i].minValue = 0;
   g_settingsMenu.item[i].callback = ITEM_NO_CALLBACK;
 
-  sprintf(g_settingsMenu.item[++i].name, "%s", getSettingsMenuName(lang, 9));  /* RESET */
+  snprintf(g_settingsMenu.item[++i].name, sizeof(g_settingsMenu.item[0].name), "%s", getSettingsMenuName(lang, 9));  /* RESET */
   g_settingsMenu.item[i].value = ITEM_NO_VALUE;
   g_settingsMenu.item[i].type = VALUE_TYPE_INTEGER;
-  sprintf(g_settingsMenu.item[i].unit, "");
+  snprintf(g_settingsMenu.item[i].unit, sizeof(g_settingsMenu.item[i].unit), "");
   g_settingsMenu.item[i].maxValue = 0;
   g_settingsMenu.item[i].minValue = 0;
   g_settingsMenu.item[i].callback = ITEM_NO_CALLBACK;
 
-  sprintf(g_settingsMenu.item[++i].name, "%s", getSettingsMenuName(lang, 10));  /* ABOUT/INFO */
+  snprintf(g_settingsMenu.item[++i].name, sizeof(g_settingsMenu.item[0].name), "%s", getSettingsMenuName(lang, 10));  /* ABOUT/INFO */
   g_settingsMenu.item[i].value = ITEM_NO_VALUE;
   g_settingsMenu.item[i].type = VALUE_TYPE_INTEGER;
-  sprintf(g_settingsMenu.item[i].unit, "");
+  snprintf(g_settingsMenu.item[i].unit, sizeof(g_settingsMenu.item[i].unit), "");
   g_settingsMenu.item[i].maxValue = 0;
   g_settingsMenu.item[i].minValue = 0;
   g_settingsMenu.item[i].callback = ITEM_NO_CALLBACK;
 
-  sprintf(g_settingsMenu.item[++i].name, "%s", getSettingsMenuName(lang, 11));  /* BACK */
+  snprintf(g_settingsMenu.item[++i].name, sizeof(g_settingsMenu.item[0].name), "%s", getSettingsMenuName(lang, 11));  /* BACK */
   g_settingsMenu.item[i].value = ITEM_NO_VALUE;
   g_settingsMenu.item[i].type = VALUE_TYPE_STRING;
-  sprintf(g_settingsMenu.item[i].unit, "");
+  snprintf(g_settingsMenu.item[i].unit, sizeof(g_settingsMenu.item[i].unit), "");
   g_settingsMenu.item[i].maxValue = 0;
   g_settingsMenu.item[i].minValue = 0;
   g_settingsMenu.item[i].callback = ITEM_NO_CALLBACK;
@@ -348,66 +348,66 @@ void initDisplayMenuItems() {
   int i = 0;
   uint8_t lang = g_storedVar.language;
 
-  sprintf(g_settingsMenu.item[i].name, "%s", getDisplayMenuName(lang, 0));  /* VIEW */
+  snprintf(g_settingsMenu.item[i].name, sizeof(g_settingsMenu.item[i].name), "%s", getDisplayMenuName(lang, 0));  /* VIEW */
   g_settingsMenu.item[i].value = (void *)&g_storedVar.raceViewMode;
   g_settingsMenu.item[i].type = VALUE_TYPE_STRING;
-  sprintf(g_settingsMenu.item[i].unit, "");
+  snprintf(g_settingsMenu.item[i].unit, sizeof(g_settingsMenu.item[i].unit), "");
   g_settingsMenu.item[i].maxValue = RACE_VIEW_SIMPLE;
   g_settingsMenu.item[i].minValue = RACE_VIEW_OFF;
   g_settingsMenu.item[i].callback = ITEM_NO_CALLBACK;
 
-  sprintf(g_settingsMenu.item[++i].name, "%s", getDisplayMenuName(lang, 1));  /* LANG */
+  snprintf(g_settingsMenu.item[++i].name, sizeof(g_settingsMenu.item[0].name), "%s", getDisplayMenuName(lang, 1));  /* LANG */
   g_settingsMenu.item[i].value = (void *)&g_storedVar.language;
   g_settingsMenu.item[i].type = VALUE_TYPE_STRING;
-  sprintf(g_settingsMenu.item[i].unit, "");
+  snprintf(g_settingsMenu.item[i].unit, sizeof(g_settingsMenu.item[i].unit), "");
   g_settingsMenu.item[i].maxValue = LANG_MAX;
   g_settingsMenu.item[i].minValue = LANG_NOR;
   g_settingsMenu.item[i].callback = ITEM_NO_CALLBACK;
 
-  sprintf(g_settingsMenu.item[++i].name, "%s", getDisplayMenuName(lang, 2));  /* CASE */
+  snprintf(g_settingsMenu.item[++i].name, sizeof(g_settingsMenu.item[0].name), "%s", getDisplayMenuName(lang, 2));  /* CASE */
   g_settingsMenu.item[i].value = (void *)&g_storedVar.textCase;
   g_settingsMenu.item[i].type = VALUE_TYPE_STRING;
-  sprintf(g_settingsMenu.item[i].unit, "");
+  snprintf(g_settingsMenu.item[i].unit, sizeof(g_settingsMenu.item[i].unit), "");
   g_settingsMenu.item[i].maxValue = TEXT_CASE_PASCAL;
   g_settingsMenu.item[i].minValue = TEXT_CASE_UPPER;
   g_settingsMenu.item[i].callback = ITEM_NO_CALLBACK;
 
-  sprintf(g_settingsMenu.item[++i].name, "%s", getDisplayMenuName(lang, 3));  /* FSIZE */
+  snprintf(g_settingsMenu.item[++i].name, sizeof(g_settingsMenu.item[0].name), "%s", getDisplayMenuName(lang, 3));  /* FSIZE */
   g_settingsMenu.item[i].value = (void *)&g_storedVar.listFontSize;
   g_settingsMenu.item[i].type = VALUE_TYPE_STRING;
-  sprintf(g_settingsMenu.item[i].unit, "");
+  snprintf(g_settingsMenu.item[i].unit, sizeof(g_settingsMenu.item[i].unit), "");
   g_settingsMenu.item[i].maxValue = FONT_SIZE_SMALL;
   g_settingsMenu.item[i].minValue = FONT_SIZE_LARGE;
   g_settingsMenu.item[i].callback = ITEM_NO_CALLBACK;
 
-  sprintf(g_settingsMenu.item[++i].name, "%s", getDisplayMenuName(lang, DISPLAY_ITEM_ADVANCED_IDX));  /* ADVANCED */
+  snprintf(g_settingsMenu.item[++i].name, sizeof(g_settingsMenu.item[0].name), "%s", getDisplayMenuName(lang, DISPLAY_ITEM_ADVANCED_IDX));  /* ADVANCED */
   g_settingsMenu.item[i].value = (void *)&g_advancedMenuEnabled;
   g_settingsMenu.item[i].type = VALUE_TYPE_STRING;
-  sprintf(g_settingsMenu.item[i].unit, "");
+  snprintf(g_settingsMenu.item[i].unit, sizeof(g_settingsMenu.item[i].unit), "");
   g_settingsMenu.item[i].maxValue = 1;
   g_settingsMenu.item[i].minValue = 0;
   g_settingsMenu.item[i].callback = ITEM_NO_CALLBACK;
 
-  sprintf(g_settingsMenu.item[++i].name, "%s", getDisplayMenuName(lang, DISPLAY_ITEM_STEPS_IDX));  /* STEPS - opens submenu */
+  snprintf(g_settingsMenu.item[++i].name, sizeof(g_settingsMenu.item[0].name), "%s", getDisplayMenuName(lang, DISPLAY_ITEM_STEPS_IDX));  /* STEPS - opens submenu */
   g_settingsMenu.item[i].value = ITEM_NO_VALUE;
   g_settingsMenu.item[i].type = VALUE_TYPE_INTEGER;
-  sprintf(g_settingsMenu.item[i].unit, "");
+  snprintf(g_settingsMenu.item[i].unit, sizeof(g_settingsMenu.item[i].unit), "");
   g_settingsMenu.item[i].maxValue = 0;
   g_settingsMenu.item[i].minValue = 0;
   g_settingsMenu.item[i].callback = ITEM_NO_CALLBACK;
 
-  sprintf(g_settingsMenu.item[++i].name, "%s", getDisplayMenuName(lang, DISPLAY_ITEM_STATUS_IDX));  /* STATUS - opens submenu */
+  snprintf(g_settingsMenu.item[++i].name, sizeof(g_settingsMenu.item[0].name), "%s", getDisplayMenuName(lang, DISPLAY_ITEM_STATUS_IDX));  /* STATUS - opens submenu */
   g_settingsMenu.item[i].value = ITEM_NO_VALUE;
   g_settingsMenu.item[i].type = VALUE_TYPE_INTEGER;
-  sprintf(g_settingsMenu.item[i].unit, "");
+  snprintf(g_settingsMenu.item[i].unit, sizeof(g_settingsMenu.item[i].unit), "");
   g_settingsMenu.item[i].maxValue = 0;
   g_settingsMenu.item[i].minValue = 0;
   g_settingsMenu.item[i].callback = ITEM_NO_CALLBACK;
 
-  sprintf(g_settingsMenu.item[++i].name, "%s", getDisplayMenuName(lang, DISPLAY_ITEM_BACK_IDX));  /* BACK */
+  snprintf(g_settingsMenu.item[++i].name, sizeof(g_settingsMenu.item[0].name), "%s", getDisplayMenuName(lang, DISPLAY_ITEM_BACK_IDX));  /* BACK */
   g_settingsMenu.item[i].value = ITEM_NO_VALUE;
   g_settingsMenu.item[i].type = VALUE_TYPE_STRING;
-  sprintf(g_settingsMenu.item[i].unit, "");
+  snprintf(g_settingsMenu.item[i].unit, sizeof(g_settingsMenu.item[i].unit), "");
   g_settingsMenu.item[i].maxValue = 0;
   g_settingsMenu.item[i].minValue = 0;
   g_settingsMenu.item[i].callback = ITEM_NO_CALLBACK;
@@ -417,34 +417,34 @@ void initStepsMenuItems() {
   int i = 0;
   uint8_t lang = g_storedVar.language;
 
-  sprintf(g_settingsMenu.item[i].name, "%s", getStepsMenuName(lang, 0));  /* ANTISPIN - opens submenu */
+  snprintf(g_settingsMenu.item[i].name, sizeof(g_settingsMenu.item[i].name), "%s", getStepsMenuName(lang, 0));  /* ANTISPIN - opens submenu */
   g_settingsMenu.item[i].value = ITEM_NO_VALUE;
   g_settingsMenu.item[i].type = VALUE_TYPE_INTEGER;
-  sprintf(g_settingsMenu.item[i].unit, "");
+  snprintf(g_settingsMenu.item[i].unit, sizeof(g_settingsMenu.item[i].unit), "");
   g_settingsMenu.item[i].maxValue = 0;
   g_settingsMenu.item[i].minValue = 0;
   g_settingsMenu.item[i].callback = ITEM_NO_CALLBACK;
 
-  sprintf(g_settingsMenu.item[++i].name, "%s", getStepsMenuName(lang, 1));  /* BRAKE STEP */
+  snprintf(g_settingsMenu.item[++i].name, sizeof(g_settingsMenu.item[0].name), "%s", getStepsMenuName(lang, 1));  /* BRAKE STEP */
   g_settingsMenu.item[i].value = (void *)&g_brakeStep;
   g_settingsMenu.item[i].type = VALUE_TYPE_INTEGER;
-  sprintf(g_settingsMenu.item[i].unit, "");
+  snprintf(g_settingsMenu.item[i].unit, sizeof(g_settingsMenu.item[i].unit), "");
   g_settingsMenu.item[i].maxValue = BRAKE_STEP_MAX;
   g_settingsMenu.item[i].minValue = BRAKE_STEP_MIN;
   g_settingsMenu.item[i].callback = ITEM_NO_CALLBACK;
 
-  sprintf(g_settingsMenu.item[++i].name, "%s", getStepsMenuName(lang, 2));  /* SENSI STEP */
+  snprintf(g_settingsMenu.item[++i].name, sizeof(g_settingsMenu.item[0].name), "%s", getStepsMenuName(lang, 2));  /* SENSI STEP */
   g_settingsMenu.item[i].value = (void *)&g_sensiStep;
   g_settingsMenu.item[i].type = VALUE_TYPE_INTEGER;
-  sprintf(g_settingsMenu.item[i].unit, "");
+  snprintf(g_settingsMenu.item[i].unit, sizeof(g_settingsMenu.item[i].unit), "");
   g_settingsMenu.item[i].maxValue = SENSI_STEP_MAX;
   g_settingsMenu.item[i].minValue = SENSI_STEP_MIN;
   g_settingsMenu.item[i].callback = ITEM_NO_CALLBACK;
 
-  sprintf(g_settingsMenu.item[++i].name, "%s", getStepsMenuName(lang, 3));  /* BACK */
+  snprintf(g_settingsMenu.item[++i].name, sizeof(g_settingsMenu.item[0].name), "%s", getStepsMenuName(lang, 3));  /* BACK */
   g_settingsMenu.item[i].value = ITEM_NO_VALUE;
   g_settingsMenu.item[i].type = VALUE_TYPE_STRING;
-  sprintf(g_settingsMenu.item[i].unit, "");
+  snprintf(g_settingsMenu.item[i].unit, sizeof(g_settingsMenu.item[i].unit), "");
   g_settingsMenu.item[i].maxValue = 0;
   g_settingsMenu.item[i].minValue = 0;
   g_settingsMenu.item[i].callback = ITEM_NO_CALLBACK;

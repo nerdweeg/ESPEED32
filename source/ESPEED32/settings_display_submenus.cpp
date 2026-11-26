@@ -142,7 +142,7 @@ static void editScreensaverText(char* text, const char* title) {
 
     /* Draw all 21 text characters - selected char inverted */
     for (uint8_t c = 0; c < TEXT_COLS; c++) {
-      sprintf(msgStr, "%c", tmpText[c]);
+      snprintf(msgStr, sizeof(msgStr), "%c", tmpText[c]);
       bool isCursor = (editMode == RENAME_CAR_SELECT_OPTION_MODE && cursorPos == c);
       obdWriteString(&g_obd, 0, c * 6, 16, msgStr, FONT_6x8, isCursor ? OBD_WHITE : OBD_BLACK, 1);
     }
@@ -327,9 +327,9 @@ void showScreensaverSettings() {
         } else if (idx == 3) {
           /* TIME: show current timeout, right-justified (4 chars × 6px = 24px from right) */
           if (g_storedVar.screensaverTimeout == 0) {
-            sprintf(msgStr, "%4s", getOnOffLabel(lang, 0));
+            snprintf(msgStr, sizeof(msgStr), "%4s", getOnOffLabel(lang, 0));
           } else {
-            sprintf(msgStr, "%3ds", g_storedVar.screensaverTimeout);
+            snprintf(msgStr, sizeof(msgStr), "%3ds", g_storedVar.screensaverTimeout);
           }
           obdWriteString(&g_obd, 0, OLED_WIDTH - 24, yPx, msgStr, FONT_6x8,
                          isEditingThis ? OBD_WHITE : OBD_BLACK, 1);

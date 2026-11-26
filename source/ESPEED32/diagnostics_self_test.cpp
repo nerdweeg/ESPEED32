@@ -12,7 +12,7 @@ static constexpr uint16_t SELFTEST_VIN_MIN_MV = 2500;          /* [mV] Minimum s
 static void selfTestStep(uint8_t step, uint8_t total, const char* name) {
   obdFill(&g_obd, OBD_WHITE, 1);
   char hdr[22];
-  sprintf(hdr, "Self-Test   %d/%d", step, total);
+  snprintf(hdr, sizeof(hdr), "Self-Test   %d/%d", step, total);
   obdWriteString(&g_obd, 0, 0, 0 * HEIGHT8x8, hdr, FONT_6x8, OBD_BLACK, 1);
   obdWriteString(&g_obd, 0, 0, 1 * HEIGHT8x8, (char*)name, FONT_8x8, OBD_BLACK, 1);
 }
@@ -116,7 +116,7 @@ void showSelfTest() {
   while (abs(encPeak) < 3) {
     int16_t pos = (int16_t)readUiEncoder();
     if (abs(pos) > abs(encPeak)) encPeak = pos;
-    sprintf(line, "Clicks: %+d      ", pos);
+    snprintf(line, sizeof(line), "Clicks: %+d      ", pos);
     obdWriteString(&g_obd, 0, 0, 6 * HEIGHT8x8, line, FONT_6x8, OBD_BLACK, 1);
     vTaskDelay(10);
   }
@@ -155,7 +155,7 @@ void showSelfTest() {
     int16_t delta = abs(raw - trigBase);
     if (delta > trigPeak) trigPeak = delta;
     uint8_t secLeft = (uint8_t)((15000 - (millis() - trigStart_ms)) / 1000);
-    sprintf(line, "d:%4d  %2ds left ", trigPeak, secLeft);
+    snprintf(line, sizeof(line), "d:%4d  %2ds left ", trigPeak, secLeft);
     obdWriteString(&g_obd, 0, 0, 6 * HEIGHT8x8, line, FONT_6x8, OBD_BLACK, 1);
     if (trigPeak > 200) { results[5] = true; break; }
     vTaskDelay(20);
@@ -206,8 +206,8 @@ void showSelfTest() {
   bool motorDiagOk = (HalfBridge_GetDiagnosis() == 0);  /* 0 = NO_ERROR */
   results[7] = hasCurrentSense ? (idleCurrent_mA < SELFTEST_IDLE_CURRENT_MAX_MA) : motorDiagOk;
 #endif
-  if (hasCurrentSense) sprintf(line, "Idle: %d mA", idleCurrent_mA);
-  else sprintf(line, "Idle: skipped");
+  if (hasCurrentSense) snprintf(line, sizeof(line), "Idle: %d mA", idleCurrent_mA);
+  else snprintf(line, sizeof(line), "Idle: skipped");
   obdWriteString(&g_obd, 0, 0, 6 * HEIGHT8x8, line, FONT_6x8, OBD_BLACK, 1);
   selfTestResult(results[7]);
   delay(3000);
@@ -216,9 +216,9 @@ void showSelfTest() {
   selfTestStep(9, TOTAL, "Voltage");
   uint16_t vin_mV = HAL_ReadVoltageDivider(AN_VIN_DIV, RVIFBL, RVIFBH);
   results[8] = vin_mV > SELFTEST_VIN_MIN_MV;
-  sprintf(line, "%d mV", vin_mV);
+  snprintf(line, sizeof(line), "%d mV", vin_mV);
   obdWriteString(&g_obd, 0, 0, 3 * HEIGHT8x8, line, FONT_8x8, OBD_BLACK, 1);
-  sprintf(line, results[8] ? "OK  (>%dmV)" : "LOW (<%dmV)", SELFTEST_VIN_MIN_MV);
+  snprintf(line, sizeof(line), results[8] ? "OK  (>%dmV)" : "LOW (<%dmV)", SELFTEST_VIN_MIN_MV);
   obdWriteString(&g_obd, 0, 0, 5 * HEIGHT8x8, line, FONT_6x8, OBD_BLACK, 1);
   selfTestResult(results[8], true);
   selfTestWaitEnc();
@@ -234,18 +234,18 @@ void showSelfTest() {
   uint8_t summaryPage = 0;
   auto drawSummary = [&](uint8_t page) {
     obdFill(&g_obd, OBD_WHITE, 1);
-    sprintf(line, "Summary %d/%d  (%d/2)", passCount, TOTAL, (int)(page + 1));
+    snprintf(line, sizeof(line), "Summary %d/%d  (%d/2)", passCount, TOTAL, (int)(page + 1));
     obdWriteString(&g_obd, 0, 0, 0, line, FONT_6x8, OBD_BLACK, 1);
 
     if (page == 0) {
       for (uint8_t i = 0; i < 5; i++) {
-        sprintf(line, "%-7s  %s", testNames[i], results[i] ? "PASS" : "FAIL");
+        snprintf(line, sizeof(line), "%-7s  %s", testNames[i], results[i] ? "PASS" : "FAIL");
         obdWriteString(&g_obd, 0, 0, (i + 1) * HEIGHT8x8, line, FONT_6x8, OBD_BLACK, 1);
       }
       obdWriteString(&g_obd, 0, 0, 7 * HEIGHT8x8, (char*)"turn=page enc>=next", FONT_6x8, OBD_BLACK, 1);
     } else {
       for (uint8_t i = 5; i < TOTAL; i++) {
-        sprintf(line, "%-7s  %s", testNames[i], results[i] ? "PASS" : "FAIL");
+        snprintf(line, sizeof(line), "%-7s  %s", testNames[i], results[i] ? "PASS" : "FAIL");
         obdWriteString(&g_obd, 0, 0, (i - 4) * HEIGHT8x8, line, FONT_6x8, OBD_BLACK, 1);
       }
       obdWriteString(&g_obd, 0, 0, 7 * HEIGHT8x8, (char*)"turn=page enc>=exit", FONT_6x8, OBD_BLACK, 1);

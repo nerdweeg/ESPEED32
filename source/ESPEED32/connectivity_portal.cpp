@@ -105,10 +105,10 @@ static void buildWifiSuffixIfNeeded() {
   }
   uint8_t wifiMac[6] = {0};
   if (readMacAddress(ESP_MAC_WIFI_STA, wifiMac)) {
-    sprintf(g_wifiSuffix, "%02X%02X", wifiMac[4], wifiMac[5]);
+    snprintf(g_wifiSuffix, sizeof(g_wifiSuffix), "%02X%02X", wifiMac[4], wifiMac[5]);
   } else {
     uint64_t mac = ESP.getEfuseMac();
-    sprintf(g_wifiSuffix, "%02X%02X", (uint8_t)(mac >> 8), (uint8_t)(mac));
+    snprintf(g_wifiSuffix, sizeof(g_wifiSuffix), "%02X%02X", (uint8_t)(mac >> 8), (uint8_t)(mac));
   }
 }
 
@@ -962,7 +962,7 @@ static void handleSerialCommand(const String& cmd) {
       idLo = (uint8_t)(mac);
     }
     char resp[16];
-    sprintf(resp, "%02X%02X,v%d.%d", idHi, idLo,
+    snprintf(resp, sizeof(resp), "%02X%02X,v%d.%d", idHi, idLo,
             SW_MAJOR_VERSION, SW_MINOR_VERSION);
     Serial.println(resp);
     Serial.flush();
@@ -1199,8 +1199,8 @@ static String buildInfoJson() {
   ipText[0] = '\0';
   spiffsRelease[0] = '\0';
 
-  sprintf(ver, "%d.%d", SW_MAJOR_VERSION, SW_MINOR_VERSION);
-  sprintf(dataVer, "v%d", STORED_VAR_VERSION);
+  snprintf(ver, sizeof(ver), "%d.%d", SW_MAJOR_VERSION, SW_MINOR_VERSION);
+  snprintf(dataVer, sizeof(dataVer), "v%d", STORED_VAR_VERSION);
   getWiFiPortalHostName(host, sizeof(host));
   HAL_GetTriggerSensorInfo(sensorInfo, sizeof(sensorInfo));
 
@@ -1622,7 +1622,7 @@ static void handleOtaUpload() {
       if (g_otaLastUiUpdateMs == 0 ||
           (uint32_t)(now - g_otaLastUiUpdateMs) >= 250U ||
           shownKb >= (g_otaLastUiShownKb + 16U)) {
-        sprintf(msgStr, "%u KB", (unsigned int)shownKb);
+        snprintf(msgStr, sizeof(msgStr), "%u KB", (unsigned int)shownKb);
         obdWriteString(&g_obd, 0, 0, 4 * HEIGHT8x8, msgStr, FONT_8x8, OBD_BLACK, 1);
         g_otaLastUiUpdateMs = now;
         g_otaLastUiShownKb = shownKb;

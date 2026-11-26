@@ -97,7 +97,7 @@ void showCarSelection() {
       if (g_carMenu.item[frameUpper + i].value != ITEM_NO_VALUE)
       {
         /* value is a generic pointer to void, so first cast to uint16_t pointer, then take the pointed value */
-        sprintf(msgStr, "%2d", *(uint16_t *)(g_carMenu.item[frameUpper + i].value));
+        snprintf(msgStr, sizeof(msgStr), "%2d", *(uint16_t *)(g_carMenu.item[frameUpper + i].value));
         /* Print the item value (car number) */
         obdWriteString(&g_obd, 0, OLED_WIDTH - 24, i * HEIGHT12x16, msgStr, FONT_12x16, OBD_BLACK, 1);
       }
@@ -207,7 +207,7 @@ void showCopyCarSettings() {
       if (g_carMenu.item[frameUpper + i].value != ITEM_NO_VALUE)
       {
         /* Print the item value (car number) */
-        sprintf(msgStr, "%2d", *(uint16_t *)(g_carMenu.item[frameUpper + i].value));
+        snprintf(msgStr, sizeof(msgStr), "%2d", *(uint16_t *)(g_carMenu.item[frameUpper + i].value));
         obdWriteString(&g_obd, 0, OLED_WIDTH - 24, i * HEIGHT12x16, msgStr, FONT_12x16, OBD_BLACK, 1);
       }
     }
@@ -319,7 +319,7 @@ void showCopyCarSettings() {
         if (g_carMenu.item[itemIndex].value != ITEM_NO_VALUE)
         {
           /* Print the item value (car number) */
-          sprintf(msgStr, "%2d", *(uint16_t *)(g_carMenu.item[itemIndex].value));
+          snprintf(msgStr, sizeof(msgStr), "%2d", *(uint16_t *)(g_carMenu.item[itemIndex].value));
           obdWriteString(&g_obd, 0, OLED_WIDTH - 24, i * HEIGHT12x16, msgStr, FONT_12x16, OBD_BLACK, 1);
         }
       }
@@ -524,7 +524,7 @@ void showSelectRenameCar() {
           obdWriteString(&g_obd, 0, 0, yPos, (char *)getCarMenuOption(lang, 2), menuFont, isSelected ? OBD_WHITE : OBD_BLACK, 1);
           /* Show temp value when editing, stored value otherwise */
           uint16_t displayValue = isEditingRaceswp ? tempRaceswpValue : g_storedVar.gridCarSelectEnabled;
-          sprintf(msgStr, "%3s", getOnOffLabel(lang, displayValue ? 1 : 0));
+          snprintf(msgStr, sizeof(msgStr), "%3s", getOnOffLabel(lang, displayValue ? 1 : 0));
           /* Value is white when editing, follows selection otherwise */
           uint8_t valueColor = isEditingRaceswp ? OBD_WHITE : (isSelected ? OBD_WHITE : OBD_BLACK);
           obdWriteString(&g_obd, 0, OLED_WIDTH - 3 * charWidth, yPos, msgStr, menuFont, valueColor, 1);
@@ -591,7 +591,7 @@ void showSelectRenameCar() {
         uint16_t lang = g_storedVar.language;
 
         obdWriteString(&g_obd, 0, 0, yPos, (char *)getCarMenuOption(lang, 2), menuFont, OBD_WHITE, 1);
-        sprintf(msgStr, "%3s", getOnOffLabel(lang, tempRaceswpValue ? 1 : 0));
+        snprintf(msgStr, sizeof(msgStr), "%3s", getOnOffLabel(lang, tempRaceswpValue ? 1 : 0));
         obdWriteString(&g_obd, 0, OLED_WIDTH - 3 * charWidth, yPos, msgStr, menuFont, OBD_WHITE, 1);
       }
     }
@@ -677,7 +677,7 @@ void showRenameCar() {
   uint16_t mode = RENAME_CAR_SELECT_OPTION_MODE;  /* Initial mode. There are two mode:
                                                      - RENAME_CAR_SELECT_OPTION_MODE, when scrolling the encoder changes the selectedOption (pick which char to change, or the OK option)
                                                      - RENAME_CAR_SELECT_CHAR_MODE, when scrolling the encoder changes the selectedChar, that is the value of the selectedOption */
-  sprintf(tmpName, "%s", g_storedVar.carParam[g_storedVar.selectedCarNumber].carName); /* Store the current carName in the temporary name */
+  snprintf(tmpName, sizeof(tmpName), "%s", g_storedVar.carParam[g_storedVar.selectedCarNumber].carName); /* Store the current carName in the temporary name */
 
   /* Clear screen */
   obdFill(&g_obd, OBD_WHITE, 1);
@@ -772,7 +772,7 @@ void showRenameCar() {
     /* Print each Char of the name, only the selected one is highlighted (WHITE color) */
     for (uint8_t i = 0; i < CAR_NAME_MAX_SIZE - 1; i++) 
     {
-      sprintf(msgStr, "%c", tmpName[i]);
+      snprintf(msgStr, sizeof(msgStr), "%c", tmpName[i]);
       obdWriteString(&g_obd, 0, 0 + (i * 12), 22, msgStr, FONT_12x16, (selectedOption == i) ? OBD_WHITE : OBD_BLACK, 1);
     }
 
@@ -801,7 +801,7 @@ void showRenameCar() {
       if (selectedOption == CAR_NAME_MAX_SIZE - 1)
       {
         /* Change the name of the Car */
-        sprintf(g_storedVar.carParam[g_storedVar.selectedCarNumber].carName, "%s", tmpName);
+        snprintf(g_storedVar.carParam[g_storedVar.selectedCarNumber].carName, sizeof(g_storedVar.carParam[g_storedVar.selectedCarNumber].carName), "%s", tmpName);
         /* Menu variables are initialized in main loop */
         return;
       }

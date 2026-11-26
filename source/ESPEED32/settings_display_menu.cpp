@@ -238,20 +238,20 @@ void showDisplaySettings() {
         uint16_t value = *(uint16_t *)(g_settingsMenu.item[itemIdx].value);
 
         if (itemIdx == DISPLAY_ITEM_VIEW_IDX) {
-          sprintf(msgStr, "%6s", getViewModeLabel(g_storedVar.language, value));
+          snprintf(msgStr, sizeof(msgStr), "%6s", getViewModeLabel(g_storedVar.language, value));
         } else if (itemIdx == DISPLAY_ITEM_LANG_IDX) {
           uint16_t dispLang = (isEditingLanguage && isValueSel) ? tempLanguage : value;
-          sprintf(msgStr, "%3s", LANG_LABELS[dispLang]);
+          snprintf(msgStr, sizeof(msgStr), "%3s", LANG_LABELS[dispLang]);
         } else if (itemIdx == DISPLAY_ITEM_CASE_IDX) {
-          sprintf(msgStr, "%6s", TEXT_CASE_LABELS[g_storedVar.language][value]);
+          snprintf(msgStr, sizeof(msgStr), "%6s", TEXT_CASE_LABELS[g_storedVar.language][value]);
         } else if (itemIdx == DISPLAY_ITEM_FSIZE_IDX) {
-          sprintf(msgStr, "%5s", FONT_SIZE_LABELS[g_storedVar.language][value]);
+          snprintf(msgStr, sizeof(msgStr), "%5s", FONT_SIZE_LABELS[g_storedVar.language][value]);
         } else if (itemIdx == DISPLAY_ITEM_ADVANCED_IDX) {
           snprintf(msgStr, sizeof(msgStr), "%3s", getOnOffLabel(g_storedVar.language, g_advancedMenuEnabled ? 1 : 0));
         } else if (g_settingsMenu.item[itemIdx].unit[0] != '\0') {
           snprintf(msgStr, sizeof(msgStr), "%2d %s", value, g_settingsMenu.item[itemIdx].unit);
         } else {
-          sprintf(msgStr, "%3d", value);
+          snprintf(msgStr, sizeof(msgStr), "%3d", value);
         }
 
         int textWidth = strlen(msgStr) * charWidth;

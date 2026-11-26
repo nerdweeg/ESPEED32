@@ -143,7 +143,7 @@ void showLockSettings() {
       bool s0 = (!editingShortcut && sel == ITEM_MENU);
       obdWriteString(&g_obd, 0, 0, 0 * lineH, (char*)getLockMenuName(lang, ITEM_MENU),
                      menuFont, s0 ? OBD_WHITE : OBD_BLACK, 1);
-      sprintf(msgStr, "%3s", getOnOffLabel(lang, g_storedVar.lockMenuEnabled ? 1 : 0));
+      snprintf(msgStr, sizeof(msgStr), "%3s", getOnOffLabel(lang, g_storedVar.lockMenuEnabled ? 1 : 0));
       uint8_t vx = OLED_WIDTH - (uint8_t)(strlen(msgStr) * WIDTH8x8);
       obdWriteString(&g_obd, 0, vx, 0 * lineH, msgStr,
                      menuFont, s0 ? OBD_WHITE : OBD_BLACK, 1);
@@ -153,7 +153,7 @@ void showLockSettings() {
       obdWriteString(&g_obd, 0, 0, 1 * lineH, (char*)getLockMenuName(lang, ITEM_SHORT),
                      menuFont, (s1 || editingShortcut) ? OBD_WHITE : OBD_BLACK, 1);
       uint8_t shownIdx = editingShortcut ? tmpShortcutIdx : (uint8_t)g_storedVar.lockShortcutIdx;
-      sprintf(msgStr, "%4s", getLockShortcutLabel(lang, shownIdx));
+      snprintf(msgStr, sizeof(msgStr), "%4s", getLockShortcutLabel(lang, shownIdx));
       uint8_t sx = OLED_WIDTH - (uint8_t)(strlen(msgStr) * WIDTH8x8);
       obdWriteString(&g_obd, 0, sx, 1 * lineH, msgStr,
                      menuFont, (s1 || editingShortcut) ? OBD_WHITE : OBD_BLACK, 1);
@@ -162,7 +162,7 @@ void showLockSettings() {
       bool s2 = (!editingShortcut && sel == ITEM_CONFIRM);
       obdWriteString(&g_obd, 0, 0, 2 * lineH, (char*)getLockMenuName(lang, ITEM_CONFIRM),
                      menuFont, s2 ? OBD_WHITE : OBD_BLACK, 1);
-      sprintf(msgStr, "%3s", getOnOffLabel(lang, g_storedVar.lockConfirmEnabled ? 1 : 0));
+      snprintf(msgStr, sizeof(msgStr), "%3s", getOnOffLabel(lang, g_storedVar.lockConfirmEnabled ? 1 : 0));
       uint8_t cx = OLED_WIDTH - (uint8_t)(strlen(msgStr) * WIDTH8x8);
       obdWriteString(&g_obd, 0, cx, 2 * lineH, msgStr,
                      menuFont, s2 ? OBD_WHITE : OBD_BLACK, 1);
