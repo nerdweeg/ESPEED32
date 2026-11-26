@@ -52,6 +52,9 @@ static String buildJsonBackupFromConfig(const StoredVar_type& storedVar,
   snprintf(buf, sizeof(buf), "  \"raceViewMode\": %u,\n", storedVar.raceViewMode);   json += buf;
   snprintf(buf, sizeof(buf), "  \"language\": %u,\n", storedVar.language);           json += buf;
   snprintf(buf, sizeof(buf), "  \"terminology\": %u,\n", storedVar.terminology);     json += buf;
+  for (uint8_t s = 0; s < RACE_SLOTS; s++) {
+    snprintf(buf, sizeof(buf), "  \"raceSlot%u\": %u,\n", (unsigned)s, storedVar.raceSlot[s]); json += buf;
+  }
   snprintf(buf, sizeof(buf), "  \"textCase\": %u,\n", storedVar.textCase);           json += buf;
   snprintf(buf, sizeof(buf), "  \"listFontSize\": %u,\n", storedVar.listFontSize);   json += buf;
   snprintf(buf, sizeof(buf), "  \"startupDelay\": %u,\n", storedVar.startupDelay);   json += buf;
@@ -483,6 +486,12 @@ bool parseAndValidateJson(const String& json, StoredVar_type* sv, uint16_t* anti
     sv->language = v;
   if (parseJsonInt(json, "terminology", v) && inRange(v, TERM_ESPEED, TERM_MAX))
     sv->terminology = v;
+  for (uint8_t s = 0; s < RACE_SLOTS; s++) {
+    char key[12];
+    snprintf(key, sizeof(key), "raceSlot%u", (unsigned)s);
+    if (parseJsonInt(json, key, v) && (v == 0 || (inRange(v, 1, RACE_PARAM_LIMIT + 1) && isRaceParamSelectable(v - 1))))
+      sv->raceSlot[s] = v;
+  }
   if (parseJsonInt(json, "textCase", v) && inRange(v, TEXT_CASE_UPPER, TEXT_CASE_PASCAL))
     sv->textCase = v;
   if (parseJsonInt(json, "listFontSize", v) && inRange(v, FONT_SIZE_LARGE, FONT_SIZE_SMALL))
@@ -876,6 +885,14 @@ String buildSchemaJson() {
                         "[{\"value\":0,\"label\":\"BLANK\"},{\"value\":1,\"label\":\"OUTPUT\"},{\"value\":2,\"label\":\"THROTTLE\"},{\"value\":3,\"label\":\"CAR\"},{\"value\":4,\"label\":\"CURR\"},{\"value\":5,\"label\":\"VOLTAGE\"},{\"value\":8,\"label\":\"BATTERY\"},{\"value\":7,\"label\":\"ACTIVE BRAKE\"},{\"value\":9,\"label\":\"DEVICE ID\"}]");
   appendSchemaEnumField(json, first, "statusSlot3", "Status Slot 4",
                         "[{\"value\":0,\"label\":\"BLANK\"},{\"value\":1,\"label\":\"OUTPUT\"},{\"value\":2,\"label\":\"THROTTLE\"},{\"value\":3,\"label\":\"CAR\"},{\"value\":4,\"label\":\"CURR\"},{\"value\":5,\"label\":\"VOLTAGE\"},{\"value\":8,\"label\":\"BATTERY\"},{\"value\":7,\"label\":\"ACTIVE BRAKE\"},{\"value\":9,\"label\":\"DEVICE ID\"}]");
+  for (uint8_t s = 0; s < RACE_SLOTS; s++) {
+    char key[12];
+    char label[16];
+    snprintf(key, sizeof(key), "raceSlot%u", (unsigned)s);
+    snprintf(label, sizeof(label), "Race Slot %u", (unsigned)(s + 1));
+    appendSchemaEnumField(json, first, key, label,
+                          "[{\"value\":1,\"label\":\"BRAKE\"},{\"value\":2,\"label\":\"SENSI\"},{\"value\":3,\"label\":\"ANTIS\"},{\"value\":4,\"label\":\"CURVE\"},{\"value\":5,\"label\":\"FADE\"},{\"value\":8,\"label\":\"LIMIT\"},{\"value\":6,\"label\":\"PWM_F\"}]");
+  }
   appendSchemaStringField(json, first, "screensaverLine1", "Screensaver Line 1", SCREENSAVER_TEXT_MAX - 1);
   appendSchemaStringField(json, first, "screensaverLine2", "Screensaver Line 2", SCREENSAVER_TEXT_MAX - 1);
   json += "],";
@@ -944,6 +961,10 @@ String buildStateJson(uint8_t carIndex) {
   snprintf(buf, sizeof(buf), "\"raceViewMode\":%u,", g_storedVar.raceViewMode); json += buf;
   snprintf(buf, sizeof(buf), "\"language\":%u,", g_storedVar.language); json += buf;
   snprintf(buf, sizeof(buf), "\"terminology\":%u,", g_storedVar.terminology); json += buf;
+  for (uint8_t s = 0; s < RACE_SLOTS; s++) {
+    snprintf(buf, sizeof(buf), "\"raceSlot%u\":%u,", (unsigned)s,
+             (unsigned)normalizeRaceSlotParam(g_storedVar.raceSlot[s], s) + 1U); json += buf;
+  }
   snprintf(buf, sizeof(buf), "\"textCase\":%u,", g_storedVar.textCase); json += buf;
   snprintf(buf, sizeof(buf), "\"listFontSize\":%u,", g_storedVar.listFontSize); json += buf;
   snprintf(buf, sizeof(buf), "\"startupDelay\":%u,", g_storedVar.startupDelay); json += buf;
@@ -1114,6 +1135,16 @@ bool parseAndApplyWebPatch(const String& json, String* errorMsg, uint8_t* applie
   if (parseJsonInt(json, "language", v)) {
     if (!inRange(v, LANG_NOR, LANG_MAX)) { *errorMsg = "Error: invalid language"; return false; }
     updated.language = (uint16_t)v;
+  }
+  for (uint8_t s = 0; s < RACE_SLOTS; s++) {
+    char key[12];
+    snprintf(key, sizeof(key), "raceSlot%u", (unsigned)s);
+    if (parseJsonInt(json, key, v)) {
+      if (!inRange(v, 1, RACE_PARAM_LIMIT + 1) || !isRaceParamSelectable(v - 1)) {
+        *errorMsg = "Error: invalid " + String(key); return false;
+      }
+      updated.raceSlot[s] = (uint16_t)v;
+    }
   }
   if (parseJsonInt(json, "terminology", v)) {
     if (!inRange(v, TERM_ESPEED, TERM_MAX)) { *errorMsg = "Error: invalid terminology"; return false; }
