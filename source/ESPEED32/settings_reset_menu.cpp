@@ -335,8 +335,7 @@ void showResetSubmenu() {
   bool screensaverActive = false;
   uint16_t screensaverEncoderPos = (uint16_t)readUiEncoder();
 
-  static bool brakeInReset = false;
-  static uint32_t lastBrakeReset = 0;
+  static BrakeButtonEdge brakeInReset;
 
   while (true) {
     bool wakeUp = refreshIdleInteractionFromControls(&lastInteraction, &screensaverActive, &screensaverEncoderPos);
@@ -376,14 +375,10 @@ void showResetSubmenu() {
     /* Brake exits */
     if (digitalRead(BUTT_PIN) == BUTTON_PRESSED) {
       lastInteraction = millis();
-      if (!brakeInReset && millis() - lastBrakeReset > BUTTON_SHORT_PRESS_DEBOUNCE_MS) {
-        brakeInReset = true;
-        lastBrakeReset = millis();
-        waitForBrakeButtonRelease();
-        break;
-      }
-    } else {
-      brakeInReset = false;
+    }
+    if (brakeInReset.pressed()) {
+      waitForBrakeButtonRelease();
+      break;
     }
 
     /* Encoder scroll */

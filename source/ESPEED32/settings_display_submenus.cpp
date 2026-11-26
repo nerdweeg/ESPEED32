@@ -557,25 +557,20 @@ void showAntiSpinSettings() {
       delay(120);
     }
 
-    static bool brakeBtnInAntiSpin = false;
-    static uint32_t lastBrakeBtnAntiSpinTime = 0;
+    static BrakeButtonEdge brakeBtnInAntiSpin;
     if (digitalRead(BUTT_PIN) == BUTTON_PRESSED) {
       lastInteraction = millis();
-      if (!brakeBtnInAntiSpin && millis() - lastBrakeBtnAntiSpinTime > BUTTON_SHORT_PRESS_DEBOUNCE_MS) {
-        brakeBtnInAntiSpin = true;
-        lastBrakeBtnAntiSpinTime = millis();
-        if (editing) {
-          editing = false;
-          editingItem = 0xFF;
-          resetBrowseEncoder();
-          needRedraw = true;
-        } else {
-          waitForBrakeButtonRelease();
-          break;
-        }
+    }
+    if (brakeBtnInAntiSpin.pressed()) {
+      if (editing) {
+        editing = false;
+        editingItem = 0xFF;
+        resetBrowseEncoder();
+        needRedraw = true;
+      } else {
+        waitForBrakeButtonRelease();
+        break;
       }
-    } else {
-      brakeBtnInAntiSpin = false;
     }
 
     if (needRedraw) {

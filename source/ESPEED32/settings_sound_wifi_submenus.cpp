@@ -363,26 +363,21 @@ void showWiFiSettings() {
       delay(120);
     }
 
-    static bool brakeBtnInWifi = false;
-    static uint32_t lastBrakeBtnWifiTime = 0;
+    static BrakeButtonEdge brakeBtnInWifi;
     if (digitalRead(BUTT_PIN) == BUTTON_PRESSED) {
       lastInteraction = millis();
-      if (!brakeBtnInWifi && millis() - lastBrakeBtnWifiTime > BUTTON_SHORT_PRESS_DEBOUNCE_MS) {
-        brakeBtnInWifi = true;
-        lastBrakeBtnWifiTime = millis();
-        if (editing) {
-          editing = false;
-          g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
-          updateMenuLayout();
-          resetUiEncoder(itemTimer);
-          needRedraw = true;
-        } else {
-          waitForBrakeButtonRelease();
-          break;
-        }
+    }
+    if (brakeBtnInWifi.pressed()) {
+      if (editing) {
+        editing = false;
+        g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
+        updateMenuLayout();
+        resetUiEncoder(itemTimer);
+        needRedraw = true;
+      } else {
+        waitForBrakeButtonRelease();
+        break;
       }
-    } else {
-      brakeBtnInWifi = false;
     }
 
     if (needRedraw) {
@@ -547,26 +542,21 @@ void showLoggingSettings() {
       delay(120);
     }
 
-    static bool brakeBtnInLogging = false;
-    static uint32_t lastBrakeBtnLoggingTime = 0;
+    static BrakeButtonEdge brakeBtnInLogging;
     if (digitalRead(BUTT_PIN) == BUTTON_PRESSED) {
       lastInteraction = millis();
-      if (!brakeBtnInLogging && millis() - lastBrakeBtnLoggingTime > BUTTON_SHORT_PRESS_DEBOUNCE_MS) {
-        brakeBtnInLogging = true;
-        lastBrakeBtnLoggingTime = millis();
-        if (editing) {
-          editing = false;
-          g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
-          setUiEncoderBoundaries(0, NUM_ITEMS - 1, false);
-          resetUiEncoder(ITEM_TIMER);
-          needRedraw = true;
-        } else {
-          waitForBrakeButtonRelease();
-          break;
-        }
+    }
+    if (brakeBtnInLogging.pressed()) {
+      if (editing) {
+        editing = false;
+        g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
+        setUiEncoderBoundaries(0, NUM_ITEMS - 1, false);
+        resetUiEncoder(ITEM_TIMER);
+        needRedraw = true;
+      } else {
+        waitForBrakeButtonRelease();
+        break;
       }
-    } else {
-      brakeBtnInLogging = false;
     }
 
     if (needRedraw) {

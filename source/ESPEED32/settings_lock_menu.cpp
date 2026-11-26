@@ -114,27 +114,22 @@ void showLockSettings() {
     }
 
     /* Brake button = back (or cancel shortcut editing) */
-    static bool brakeBtnInLock = false;
-    static uint32_t lastBrakeBtnLockTime = 0;
+    static BrakeButtonEdge brakeBtnInLock;
     if (digitalRead(BUTT_PIN) == BUTTON_PRESSED) {
       lastInteraction = millis();
-      if (!brakeBtnInLock && millis() - lastBrakeBtnLockTime > BUTTON_SHORT_PRESS_DEBOUNCE_MS) {
-        brakeBtnInLock = true;
-        lastBrakeBtnLockTime = millis();
-        if (editingShortcut) {
-          editingShortcut = false;
-          g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
-          setUiEncoderBoundaries(0, NUM_ITEMS - 1, false);
-          resetUiEncoder(ITEM_SHORT);
-          sel = ITEM_SHORT;
-          needRedraw = true;
-        } else {
-          waitForBrakeButtonRelease();
-          break;
-        }
+    }
+    if (brakeBtnInLock.pressed()) {
+      if (editingShortcut) {
+        editingShortcut = false;
+        g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
+        setUiEncoderBoundaries(0, NUM_ITEMS - 1, false);
+        resetUiEncoder(ITEM_SHORT);
+        sel = ITEM_SHORT;
+        needRedraw = true;
+      } else {
+        waitForBrakeButtonRelease();
+        break;
       }
-    } else {
-      brakeBtnInLock = false;
     }
 
     if (checkRaceModeEscape()) { requestEscapeToMain(); break; }

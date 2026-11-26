@@ -3772,23 +3772,16 @@ void showUSBPortalScreen() {
   obdWriteString(&g_obd, 0, 0,  4 * HEIGHT8x8,  (char*)"   in Chrome/Edge",     FONT_6x8,  OBD_BLACK, 1);
   obdWriteString(&g_obd, 0, 0,  5 * HEIGHT8x8,  (char*)"3. Click Connect USB",  FONT_6x8,  OBD_BLACK, 1);
 
-  static bool brakeBtnInUsb = false;
-  static uint32_t lastBrakeBtnUsbTime = 0;
+  static BrakeButtonEdge brakeBtnInUsb;
 
   while (true) {
     serviceConnectivityPortal();
 
     if (g_rotaryEncoder.isEncoderButtonClicked()) break;
 
-    if (digitalRead(BUTT_PIN) == BUTTON_PRESSED) {
-      if (!brakeBtnInUsb && millis() - lastBrakeBtnUsbTime > BUTTON_SHORT_PRESS_DEBOUNCE_MS) {
-        brakeBtnInUsb = true;
-        lastBrakeBtnUsbTime = millis();
-        waitForBrakeButtonRelease();
-        break;
-      }
-    } else {
-      brakeBtnInUsb = false;
+    if (brakeBtnInUsb.pressed()) {
+      waitForBrakeButtonRelease();
+      break;
     }
 
     vTaskDelay(1);

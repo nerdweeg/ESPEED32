@@ -115,8 +115,7 @@ void showAdvancedBrakeMenu() {
   bool screensaverActive     = false;
   uint16_t screensaverEncPos = (uint16_t)readUiEncoder();
 
-  static bool brakeInQB = false;
-  static uint32_t lastBrakeQB = 0;
+  static BrakeButtonEdge brakeInQB;
 
   auto currentMode = [&]() -> uint16_t {
     return g_storedVar.carParam[g_carSel].quickBrakeEnabled;
@@ -159,29 +158,23 @@ void showAdvancedBrakeMenu() {
     }
 
     /* Brake button: cancel edit or exit submenu */
-    if (digitalRead(BUTT_PIN) == BUTTON_PRESSED) {
-      if (!brakeInQB && millis() - lastBrakeQB > BUTTON_SHORT_PRESS_DEBOUNCE_MS) {
-        brakeInQB = true;
-        lastBrakeQB = millis();
-        if (state == VALUE_SELECTION) {
-          /* Cancel: restore original value */
-          if (editRowType == AB_ROW_BUTTON) g_storedVar.carParam[g_carSel].brakeButtonReduction = origValue;
-          else if (editRowType == AB_ROW_MODE) g_storedVar.carParam[g_carSel].quickBrakeEnabled = origValue;
-          else if (editRowType == AB_ROW_ZONE) g_storedVar.carParam[g_carSel].quickBrakeThreshold = origValue;
-          else if (editRowType == AB_ROW_LEVEL) g_storedVar.carParam[g_carSel].quickBrakeStrength = origValue;
-          state = ITEM_SELECTION;
-          g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
-          refreshSelectionBounds();
-          obdFill(&g_obd, OBD_WHITE, 1);
-          prevSel     = 0xFF;
-          forceRedraw = true;
-        } else {
-          waitForBrakeButtonRelease();
-          break;
-        }
+    if (brakeInQB.pressed()) {
+      if (state == VALUE_SELECTION) {
+        /* Cancel: restore original value */
+        if (editRowType == AB_ROW_BUTTON) g_storedVar.carParam[g_carSel].brakeButtonReduction = origValue;
+        else if (editRowType == AB_ROW_MODE) g_storedVar.carParam[g_carSel].quickBrakeEnabled = origValue;
+        else if (editRowType == AB_ROW_ZONE) g_storedVar.carParam[g_carSel].quickBrakeThreshold = origValue;
+        else if (editRowType == AB_ROW_LEVEL) g_storedVar.carParam[g_carSel].quickBrakeStrength = origValue;
+        state = ITEM_SELECTION;
+        g_rotaryEncoder.setAcceleration(MENU_ACCELERATION);
+        refreshSelectionBounds();
+        obdFill(&g_obd, OBD_WHITE, 1);
+        prevSel     = 0xFF;
+        forceRedraw = true;
+      } else {
+        waitForBrakeButtonRelease();
+        break;
       }
-    } else {
-      brakeInQB = false;
     }
 
     /* Encoder scroll */
