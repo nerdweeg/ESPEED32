@@ -291,6 +291,7 @@ static bool formatRaceParamValue(uint8_t param, bool editingThisSlot, char* out,
  */
 void displayRaceModeSimple(uint8_t selectedItem, bool isEditing) {
   static char lastText[2][8];
+  static const char* lastLabel[2] = {nullptr, nullptr};
   static uint8_t lastSelectedItem = 255;
   static bool lastIsEditing = false;
   static uint16_t lastCarSel = 999;
@@ -306,13 +307,17 @@ void displayRaceModeSimple(uint8_t selectedItem, bool isEditing) {
     uint8_t param = getRaceSlotParam(slot);
     char text[8];
     bool usesPot = formatRaceParamValue(param, isEditing && selectedItem == slot, text, sizeof(text));
-    if (!force && strcmp(text, lastText[slot]) == 0) continue;
+    /* The label pointer changes with the slot's parameter, language, terminology or text case,
+       which can all be changed from the web UI while this view is shown. */
+    const char* label = getRaceLabel(g_storedVar.language, param);
+    bool labelChanged = (label != lastLabel[slot]);
+    if (!force && !labelChanged && strcmp(text, lastText[slot]) == 0) continue;
 
     int center = (slot == 0) ? 32 : 96;  /* centre of the left / right half */
     uint8_t color = (selectedItem == slot) ? OBD_WHITE : OBD_BLACK;
 
     /* Label in FONT_12x16: 5 chars x 12px = 60px wide */
-    const char* label = getRaceLabel(g_storedVar.language, param);
+    if (labelChanged) writeBlankField(center - (5 * WIDTH12x16) / 2, 0, FONT_12x16, 5);
     obdWriteString(&g_obd, 0, center - ((strlen(label) * WIDTH12x16) / 2), 0, (char *)label, FONT_12x16, color, 1);
 
     clearCenteredField(center, 16, FONT_12x16, 6);
@@ -325,6 +330,7 @@ void displayRaceModeSimple(uint8_t selectedItem, bool isEditing) {
       obdWriteString(&g_obd, 0, center - ((strlen(text) * WIDTH12x16) / 2), 16, text, FONT_12x16, color, 1);
     }
     snprintf(lastText[slot], sizeof(lastText[slot]), "%s", text);
+    lastLabel[slot] = label;
   }
 
   /* Note: Car name, voltage, and LIMITER warning are displayed by displayStatusLine() */
@@ -337,6 +343,7 @@ void displayRaceModeSimple(uint8_t selectedItem, bool isEditing) {
  */
 void displayRaceMode(uint8_t selectedItem, bool isEditing) {
   static char lastText[RACE_SLOTS][8];
+  static const char* lastLabel[RACE_SLOTS] = {nullptr, nullptr, nullptr, nullptr};
   static uint8_t lastSelectedItem = 255;
   static bool lastIsEditing = false;
   static uint16_t lastCarSel = 999;
@@ -353,20 +360,24 @@ void displayRaceMode(uint8_t selectedItem, bool isEditing) {
     uint8_t param = getRaceSlotParam(slot);
     char text[8];
     formatRaceParamValue(param, isEditing && selectedItem == slot, text, sizeof(text));
-    if (!force && strcmp(text, lastText[slot]) == 0) continue;
+    /* See displayRaceModeSimple(): redraw when the label changes, not only the value */
+    const char* label = getRaceLabel(g_storedVar.language, param);
+    bool labelChanged = (label != lastLabel[slot]);
+    if (!force && !labelChanged && strcmp(text, lastText[slot]) == 0) continue;
 
     bool rightColumn = (slot & 1U) != 0U;
     int center = rightColumn ? 96 : 32;
     int labelY = (slot < 2U) ? 2 : 24;
     uint8_t color = (selectedItem == slot) ? OBD_WHITE : OBD_BLACK;
 
-    /* Right-column labels sit 1px right, as before */
-    const char* label = getRaceLabel(g_storedVar.language, param);
+    /* Right-column labels sit 1px right, as before. FONT_6x8 is 6px wide, 5 chars max. */
+    if (labelChanged) writeBlankField(center - 15 + (rightColumn ? 1 : 0), labelY, FONT_6x8, 5);
     obdWriteString(&g_obd, 0, center - ((strlen(label) * 6) / 2) + (rightColumn ? 1 : 0), labelY, (char *)label, FONT_6x8, color, 1);
 
     clearCenteredField(center, labelY + 10, FONT_8x8, 6);
     obdWriteString(&g_obd, 0, center - ((strlen(text) * WIDTH8x8) / 2), labelY + 10, text, FONT_8x8, color, 1);
     snprintf(lastText[slot], sizeof(lastText[slot]), "%s", text);
+    lastLabel[slot] = label;
   }
 
   /* Note: Car name, voltage, and LIMITER warning are displayed by displayStatusLine() */
