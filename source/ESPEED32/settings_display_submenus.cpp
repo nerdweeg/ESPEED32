@@ -758,13 +758,16 @@ void showStatusSettings() {
         bool inEdit     = (state == VALUE_SELECTION && isSelected);
 
         /* Row label: inverted when selected in ITEM_SELECTION mode */
-        obdWriteString(&g_obd, 0, 0, yPx, (char *)rowNames[idx], FONT_8x8,
+        char rowBuf[16];
+        formatConfiguredMenuLabel(rowNames[idx], rowBuf, sizeof(rowBuf));
+        obdWriteString(&g_obd, 0, 0, yPx, rowBuf, FONT_8x8,
                        (isSelected && state == ITEM_SELECTION) ? OBD_WHITE : OBD_BLACK, 1);
 
         /* Value label right-justified in a wider field for longer slot names. */
         if (idx < STATUS_SLOTS) {
           uint16_t v = normalizeStatusSlotValue(g_storedVar.statusSlot[idx]);
-          const char* lbl = (v <= ST_SLOT_MAX) ? slotLabels[v] : "???";
+          char lbl[ST_LABEL_CHARS + 1];
+          formatConfiguredMenuLabel((v <= ST_SLOT_MAX) ? slotLabels[v] : "???", lbl, sizeof(lbl));
           char vbuf[ST_LABEL_CHARS + 1];
           snprintf(vbuf, sizeof(vbuf), "%*s", ST_LABEL_CHARS, lbl);
           obdWriteString(&g_obd, 0, OLED_WIDTH - ST_LABEL_PIXELS, yPx, vbuf, FONT_6x8,
