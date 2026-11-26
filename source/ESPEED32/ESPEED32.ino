@@ -49,7 +49,7 @@ TaskHandle_t Task2;
 TaskHandle_t WiFiTask;
 
 /* State Machine */
-StateMachine_enum g_currState = INIT;
+volatile StateMachine_enum g_currState = INIT;  /* Written by Task1, read by Task2 */
 
 /* Display Components */
 #ifdef USE_BACKBUFFER
@@ -62,7 +62,7 @@ OBDISP g_obd;         /* OLED display instance */
 char msgStr[50];      /* Display message buffer */
 
 /* Car Selection */
-uint16_t g_carSel;    /* Currently selected car model index */
+volatile uint16_t g_carSel;    /* Currently selected car model index (written by Task1, read by Task2) */
 
 /* Rotary Encoder */
 AiEsp32RotaryEncoder g_rotaryEncoder = AiEsp32RotaryEncoder(ENCODER_A_PIN, ENCODER_B_PIN, ENCODER_BUTTON_PIN, ENCODER_VCC_PIN, ENCODER_STEPS);
@@ -132,7 +132,7 @@ Menu_type g_carMenu {
 Preferences g_pref;
 
 /* UI Timing */
-uint32_t g_lastEncoderInteraction = 0;         /* Timestamp of last encoder interaction for display power saving */
+volatile uint32_t g_lastEncoderInteraction = 0;         /* Timestamp of last encoder interaction for display power saving */
 bool g_forceRaceRedraw = false; /* Force race mode display to redraw */
 
 /* Settings lock — volatile, resets on reboot */

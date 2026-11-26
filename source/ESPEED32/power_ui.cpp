@@ -10,7 +10,7 @@
  *          resets the inactivity timer. If screensaver is already active, the same
  *          inputs wake it and let the caller redraw the current menu.
  */
-bool refreshIdleInteractionFromControls(uint32_t* lastInteraction, bool* screensaverActive, uint16_t* lastEncoderPos) {
+bool refreshIdleInteractionFromControls(volatile uint32_t* lastInteraction, bool* screensaverActive, uint16_t* lastEncoderPos) {
   if (lastInteraction == NULL || lastEncoderPos == NULL) return false;
 
   if (isOtaInProgress()) {

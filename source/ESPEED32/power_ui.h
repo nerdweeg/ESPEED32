@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-bool refreshIdleInteractionFromControls(uint32_t* lastInteraction, bool* screensaverActive, uint16_t* lastEncoderPos);
+bool refreshIdleInteractionFromControls(volatile uint32_t* lastInteraction, bool* screensaverActive, uint16_t* lastEncoderPos);
 bool serviceIdlePowerTransitions(uint32_t* lastInteraction, bool* screensaverActive);
 bool consumeScreensaverWakeInput(bool wakeTriggered);
 void showPowerSave();

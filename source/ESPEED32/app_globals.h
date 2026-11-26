@@ -12,11 +12,11 @@
 extern TaskHandle_t Task2;
 
 /* State machine and runtime state */
-extern StateMachine_enum g_currState;
+extern volatile StateMachine_enum g_currState;
 extern StoredVar_type g_storedVar;
 extern ESC_type g_escVar;
-extern uint16_t g_carSel;
-extern uint32_t g_lastEncoderInteraction;
+extern volatile uint16_t g_carSel;
+extern volatile uint32_t g_lastEncoderInteraction;  /* Also refreshed by Task2 while driving */
 extern bool g_forceRaceRedraw;
 extern portMUX_TYPE g_lapStatsMux;  /* Guards lap stats in g_escVar across cores */
 
