@@ -541,6 +541,7 @@ details.doc-fold>:not(summary){margin-top:8px}
       <li>Die erste Seite ist die oeffentliche Controller-Startseite. Empfindliche Werkzeuge wie <code>Controller Panel</code>, <code>Backup</code>, <code>Restore</code>, Telemetrie, OTA und <code>Advanced Config Editor</code> sind durch Controller-Login geschuetzt.</li>
       <li>Standard-Login des Controllers ist Benutzername <code>espeed32</code> und Passwort <code>espeed32</code>. Der aktuelle Login wird auch auf der WiFi-Infoseite des Controllers angezeigt.</li>
       <li>Backup-Dateien exportieren weder Client-WiFi-Passwort noch Controller-Login-Passwort. Restore behaelt die lokalen WiFi/Login-Daten, die bereits auf diesem Controller gespeichert sind.</li>
+      <li>Backups enthalten alle Fahrzeugprofile und Controller-Einstellungen, auch Race- und Statusfelder, Schlafzeiten, LOCK, STATS und die Ziele der externen Potis. Der Trigger-Sensortyp wird nur auf dem Controller wiederhergestellt, von dem das Backup stammt.</li>
     </ol>
     <figure class="doc-media">
       <img src="../assets/wifi_examples.svg" alt="Beispiel fuer die OLED-WiFi-Infoseite und den Vollbild-QR-Code auf dem Controller">

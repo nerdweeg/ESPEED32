@@ -545,6 +545,7 @@ details.doc-fold>:not(summary){margin-top:8px}
       <li>The first page is public controller home. Sensitive tools such as <code>Controller Panel</code>, <code>Backup</code>, <code>Restore</code>, telemetry, OTA, and <code>Advanced Config Editor</code> are protected by controller login.</li>
       <li>Default controller login is username <code>espeed32</code> and password <code>espeed32</code>. The current login is also shown on the controller WiFi info page.</li>
       <li>Backup files do not export Client WiFi or controller login passwords. Restore keeps the local WiFi/login credentials already stored on that controller.</li>
+      <li>Backups contain all car profiles and controller settings, including race and status slots, sleep timeouts, LOCK, STATS and the external pot targets. The trigger sensor type is only restored on the controller the backup came from.</li>
     </ol>
     <figure class="doc-media">
       <img src="../assets/wifi_examples.svg" alt="Controller OLED WiFi info page and full-screen QR example">

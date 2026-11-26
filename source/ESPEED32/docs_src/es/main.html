@@ -366,6 +366,7 @@
       <li>La primera pagina es la home publica del controlador. Herramientas sensibles como <code>Controller Panel</code>, <code>Backup</code>, <code>Restore</code>, telemetria, OTA y <code>Advanced Config Editor</code> estan protegidas por login del controlador.</li>
       <li>Las credenciales por defecto del controlador son usuario <code>espeed32</code> y password <code>espeed32</code>. El login actual tambien se muestra en la WiFi info page del controlador.</li>
       <li>Los backups no exportan la password de Client WiFi ni la password de login del controlador. Restore mantiene las credenciales locales ya guardadas en ese controlador.</li>
+      <li>Los backups incluyen todos los perfiles de coche y los ajustes del controlador, tambien los campos race y de estado, los tiempos de reposo, LOCK, STATS y los destinos de los potenciometros externos. El tipo de sensor del gatillo solo se restaura en el controlador del que procede el backup.</li>
     </ol>
     <figure class="doc-media">
       <img src="../assets/wifi_examples.svg" alt="Ejemplo de pantalla OLED con info WiFi y QR a pantalla completa en el controlador">
