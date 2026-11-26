@@ -1700,9 +1700,9 @@ void saveEEPROM(const StoredVar_type& toSave) {
   /* Skip the "stored_var" flash write if nothing has changed since the last
    * save: saveEEPROM() is called on almost every menu confirm (and even on
    * a plain GRID/LIST view toggle), so this avoids needless NVS wear during
-   * trackside tuning sessions. saveWiFiNetworkSettings() is unaffected by
-   * this check and always runs, since WiFi credentials live outside this
-   * snapshot and are not otherwise persisted here. */
+   * trackside tuning sessions. saveWiFiNetworkSettings() is not covered by
+   * this snapshot: WiFi/login keys live outside it and have their own
+   * skip-if-unchanged check in writeWiFiNetworkSettingsToPrefs(). */
   static EepromSnapshot_type s_lastSaved;
   static bool s_hasLastSaved = false;
   bool storedVarUnchanged = s_hasLastSaved && memcmp(&s_lastSaved, &snapshot, sizeof(snapshot)) == 0;
